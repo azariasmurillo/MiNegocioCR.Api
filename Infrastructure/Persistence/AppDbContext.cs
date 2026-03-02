@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Migrations;
 
 namespace MiNegocioCR.Api.Infrastructure.Persistence
 {
@@ -15,6 +16,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<User> Users => Set<User>();
         public DbSet<BusinessSettings> BusinessSettings => Set<BusinessSettings>();
         public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
+        public DbSet<Domain.Entities.WhatsappMessage> WhatsappMessages => Set<Domain.Entities.WhatsappMessage>();       
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -38,5 +38,45 @@ public class DomainExceptionFilter : IExceptionFilter
             };
             context.ExceptionHandled = true;
         }
+
+        if (context.Exception is WhatsappNotConfiguredException whatsappEx)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = whatsappEx.Message,
+                code = WhatsappNotConfiguredException.ErrorCode
+            })
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest
+            };
+            context.ExceptionHandled = true;
+        }
+
+        if (context.Exception is EncryptionFailedException encryptEx)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = encryptEx.Message,
+                code = EncryptionFailedException.ErrorCode
+            })
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest
+            };
+            context.ExceptionHandled = true;
+            return;
+        }
+
+        if (context.Exception is DecryptionFailedException decryptEx)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = decryptEx.Message,
+                code = DecryptionFailedException.ErrorCode
+            })
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest
+            };
+            context.ExceptionHandled = true;
+        }
     }
 }

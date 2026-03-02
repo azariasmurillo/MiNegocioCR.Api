@@ -2,6 +2,7 @@
 using MiNegocioCR.Api.Aplication.DTOs;
 using MiNegocioCR.Api.Aplication.Interfaces.Business;
 using MiNegocioCR.Api.Aplication.UseCases.Business;
+using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.API.Controllers;
 
@@ -12,15 +13,18 @@ public class BusinessesController : ControllerBase
     private readonly ICreateBusinessUseCase _createBusinessUseCase;
     private readonly IConfigureSmtpUseCase _configureSmtpUseCase;
     private readonly ISetBusinessActiveStatusUseCase _setBusinessActiveStatusUseCase;
+    private readonly IGetBusinessByIdUseCase _getBusinessByIdUseCase;
 
     public BusinessesController(
         ICreateBusinessUseCase createBusinessUseCase,
         IConfigureSmtpUseCase configureSmtpUseCase,
-        ISetBusinessActiveStatusUseCase setBusinessActiveStatusUseCase)
+        ISetBusinessActiveStatusUseCase setBusinessActiveStatusUseCase,
+        IGetBusinessByIdUseCase getBusinessByIdUseCase  )
     {
         _createBusinessUseCase = createBusinessUseCase;
         _configureSmtpUseCase = configureSmtpUseCase;
         _setBusinessActiveStatusUseCase = setBusinessActiveStatusUseCase;
+        _getBusinessByIdUseCase = getBusinessByIdUseCase;
     }
 
     [HttpPost]
@@ -43,4 +47,15 @@ public class BusinessesController : ControllerBase
         await _setBusinessActiveStatusUseCase.Execute(businessId, isActive);
         return Ok($"Business status updated to {(isActive ? "Active" : "Inactive")}");
     }
+
+    [HttpGet("{businessId}")]
+    public async Task<IActionResult> GetById(Guid businessId)
+    {
+        var result = await _getBusinessByIdUseCase.Execute(businessId);
+        if (result == null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
 }

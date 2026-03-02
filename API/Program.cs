@@ -1,12 +1,16 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Aplication.Interfaces.Business;
 using MiNegocioCR.Api.Aplication.Interfaces.ReapirOrders;
+using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Aplication.Services;
 using MiNegocioCR.Api.Aplication.UseCases.Business;
 using MiNegocioCR.Api.Aplication.UseCases.RepairOrder;
+using MiNegocioCR.Api.Aplication.UseCases.Whatsapp;
 using MiNegocioCR.Api.Infrastructure.Persistence;
+using MiNegocioCR.Api.Infrastructure.Security;
 using MiNegocioCR.Api.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +21,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
+Directory.CreateDirectory(keysPath);
+builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysPath)).SetApplicationName("MiNegocioCR");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -29,10 +36,15 @@ builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepai
 builder.Services.AddScoped<ICreateBusinessUseCase, CreateBusinessUseCase>();
 builder.Services.AddScoped<IConfigureSmtpUseCase, ConfigureSmtpUseCase>();
 builder.Services.AddScoped<ISetBusinessActiveStatusUseCase, SetBusinessActiveStatusUseCase>();
-
+builder.Services.AddScoped<IGetBusinessByIdUseCase, GetBusinessByIdUseCase>();
 builder.Services.AddScoped<IAppDbContext, AppDbContext>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IWhatsappApplicationService, WhatsappApplicationService>();
+builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<IWhatsappWebhookService, WhatsappWebhookService>();
+
+builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 
 builder.Services.AddControllers(options => {options.Filters.Add<DomainExceptionFilter>();});
 
@@ -68,7 +80,10 @@ app.MapGet("/weatherforecast", () =>
 .WithOpenApi();
 app.MapControllers();
 
-app.Run();
+//app.Run();
+
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Run($"http://0.0.0.0:{port}");
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
