@@ -5,24 +5,25 @@ using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
 namespace MiNegocioCR.Api.API.Controllers
 {
     [ApiController]
-    [Route("api/whatsapp/webhook")]
+    [Route("api/webhook")]
     public class WhatsappWebhookController : ControllerBase
     {
-        private readonly IWhatsappWebhookService _webhookService;
-        private const string VerifyToken = "MiNegocioCR_Webhook_Secret";
+        private readonly IConfiguration _config;
 
-        public WhatsappWebhookController(IWhatsappWebhookService webhookService)
+        public WhatsappWebhookController(IConfiguration config)
         {
-            _webhookService = webhookService;
+            _config = config;
         }
 
         [HttpGet]
         public IActionResult Verify(
             [FromQuery(Name = "hub.mode")] string mode,
-            [FromQuery(Name = "hub.challenge")] string challenge,
-            [FromQuery(Name = "hub.verify_token")] string verifyToken)
+            [FromQuery(Name = "hub.verify_token")] string verifyToken,
+            [FromQuery(Name = "hub.challenge")] string challenge)
         {
-            if (mode == "subscribe" && verifyToken == VerifyToken)
+            var myToken = _config["WHATSAPP_VERIFY_TOKEN"];
+
+            if (mode == "subscribe" && verifyToken == myToken)
             {
                 return Ok(challenge);
             }
@@ -31,9 +32,11 @@ namespace MiNegocioCR.Api.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Receive([FromBody] JsonElement payload, CancellationToken cancellationToken)
+        public async Task<IActionResult> Receive([FromBody] object body)
         {
-            await _webhookService.ProcessAsync(payload, cancellationToken);
+            Console.WriteLine("📩 Mensaje recibido:");
+            Console.WriteLine(body);
+
             return Ok();
         }
     }
