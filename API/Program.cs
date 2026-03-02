@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.DataProtection;
+﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Aplication.Interfaces;
@@ -59,6 +59,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+app.UseRouting(); // 👈 AGREGA ESTO
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{
@@ -97,7 +99,7 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.MapControllers();
-
+Console.WriteLine("🔥🔥🔥 VERSION 100% NUEVA ACTIVA 🔥🔥🔥");
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
