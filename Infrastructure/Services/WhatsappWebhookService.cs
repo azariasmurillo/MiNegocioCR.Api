@@ -1,7 +1,8 @@
 ﻿using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Infrastructure.Persistence;
-using System.Text.Json;
+using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace MiNegocioCR.Api.Infrastructure.Services
 {
@@ -26,34 +27,66 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
                 foreach (var change in changes.EnumerateArray())
                 {
-                    var value = change.GetProperty("value");
+                    if (!change.TryGetProperty("value", out var value))
+                        continue;
+                    
+                    if (value.TryGetProperty("messages", out var messages))
+                    {
+                        foreach (var msg in messages.EnumerateArray())
+                        {
+                            var metaId = msg.GetProperty("id").GetString();
+                            var from = msg.GetProperty("from").GetString();
 
+                            string? body = null;
+
+                            if (msg.TryGetProperty("text", out var textObj))
+                            {
+                                body = textObj.GetProperty("body").GetString();
+                            }
+                                                       
+                            var exists = await _context.WhatsappMessages
+                                .AnyAsync(x => x.MetaMessageId == metaId, cancellationToken);
+
+                            if (exists)
+                                continue;
+
+                            var entity = new WhatsappMessage
+                            {
+                                MetaMessageId = metaId,
+                                FromNumber = from,
+                                Body = body,
+                                Status = "received",
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+
+                            _context.WhatsappMessages.Add(entity);
+                        }
+
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+                    
                     if (value.TryGetProperty("statuses", out var statuses))
                     {
-                        foreach (var status in statuses.EnumerateArray())
+                        foreach (var statusObj in statuses.EnumerateArray())
                         {
-                            var messageId = status.GetProperty("id").GetString();
-                            var messageStatus = status.GetProperty("status").GetString();
+                            var messageId = statusObj.GetProperty("id").GetString();
+                            var messageStatus = statusObj.GetProperty("status").GetString();
 
-                            await UpdateMessageStatus(messageId, messageStatus, cancellationToken);
+                            var message = await _context.WhatsappMessages
+                                .FirstOrDefaultAsync(x => x.MetaMessageId == messageId, cancellationToken);
+
+                            if (message == null)
+                                continue;
+
+                            message.Status = messageStatus;
+                            message.UpdatedAt = DateTime.UtcNow;
                         }
+
+                        await _context.SaveChangesAsync(cancellationToken);
                     }
                 }
             }
-        }
-
-        private async Task UpdateMessageStatus(string messageId, string status, CancellationToken cancellationToken)
-        {
-            var message = await _context.WhatsappMessages
-                .FirstOrDefaultAsync(x => x.MetaMessageId == messageId);
-
-            if (message == null)
-                return;
-
-            message.Status = status;
-            message.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

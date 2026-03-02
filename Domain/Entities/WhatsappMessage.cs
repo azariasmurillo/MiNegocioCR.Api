@@ -3,19 +3,14 @@
     public class WhatsappMessage
     {
         public Guid Id { get; set; }
-
         public Guid BusinessId { get; set; }
-
         public string? Phone { get; set; }
-
         public string? Message { get; set; }
-
         public string? MetaMessageId { get; set; }        
-
         public string? Status { get; set; }
-
+        public string? FromNumber { get; set; }
+        public string? Body { get; set; }
         public DateTime CreatedAt { get; set; }
-
         public DateTime? UpdatedAt { get; set; }
     }
 }
