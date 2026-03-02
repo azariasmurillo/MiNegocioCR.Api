@@ -51,11 +51,11 @@ builder.Services.AddControllers(options => {options.Filters.Add<DomainExceptionF
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+//}
 
 app.UseHttpsRedirection();
 
@@ -78,6 +78,15 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi();
+
+app.MapGet("/", () => Results.Ok(new
+{
+    message = "MiNegocioCR API",
+    status = "running",
+    docs = "/swagger",
+    health = "/health"
+}));
+
 app.MapControllers();
 
 //app.Run();
