@@ -17,16 +17,17 @@ namespace MiNegocioCR.Api.API.Controllers
 
         [HttpGet]
         public IActionResult Verify(
-            [FromQuery(Name = "hub.mode")] string mode,
-            [FromQuery(Name = "hub.verify_token")] string verifyToken,
-            [FromQuery(Name = "hub.challenge")] string challenge)
+        [FromQuery(Name = "hub.mode")] string mode,
+        [FromQuery(Name = "hub.verify_token")] string verifyToken,
+        [FromQuery(Name = "hub.challenge")] string challenge)
         {
             var myToken = _config["WHATSAPP_VERIFY_TOKEN"];
 
+            if (string.IsNullOrEmpty(myToken))
+                return StatusCode(500, "Verify token not configured");
+
             if (mode == "subscribe" && verifyToken == myToken)
-            {
                 return Ok(challenge);
-            }
 
             return Forbid();
         }
