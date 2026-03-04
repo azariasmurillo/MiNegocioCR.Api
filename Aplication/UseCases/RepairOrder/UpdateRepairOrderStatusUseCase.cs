@@ -1,7 +1,7 @@
 using MiNegocioCR.Api.Aplication.DTOs;
 using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Aplication.Interfaces.RepairOrders;
-using MiNegocioCR.Api.Aplication.Services;
+using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
 

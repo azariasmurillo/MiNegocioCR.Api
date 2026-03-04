@@ -1,6 +1,6 @@
-﻿using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Entities;
 
-namespace MiNegocioCR.Api.Aplication.Services;
+namespace MiNegocioCR.Api.Aplication.Interfaces;
 
 public interface INotificationService
 {

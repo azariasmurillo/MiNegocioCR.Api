@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Aplication.DTOs;
 using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Aplication.Interfaces.RepairOrders;
-using MiNegocioCR.Api.Aplication.Services;
+using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 
