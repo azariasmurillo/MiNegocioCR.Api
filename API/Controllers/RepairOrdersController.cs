@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Aplication.DTOs;
-using MiNegocioCR.Api.Aplication.Interfaces.ReapirOrders;
+using MiNegocioCR.Api.Aplication.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Aplication.UseCases.RepairOrder;
 using MiNegocioCR.Api.Domain.Enums;
 

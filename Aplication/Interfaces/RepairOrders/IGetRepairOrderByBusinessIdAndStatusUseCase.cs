@@ -1,6 +1,6 @@
-﻿using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Enums;
 
-namespace MiNegocioCR.Api.Aplication.Interfaces.ReapirOrders
+namespace MiNegocioCR.Api.Aplication.Interfaces.RepairOrders
 {
     public interface IGetRepairOrderByBusinessIdAndStatusUseCase
     {

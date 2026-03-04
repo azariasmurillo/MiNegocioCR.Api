@@ -1,6 +1,6 @@
-﻿using MiNegocioCR.Api.Aplication.DTOs;
+using MiNegocioCR.Api.Aplication.DTOs;
 using MiNegocioCR.Api.Aplication.Interfaces;
-using MiNegocioCR.Api.Aplication.Interfaces.ReapirOrders;
+using MiNegocioCR.Api.Aplication.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Aplication.UseCases.RepairOrder

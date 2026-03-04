@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Aplication.Interfaces.ReapirOrders
+namespace MiNegocioCR.Api.Aplication.Interfaces.RepairOrders
 {
     public interface IGetRepairOrderByIdUseCase
     {

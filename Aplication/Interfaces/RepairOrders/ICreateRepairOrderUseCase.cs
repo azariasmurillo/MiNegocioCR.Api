@@ -1,6 +1,6 @@
-﻿using MiNegocioCR.Api.Aplication.DTOs;
+using MiNegocioCR.Api.Aplication.DTOs;
 
-namespace MiNegocioCR.Api.Aplication.Interfaces.ReapirOrders
+namespace MiNegocioCR.Api.Aplication.Interfaces.RepairOrders
 {
     public interface ICreateRepairOrderUseCase
     {
