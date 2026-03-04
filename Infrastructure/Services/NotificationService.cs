@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Aplication.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Infrastructure.Services;

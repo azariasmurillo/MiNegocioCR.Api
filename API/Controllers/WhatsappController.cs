@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Aplication.DTOs;
-using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
+using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 
 namespace MiNegocioCR.Api.API.Controllers
 {

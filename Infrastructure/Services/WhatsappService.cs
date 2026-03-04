@@ -1,8 +1,8 @@
-using MiNegocioCR.Api.Aplication.DTOs;
-using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
+using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Exceptions;
-using MiNegocioCR.Api.Aplication.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;

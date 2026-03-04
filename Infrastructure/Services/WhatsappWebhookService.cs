@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;

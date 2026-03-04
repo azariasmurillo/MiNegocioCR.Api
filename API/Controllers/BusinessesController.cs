@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Aplication.DTOs;
-using MiNegocioCR.Api.Aplication.Interfaces.Business;
-using MiNegocioCR.Api.Aplication.UseCases.Business;
+using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.API.Controllers;
