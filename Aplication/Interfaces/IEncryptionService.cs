@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Infrastructure.Security
+namespace MiNegocioCR.Api.Aplication.Interfaces
 {
     public interface IEncryptionService
     {

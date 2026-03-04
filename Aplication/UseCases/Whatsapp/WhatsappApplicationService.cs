@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Aplication.Interfaces;
 using MiNegocioCR.Api.Aplication.Interfaces.Business;
 using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
-using MiNegocioCR.Api.Infrastructure.Security;
+using MiNegocioCR.Api.Aplication.Interfaces;
 
 namespace MiNegocioCR.Api.Aplication.UseCases.Whatsapp
 {
