@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection;
 using System.Security.Cryptography;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Infrastructure.Security
