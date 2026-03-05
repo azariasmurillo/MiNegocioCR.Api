@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
+using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
@@ -48,6 +52,14 @@ builder.Services.AddScoped<IWhatsappMessageRepository, WhatsappMessageRepository
 builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<IWhatsappWebhookLogRepository, WhatsappWebhookLogRepository>();
+builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
+builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
+builder.Services.AddScoped<IVariantRepository, VariantRepository>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
+builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IRegisterSaleUseCase, RegisterSaleUseCase>();
+builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 

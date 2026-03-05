@@ -3,6 +3,7 @@ using System;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260305022953_AddInventoryIndices")]
+    partial class AddInventoryIndices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -121,7 +124,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("CatalogCategories");
+                    b.ToTable("CatalogCategory");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogImage", b =>
@@ -131,6 +134,9 @@ namespace MiNegocioCR.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CatalogItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CatalogItemId1")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ImageUrl")
@@ -144,7 +150,9 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogItemId");
 
-                    b.ToTable("CatalogImages");
+                    b.HasIndex("CatalogItemId1");
+
+                    b.ToTable("CatalogImage");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogItem", b =>
@@ -194,7 +202,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "IsActive");
 
-                    b.ToTable("CatalogItems");
+                    b.ToTable("CatalogItem");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogOption", b =>
@@ -206,6 +214,9 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<Guid>("CatalogItemId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CatalogItemId1")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -214,7 +225,9 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogItemId");
 
-                    b.ToTable("CatalogOptions");
+                    b.HasIndex("CatalogItemId1");
+
+                    b.ToTable("CatalogOption");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogOptionValue", b =>
@@ -226,6 +239,9 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<Guid>("CatalogOptionId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CatalogOptionId1")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Value")
                         .IsRequired()
                         .HasColumnType("text");
@@ -234,7 +250,9 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogOptionId");
 
-                    b.ToTable("CatalogOptionValues");
+                    b.HasIndex("CatalogOptionId1");
+
+                    b.ToTable("CatalogOptionValue");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogVariant", b =>
@@ -264,7 +282,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("SKU");
 
-                    b.ToTable("CatalogVariants");
+                    b.ToTable("CatalogVariant");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
@@ -300,9 +318,11 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogVariantId");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("BusinessId", "CreatedAt");
 
-                    b.ToTable("InventoryMovements");
+                    b.ToTable("InventoryMovement");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Purchase", b =>
@@ -320,6 +340,9 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("SupplierId1")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Total")
                         .HasColumnType("numeric");
 
@@ -327,9 +350,13 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId");
 
+                    b.HasIndex("PurchaseDate");
+
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("Purchases");
+                    b.HasIndex("SupplierId1");
+
+                    b.ToTable("Purchase");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.PurchaseItem", b =>
@@ -347,6 +374,9 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<Guid>("PurchaseId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("PurchaseId1")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
@@ -354,7 +384,9 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("PurchaseId");
 
-                    b.ToTable("PurchaseItems");
+                    b.HasIndex("PurchaseId1");
+
+                    b.ToTable("PurchaseItem");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrder", b =>
@@ -430,7 +462,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("Suppliers");
+                    b.ToTable("Supplier");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.User", b =>
@@ -600,9 +632,15 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogImage", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", "CatalogItem")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", null)
                         .WithMany("Images")
                         .HasForeignKey("CatalogItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", "CatalogItem")
+                        .WithMany()
+                        .HasForeignKey("CatalogItemId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -621,9 +659,15 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogOption", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", "CatalogItem")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", null)
                         .WithMany()
                         .HasForeignKey("CatalogItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", "CatalogItem")
+                        .WithMany()
+                        .HasForeignKey("CatalogItemId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -632,9 +676,15 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogOptionValue", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogOption", "CatalogOption")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogOption", null)
                         .WithMany("Values")
                         .HasForeignKey("CatalogOptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogOption", "CatalogOption")
+                        .WithMany()
+                        .HasForeignKey("CatalogOptionId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -654,21 +704,25 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogVariant", "Variant")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogVariant", null)
                         .WithMany()
                         .HasForeignKey("CatalogVariantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Purchase", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Supplier", "Supplier")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Supplier", null)
                         .WithMany()
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId1")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Supplier");
@@ -676,9 +730,15 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.PurchaseItem", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Purchase", "Purchase")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Purchase", null)
                         .WithMany("Items")
                         .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Purchase", "Purchase")
+                        .WithMany()
+                        .HasForeignKey("PurchaseId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
