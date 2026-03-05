@@ -12,8 +12,10 @@
 
         public int StockQuantity { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        public int LowStockThreshold { get; set; } = 2;
 
-        public CatalogItem CatalogItem { get; set; } = null!;
+        public bool IsActive { get; set; }
+
+        public CatalogItem CatalogItem { get; set; }
     }
 }

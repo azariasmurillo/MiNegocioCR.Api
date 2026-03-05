@@ -19,5 +19,7 @@ namespace MiNegocioCR.Api.Domain.Entities
         public string? Notes { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public CatalogVariant Variant { get; set; }
     }
 }
