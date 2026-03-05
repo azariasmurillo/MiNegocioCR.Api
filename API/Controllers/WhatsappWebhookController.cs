@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
-using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
-using MiNegocioCR.Api.Infrastructure.Services;
+using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using System.Text.Json;
 using System.Threading;
 

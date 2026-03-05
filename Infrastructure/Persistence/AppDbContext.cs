@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MiNegocioCR.Api.Aplication.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Migrations;
 
