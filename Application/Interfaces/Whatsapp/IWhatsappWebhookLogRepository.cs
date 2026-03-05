@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Aplication.Interfaces.Whatsapp
+﻿namespace MiNegocioCR.Api.Application.Interfaces.Whatsapp
 {
     public interface IWhatsappWebhookLogRepository
     {

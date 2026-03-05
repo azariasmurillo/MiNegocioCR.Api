@@ -1,5 +1,5 @@
-﻿using MiNegocioCR.Api.Aplication.Interfaces.Business;
-using MiNegocioCR.Api.Aplication.Interfaces.Whatsapp;
+﻿using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using System.Text.Json;

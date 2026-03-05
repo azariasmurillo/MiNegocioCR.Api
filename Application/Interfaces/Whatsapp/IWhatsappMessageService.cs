@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace MiNegocioCR.Api.Aplication.Interfaces.Whatsapp
+namespace MiNegocioCR.Api.Application.Interfaces.Whatsapp
 {
     public interface IWhatsappMessageService
     {

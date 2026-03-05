@@ -1,7 +1,7 @@
 ﻿using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 
-namespace MiNegocioCR.Api.Aplication.Interfaces.Whatsapp
+namespace MiNegocioCR.Api.Application.Interfaces.Whatsapp
 {
     public interface IWhatsappMessageRepository
     {
