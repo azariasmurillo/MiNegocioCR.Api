@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
@@ -20,16 +20,23 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
         public async Task ProcessWebhookAsync(JsonElement payload)
         {
-            var entry = payload.GetProperty("entry")[0];
-            var changes = entry.GetProperty("changes")[0];
-            var value = changes.GetProperty("value");
+            if (!payload.TryGetProperty("entry", out var entryArr) || entryArr.GetArrayLength() == 0)
+                return;
+            var entry = entryArr[0];
 
-            if (value.TryGetProperty("messages", out var messages))
+            if (!entry.TryGetProperty("changes", out var changesArr) || changesArr.GetArrayLength() == 0)
+                return;
+            var changes = changesArr[0];
+
+            if (!changes.TryGetProperty("value", out var value))
+                return;
+
+            if (value.TryGetProperty("messages", out var messages) && messages.GetArrayLength() > 0)
             {
                 await ProcessIncomingMessage(messages, value);
             }
 
-            if (value.TryGetProperty("statuses", out var statuses))
+            if (value.TryGetProperty("statuses", out var statuses) && statuses.GetArrayLength() > 0)
             {
                 await ProcessStatusUpdate(statuses);
             }
@@ -37,21 +44,26 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
         private async Task ProcessIncomingMessage(JsonElement messages, JsonElement value)
         {
+            if (messages.GetArrayLength() == 0)
+                return;
             var message = messages[0];
 
-            var messageId = message.GetProperty("id").GetString();
-            var from = message.GetProperty("from").GetString();
-            var timestamp = message.GetProperty("timestamp").GetString();
+            var messageId = message.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+            var from = message.TryGetProperty("from", out var fromProp) ? fromProp.GetString() : null;
+            if (string.IsNullOrEmpty(messageId) || string.IsNullOrEmpty(from))
+                return;
 
-            var body = message.GetProperty("text")
-                              .GetProperty("body")
-                              .GetString();
+            var body = "";
+            if (message.TryGetProperty("text", out var textObj) && textObj.TryGetProperty("body", out var bodyProp))
+                body = bodyProp.GetString() ?? "";
 
-            var phoneNumberId = value.GetProperty("metadata")
-                                     .GetProperty("phone_number_id")
-                                     .GetString();
+            if (!value.TryGetProperty("metadata", out var metadata) || !metadata.TryGetProperty("phone_number_id", out var phoneProp))
+                return;
+            var phoneNumberId = phoneProp.GetString();
+            if (string.IsNullOrEmpty(phoneNumberId))
+                return;
 
-            var business = await _businessRepository.GetByWhatsappPhoneNumberIdAsync(phoneNumberId!);
+            var business = await _businessRepository.GetByWhatsappPhoneNumberIdAsync(phoneNumberId);
 
             if (business == null)
             {
@@ -62,11 +74,11 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             {
                 Id = Guid.NewGuid(),
                 BusinessId = business.Id,
-                MessageId = messageId!,
-                PhoneNumber = from!,
-                From = from!,
-                To = phoneNumberId!,
-                Body = body!,
+                MessageId = messageId,
+                PhoneNumber = from,
+                From = from,
+                To = phoneNumberId,
+                Body = body,
                 Timestamp = DateTime.UtcNow,
                 Direction = MessageDirection.Inbound,
                 Status = MessageStatus.Received
@@ -77,10 +89,14 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
         private async Task ProcessStatusUpdate(JsonElement statuses)
         {
+            if (statuses.GetArrayLength() == 0)
+                return;
             var status = statuses[0];
 
-            var messageId = status.GetProperty("id").GetString();
-            var statusValue = status.GetProperty("status").GetString();
+            var messageId = status.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+            var statusValue = status.TryGetProperty("status", out var statusProp) ? statusProp.GetString() : null;
+            if (string.IsNullOrEmpty(messageId) || string.IsNullOrEmpty(statusValue))
+                return;
 
             MessageStatus newStatus = statusValue switch
             {
@@ -90,7 +106,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 _ => MessageStatus.Sent
             };
 
-            await _messageRepository.UpdateStatusAsync(messageId!, newStatus);
+            await _messageRepository.UpdateStatusAsync(messageId, newStatus);
         }
     }
 }

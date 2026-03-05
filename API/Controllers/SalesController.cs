@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 
@@ -18,9 +18,14 @@ namespace MiNegocioCR.Api.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateSale(CreateSaleRequestDto request)
         {
-            var businessId = Guid.Parse(
-                User.FindFirst("businessId")!.Value
-            );
+            if (request == null) return BadRequest("CreateSale - Request body is required.");
+
+            var businessIdClaim = User.FindFirst("businessId")?.Value;
+            if (string.IsNullOrEmpty(businessIdClaim) || !Guid.TryParse(businessIdClaim, out var businessId))
+                return BadRequest("Invalid or missing businessId claim.");
+
+            if (request.Items == null || !request.Items.Any())
+                return BadRequest("At least one item is required.");
 
             var id = await _registerSale.ExecuteAsync(
                 businessId,

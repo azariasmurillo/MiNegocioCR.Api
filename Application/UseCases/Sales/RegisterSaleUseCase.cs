@@ -26,6 +26,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             Guid businessId,
             List<(Guid variantId, int quantity, decimal price)> items)
         {
+            if (items == null || !items.Any()) throw new ArgumentException("At least one item is required.", nameof(items));
+
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try

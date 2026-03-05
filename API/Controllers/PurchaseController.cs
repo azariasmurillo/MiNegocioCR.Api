@@ -18,6 +18,8 @@ namespace MiNegocioCR.Api.API.Controllers
         [HttpPost]
         public async Task<IActionResult> RegisterPurchase(RegisterPurchaseRequestDto request)
         {
+            if (request == null) return BadRequest("RegisterPurchase - Request body is required.");
+
             await _registerPurchase.ExecuteAsync(
                 request.BusinessId,
                 request.VariantId,

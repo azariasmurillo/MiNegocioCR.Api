@@ -1,6 +1,7 @@
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Business
 {
@@ -15,10 +16,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Business
 
         public async Task Execute(Guid businessId, ConfigureSmtpDto dto)
         {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+
             var business = await _context.Businesses.FindAsync(businessId);
 
             if (business == null)
-                throw new Exception("Business not found");
+                throw new NotFoundException("Business", "Business not found");
 
             business.SmtpHost = dto.SmtpHost;
             business.SmtpPort = dto.SmtpPort;

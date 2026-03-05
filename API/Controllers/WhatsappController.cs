@@ -21,6 +21,9 @@ namespace MiNegocioCR.Api.API.Controllers
         [HttpPost("send")]
         public async Task<IActionResult> Send([FromBody] SendWhatsappRequestDto request)
         {
+            if (request == null)
+                return BadRequest("Request body is required.");
+
             await _whatsappAppService.SendAsync(
                 request.BusinessId,
                 request.Phone,
@@ -32,6 +35,9 @@ namespace MiNegocioCR.Api.API.Controllers
         [HttpPost("connect")]
         public async Task<IActionResult> Connect([FromBody] ConnectWhatsappRequestDto request, CancellationToken cancellationToken)
         {
+            if (request == null)
+                return BadRequest("Request body is required.");
+
             await _whatsappAppService.ConnectAsync(
                 request.BusinessId,
                 request.PhoneNumberId,

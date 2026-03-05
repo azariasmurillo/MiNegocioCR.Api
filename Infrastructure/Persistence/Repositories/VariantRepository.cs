@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,12 +30,16 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
         public async Task AddVariantAsync(CatalogVariant variant)
         {
+            if (variant == null)
+                throw new ArgumentNullException(nameof(variant));
             await _context.CatalogVariants.AddAsync(variant);
             await _context.SaveChangesAsync();
         }
 
         public async Task UpdateVariantAsync(CatalogVariant variant)
         {
+            if (variant == null)
+                throw new ArgumentNullException(nameof(variant));
             _context.CatalogVariants.Update(variant);
             await _context.SaveChangesAsync();
         }        

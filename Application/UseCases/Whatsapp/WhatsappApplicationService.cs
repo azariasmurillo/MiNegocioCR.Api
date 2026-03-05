@@ -3,6 +3,7 @@ using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 
 namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
@@ -34,7 +35,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             var business = await _getBusinessByIdUseCase.Execute(businessId);
 
             if (business == null)
-                throw new Exception("Business not found");
+                throw new NotFoundException("Business", "Business not found");
 
             if (!business.EnableWhatsappNotifications)
                 throw new Exception("Whatsapp not enabled for this business");
@@ -63,8 +64,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             var business = await _getBusinessByIdUseCase.Execute(businessId);            
 
             if (business == null)
-                throw new Exception("Business not found");
-                        
+                throw new NotFoundException("Business", "Business not found");
+
             var isValid = await _whatsappService.ValidateAsync(phoneNumberId, accessToken);
 
             if (!isValid)

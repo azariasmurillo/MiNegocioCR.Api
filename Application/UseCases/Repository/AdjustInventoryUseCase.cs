@@ -1,6 +1,7 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
@@ -23,10 +24,13 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             int adjustment,
             string reason)
         {
+            if (adjustment == 0)
+                throw new ArgumentException("Adjustment must be a non-zero value.", nameof(adjustment));
+            
             var variant = await _variantRepository.GetVariantAsync(variantId, businessId);
 
             if (variant == null)
-                throw new Exception("Variant not found");
+                throw new NotFoundException("CatalogVariant", "Variant not found");
 
             variant.StockQuantity += adjustment;
 

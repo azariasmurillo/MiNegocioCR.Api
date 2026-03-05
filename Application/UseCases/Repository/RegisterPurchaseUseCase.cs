@@ -1,6 +1,7 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
@@ -26,10 +27,13 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             int quantity,
             decimal cost)
         {
+            if (quantity <= 0)
+                throw new ArgumentException("Quantity must be greater than zero.", nameof(quantity));
+
             var variant = await _variantRepository.GetVariantAsync(variantId, businessId);
 
             if (variant == null)
-                throw new Exception("Variant not found");
+                throw new NotFoundException("CatalogVariant", "Variant not found");
 
             variant.StockQuantity += quantity;
 
