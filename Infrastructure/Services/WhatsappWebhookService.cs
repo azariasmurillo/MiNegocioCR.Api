@@ -1,7 +1,8 @@
-using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
-using MiNegocioCR.Api.Infrastructure.Persistence;
-using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
+using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Infrastructure.Persistence;
 using System.Text.Json;
 
 namespace MiNegocioCR.Api.Infrastructure.Services
@@ -44,23 +45,23 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                                 body = textObj.GetProperty("body").GetString();
                             }
                                                        
-                            var exists = await _context.WhatsappMessages
+                            var exists = await _context.WhatsAppMessages
                                 .AnyAsync(x => x.MetaMessageId == metaId, cancellationToken);
 
                             if (exists)
                                 continue;
 
-                            var entity = new WhatsappMessage
+                            var entity = new WhatsAppMessage
                             {
                                 MetaMessageId = metaId,
-                                FromNumber = from,
+                                From = from,
                                 Body = body,
-                                Status = "received",
+                                Status = MessageStatus.Received,
                                 CreatedAt = DateTime.UtcNow,
                                 UpdatedAt = DateTime.UtcNow
                             };
 
-                            _context.WhatsappMessages.Add(entity);
+                            _context.WhatsAppMessages.Add(entity);
                         }
 
                         await _context.SaveChangesAsync(cancellationToken);
@@ -73,13 +74,16 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                             var messageId = statusObj.GetProperty("id").GetString();
                             var messageStatus = statusObj.GetProperty("status").GetString();
 
-                            var message = await _context.WhatsappMessages
+                            var message = await _context.WhatsAppMessages
                                 .FirstOrDefaultAsync(x => x.MetaMessageId == messageId, cancellationToken);
 
                             if (message == null)
                                 continue;
 
-                            message.Status = messageStatus;
+                            if (Enum.TryParse<MessageStatus>(messageStatus, ignoreCase: true, out var status))
+                            {
+                                message.Status = status;
+                            }                            
                             message.UpdatedAt = DateTime.UtcNow;
                         }
 

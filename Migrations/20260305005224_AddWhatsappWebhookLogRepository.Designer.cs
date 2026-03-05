@@ -3,6 +3,7 @@ using System;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260305005224_AddWhatsappWebhookLogRepository")]
+    partial class AddWhatsappWebhookLogRepository
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,230 +98,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.ToTable("BusinessSettings");
                 });
 
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CatalogCategory");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogImage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CatalogItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CatalogItemId");
-
-                    b.ToTable("CatalogImage");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("BasePrice")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CategoryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("HasVariants")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("TrackStock")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BusinessId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("BusinessId", "CategoryId");
-
-                    b.HasIndex("BusinessId", "IsActive");
-
-                    b.ToTable("CatalogItem");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogVariant", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CatalogItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("SKU")
-                        .HasColumnType("text");
-
-                    b.Property<int>("StockQuantity")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CatalogItemId");
-
-                    b.HasIndex("SKU");
-
-                    b.ToTable("CatalogVariant");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CatalogVariantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reference")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BusinessId");
-
-                    b.HasIndex("CatalogVariantId");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("BusinessId", "CreatedAt");
-
-                    b.ToTable("InventoryMovement");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Purchase", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("PurchaseDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Total")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BusinessId");
-
-                    b.HasIndex("PurchaseDate");
-
-                    b.HasIndex("SupplierId");
-
-                    b.ToTable("Purchase");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.PurchaseItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CatalogVariantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Cost")
-                        .HasColumnType("numeric");
-
-                    b.Property<Guid>("PurchaseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PurchaseId");
-
-                    b.ToTable("PurchaseItem");
-                });
-
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -361,36 +140,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasIndex("BusinessId");
 
                     b.ToTable("RepairOrders");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Supplier", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Address")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Supplier");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.User", b =>
@@ -524,8 +273,6 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "PhoneNumber");
 
-                    b.HasIndex("BusinessId", "Timestamp");
-
                     b.ToTable("WhatsAppMessages");
                 });
 
@@ -556,59 +303,6 @@ namespace MiNegocioCR.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Business");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogImage", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", "CatalogItem")
-                        .WithMany("Images")
-                        .HasForeignKey("CatalogItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CatalogItem");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogItem", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogCategory", "Category")
-                        .WithMany("Items")
-                        .HasForeignKey("CategoryId");
-
-                    b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogVariant", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogItem", "CatalogItem")
-                        .WithMany("Variants")
-                        .HasForeignKey("CatalogItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CatalogItem");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Purchase", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Supplier", "Supplier")
-                        .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Supplier");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.PurchaseItem", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Purchase", "Purchase")
-                        .WithMany("Items")
-                        .HasForeignKey("PurchaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Purchase");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrder", b =>
@@ -651,23 +345,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("Settings");
 
                     b.Navigation("Users");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogCategory", b =>
-                {
-                    b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogItem", b =>
-                {
-                    b.Navigation("Images");
-
-                    b.Navigation("Variants");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Purchase", b =>
-                {
-                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }
