@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MiNegocioCR.Api.Aplication.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories

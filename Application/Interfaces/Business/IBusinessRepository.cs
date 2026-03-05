@@ -1,5 +1,6 @@
 ﻿
-namespace MiNegocioCR.Api.Aplication.Interfaces.Business
+
+namespace MiNegocioCR.Api.Application.Interfaces.Business
 {
     public interface IBusinessRepository
     {
