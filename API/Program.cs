@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Aplication.Interfaces;
@@ -10,9 +11,9 @@ using MiNegocioCR.Api.Aplication.UseCases.Business;
 using MiNegocioCR.Api.Aplication.UseCases.RepairOrder;
 using MiNegocioCR.Api.Aplication.UseCases.Whatsapp;
 using MiNegocioCR.Api.Infrastructure.Persistence;
+using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using MiNegocioCR.Api.Infrastructure.Security;
 using MiNegocioCR.Api.Infrastructure.Services;
-using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,10 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IWhatsappApplicationService, WhatsappApplicationService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IWhatsappWebhookService, WhatsappWebhookService>();
+builder.Services.AddScoped<IWhatsappMessageRepository, WhatsappMessageRepository>();
+builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
+builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
+builder.Services.AddScoped<IWhatsappWebhookLogRepository, WhatsappWebhookLogRepository>();
 
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 

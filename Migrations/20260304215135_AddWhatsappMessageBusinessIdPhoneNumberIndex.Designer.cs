@@ -3,6 +3,7 @@ using System;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260304215135_AddWhatsappMessageBusinessIdPhoneNumberIndex")]
+    partial class AddWhatsappMessageBusinessIdPhoneNumberIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -134,7 +137,8 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BusinessId");
+                    b.HasIndex("BusinessId", "OrderNumber")
+                        .IsUnique();
 
                     b.ToTable("RepairOrders");
                 });
@@ -178,40 +182,6 @@ namespace MiNegocioCR.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastMessage")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastMessageAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("UnreadCount")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BusinessId", "PhoneNumber")
-                        .IsUnique();
-
-                    b.ToTable("WhatsAppConversations");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppMessage", b =>
@@ -266,29 +236,12 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MessageId");
+                    b.HasIndex("BusinessId");
 
-                    b.HasIndex("BusinessId", "PhoneNumber");
+                    b.HasIndex("MessageId")
+                        .IsUnique();
 
-                    b.ToTable("WhatsAppMessages");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsappWebhookLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Payload")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("WhatsappWebhookLogs");
+                    b.ToTable("WhatsappMessages");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.BusinessSettings", b =>

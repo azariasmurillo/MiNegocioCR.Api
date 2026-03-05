@@ -10,7 +10,8 @@ namespace MiNegocioCR.Api.Aplication.Interfaces
         DbSet<RepairOrder> RepairOrders { get; }
         DbSet<User> Users { get; }
         DbSet<BusinessSettings> BusinessSettings { get; }
-        DbSet<Domain.Entities.WhatsappMessage> WhatsappMessages { get; }
+        DbSet<WhatsAppMessage> WhatsAppMessages { get; }
+        public DbSet<WhatsAppConversation> WhatsAppConversations { get; set; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
