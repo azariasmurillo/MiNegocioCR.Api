@@ -30,13 +30,19 @@ public class BusinessesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBusinessRequestDto request)
     {
+        if (request == null)
+            return BadRequest("Request body is required.");
+
         var result = await _createBusinessUseCase.Execute(request);
         return Ok(result);
     }
 
     [HttpPut("{businessId}/smtp")]
-    public async Task<IActionResult> ConfigureSmtp(Guid businessId, ConfigureSmtpDto dto)
+    public async Task<IActionResult> ConfigureSmtp(Guid businessId, [FromBody] ConfigureSmtpDto dto)
     {
+        if (dto == null)
+            return BadRequest("Request body is required.");
+
         await _configureSmtpUseCase.Execute(businessId, dto);
         return Ok("SMTP configured successfully");
     }

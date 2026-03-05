@@ -18,6 +18,8 @@ namespace MiNegocioCR.Api.API.Controllers
         [HttpPost("adjust")]
         public async Task<IActionResult> AdjustStock(AdjustInventoryRequestDto request)
         {
+            if (request == null) return BadRequest("AdjustStock - Request body is required.");
+
             await _adjustInventory.ExecuteAsync(
                 request.BusinessId,
                 request.VariantId,

@@ -17,6 +17,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Business
 
         public async Task<object> Execute(CreateBusinessRequestDto request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var business = new BusinessEntity
             {
                 Name = request.Name

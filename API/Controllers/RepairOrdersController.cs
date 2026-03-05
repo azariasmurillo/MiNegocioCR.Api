@@ -38,6 +38,8 @@ public class RepairOrdersController : ControllerBase
         Guid businessId,
         [FromBody] CreateRepairOrderRequestDto request)
     {
+        if (request == null) return BadRequest("RepairOrdersCreate - Request body is required.");
+
         var result = await _createRepairOrderUseCase.Execute(businessId, request);
         return Ok(result);
     }
@@ -47,6 +49,7 @@ public class RepairOrdersController : ControllerBase
     Guid id,
     [FromBody] UpdateStatusRequestDto request)
     {
+        if (request == null) return BadRequest("RepairOrdersUpdateStatus - Request body is required.");
         var result = await _updateStatusUseCase.Execute(id, request);
         return Ok(result);
     }
@@ -74,6 +77,7 @@ public class RepairOrdersController : ControllerBase
     Guid id,
     [FromBody] UpdateRepairOrderRequestDto request)
     {
+        if (request == null) return BadRequest("RepairOrdersUpdate - Request body is required.");
         await _updateRepairOrderUseCase.Execute(id, request);
         return Ok();
     }

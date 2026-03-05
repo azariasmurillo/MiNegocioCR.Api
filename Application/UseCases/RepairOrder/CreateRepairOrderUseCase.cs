@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
-using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
 {
@@ -21,6 +21,8 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
 
     public async Task<object> Execute(Guid businessId, CreateRepairOrderRequestDto request)
     {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
         using var transaction = await (_context as DbContext)!
             .Database.BeginTransactionAsync();
 
@@ -31,7 +33,7 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             .FirstOrDefaultAsync();
 
         if (settings == null)
-            throw new Exception("Business settings not found.");
+            throw new NotFoundException("BusinessSettings", "Business settings not found.");
 
         var orderNumber = settings.NextOrderNumber;
         settings.NextOrderNumber++;

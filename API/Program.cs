@@ -60,6 +60,7 @@ builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, RegisterSaleUseCase>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
+builder.Services.AddScoped<ISaleRepository, SaleRepository>();
 
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 

@@ -1,8 +1,9 @@
-﻿using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Infrastructure.Services
 {
@@ -31,10 +32,10 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             var variant = await _variantRepository.GetVariantAsync(variantId, businessId);
 
             if (variant == null)
-                throw new Exception("Variant not found");
+                throw new NotFoundException("CatalogVariant", "Variant not found");
 
             if (quantity <= 0)
-                throw new Exception("Quantity must be greater than zero");
+                throw new ArgumentException("Quantity must be greater than zero");
 
             variant.StockQuantity += quantity;
 
@@ -61,13 +62,13 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             var variant = await _variantRepository.GetVariantAsync(variantId, businessId);
 
             if (variant == null)
-                throw new Exception("Variant not found");
+                throw new NotFoundException("CatalogVariant", "Variant not found");
 
             if (variant.StockQuantity < quantity)
-                throw new Exception("Not enough stock");
+                throw new ArgumentException("Not enough stock");
 
             if (quantity <= 0)
-                throw new Exception("Quantity must be greater than zero");
+                throw new ArgumentException("Quantity must be greater than zero");
 
             variant.StockQuantity -= quantity;
 
@@ -98,10 +99,10 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             var variant = await _variantRepository.GetVariantAsync(variantId, businessId);
 
             if (variant == null)
-                throw new Exception("Variant not found");
+                throw new NotFoundException("CatalogVariant", "Variant not found");
 
             if (quantity <= 0)
-                throw new Exception("Quantity must be greater than zero");
+                throw new ArgumentException("Quantity must be greater than zero");
 
             variant.StockQuantity += quantity;
 

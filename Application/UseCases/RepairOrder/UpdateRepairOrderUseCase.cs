@@ -2,6 +2,7 @@ using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
 {
@@ -16,13 +17,14 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
 
         public async Task Execute(Guid id, UpdateRepairOrderRequestDto request)
         {
+            if (request == null) throw new ArgumentNullException(nameof(request));
             var order = await _context.RepairOrders.FindAsync(id);
 
             if (order == null)
-                throw new Exception("Order not found");
+                throw new NotFoundException("RepairOrder", "Order not found");
 
             if ((RepairOrderStatus)order.Status == RepairOrderStatus.Delivered)
-                throw new Exception("Delivered orders cannot be modified.");
+                throw new ArgumentException("Delivered orders cannot be modified.");
 
             order.CustomerName = request.CustomerName;
             order.CustomerPhone = request.CustomerPhone;

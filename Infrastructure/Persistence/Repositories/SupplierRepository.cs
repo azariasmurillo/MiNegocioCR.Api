@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +15,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
         public async Task AddSupplierAsync(Supplier supplier)
         {
+            if (supplier == null)
+                throw new ArgumentNullException(nameof(supplier));
             await _context.Suppliers.AddAsync(supplier);
             await _context.SaveChangesAsync();
         }

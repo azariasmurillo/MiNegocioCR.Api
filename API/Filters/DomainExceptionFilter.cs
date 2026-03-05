@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using MiNegocioCR.Api.Domain.Exceptions;
@@ -72,6 +72,19 @@ public class DomainExceptionFilter : IExceptionFilter
             {
                 error = decryptEx.Message,
                 code = DecryptionFailedException.ErrorCode
+            })
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest
+            };
+            context.ExceptionHandled = true;
+        }
+
+        if (context.Exception is ArgumentException argEx)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = argEx.Message,
+                code = "VALIDATION_ERROR"
             })
             {
                 StatusCode = (int)HttpStatusCode.BadRequest

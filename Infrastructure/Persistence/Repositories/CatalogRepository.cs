@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,12 +31,16 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
         public async Task AddItemAsync(CatalogItem item)
         {
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
             await _context.CatalogItems.AddAsync(item);
             await _context.SaveChangesAsync();
         }
 
         public async Task UpdateItemAsync(CatalogItem item)
         {
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
             _context.CatalogItems.Update(item);
             await _context.SaveChangesAsync();
         }

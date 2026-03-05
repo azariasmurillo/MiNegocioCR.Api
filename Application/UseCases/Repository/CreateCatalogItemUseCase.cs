@@ -20,6 +20,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             bool trackStock,
             CatalogItemType type)
         {
+            if (!string.IsNullOrEmpty(name)) throw new ArgumentException("Name cannot be null or empty.", nameof(name));
+
             var item = new CatalogItem
             {
                 Id = Guid.NewGuid(),

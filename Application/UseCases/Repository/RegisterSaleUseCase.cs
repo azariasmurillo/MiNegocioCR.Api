@@ -21,6 +21,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             Guid businessId,
             List<(Guid variantId, int quantity, decimal price)> items)
         {
+            if (items == null || !items.Any()) throw new ArgumentException("At least one item is required.", nameof(items));
+
             var sale = new Sale
             {
                 Id = Guid.NewGuid(),

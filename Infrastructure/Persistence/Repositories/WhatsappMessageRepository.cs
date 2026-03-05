@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
@@ -16,6 +16,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
         public async Task SaveAsync(WhatsAppMessage message)
         {
+            if (message == null)
+                throw new ArgumentNullException(nameof(message));
             _context.WhatsAppMessages.Add(message);
 
             await _context.SaveChangesAsync();

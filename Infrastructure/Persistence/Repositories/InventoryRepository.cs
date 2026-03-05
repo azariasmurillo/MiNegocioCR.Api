@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +15,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
         public async Task AddMovementAsync(InventoryMovement movement)
         {
+            if (movement == null)
+                throw new ArgumentNullException(nameof(movement));
             await _context.InventoryMovements.AddAsync(movement);
             await _context.SaveChangesAsync();
         }
