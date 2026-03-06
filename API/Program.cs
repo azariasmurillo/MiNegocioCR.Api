@@ -24,14 +24,31 @@ using MiNegocioCR.Api.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var firebasePath = Path.Combine(
-    builder.Environment.ContentRootPath,
-    "Infrastructure/Auth/firebase-adminsdk.json");
+var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS");
 
-FirebaseApp.Create(new AppOptions()
+if (FirebaseApp.DefaultInstance == null)
 {
-    Credential = GoogleCredential.FromFile(firebasePath)
-});
+    if (!string.IsNullOrEmpty(firebaseJson))
+    {
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromJson(firebaseJson)
+        });
+    }
+    else
+    {
+        var path = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "Infrastructure",
+            "Auth",
+            "firebase-adminsdk.json");
+
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromFile(path)
+        });
+    }
+}
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
