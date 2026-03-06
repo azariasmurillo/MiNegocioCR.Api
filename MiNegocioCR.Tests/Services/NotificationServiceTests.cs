@@ -19,7 +19,7 @@ public class NotificationServiceTests
     }
 
     [Fact]
-    public async Task SendOrderCreatedAsync_WhenOrderAndBusinessValidAndEmailEnabled_SendsEmail()
+    public async Task OrderCreatedAsync_WhenOrderAndBusinessValidAndEmailEnabled_SendsEmail()
     {
         var business = new Business
         {
@@ -37,57 +37,30 @@ public class NotificationServiceTests
         _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        await _sut.SendOrderCreatedAsync(order);
+        await _sut.OrderCreatedAsync(business, order);
 
         _emailServiceMock.Verify(
             x => x.SendAsync(
                 business,
                 "client@test.com",
-                "Orden #42 creada",
-                "Su orden fue creada correctamente."),
+                $"Orden #{order.Id} creada",
+                It.Is<string>(b => b.Contains("Orden creada") && b.Contains(order.Id.ToString()))),
             Times.Once);
     }
 
     [Fact]
-    public async Task SendOrderCreatedAsync_WhenOrderIsNull_DoesNotCallEmailService()
+    public async Task OrderCreatedAsync_WhenEmailNotificationsDisabled_DoesNotCallEmailService()
     {
-        await _sut.SendOrderCreatedAsync(null!);
-
-        _emailServiceMock.Verify(
-            x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
-            Times.Never);
-    }
-
-    [Fact]
-    public async Task SendOrderCreatedAsync_WhenBusinessIsNull_DoesNotCallEmailService()
-    {
+        var business = new Business { EnableEmailNotifications = false };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
             OrderNumber = 1,
             CustomerEmail = "a@b.com",
-            Business = null!
-        };
-
-        await _sut.SendOrderCreatedAsync(order);
-
-        _emailServiceMock.Verify(
-            x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
-            Times.Never);
-    }
-
-    [Fact]
-    public async Task SendOrderCreatedAsync_WhenEmailNotificationsDisabled_DoesNotCallEmailService()
-    {
-        var business = new Business { EnableEmailNotifications = false };
-        var order = new RepairOrder
-        {
-            OrderNumber = 1,
-            CustomerEmail = "a@b.com",
             Business = business
         };
 
-        await _sut.SendOrderCreatedAsync(order);
+        await _sut.OrderCreatedAsync(business, order);
 
         _emailServiceMock.Verify(
             x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -95,17 +68,18 @@ public class NotificationServiceTests
     }
 
     [Fact]
-    public async Task SendOrderCreatedAsync_WhenCustomerEmailIsEmpty_DoesNotCallEmailService()
+    public async Task OrderCreatedAsync_WhenCustomerEmailIsEmpty_DoesNotCallEmailService()
     {
         var business = new Business { EnableEmailNotifications = true };
         var order = new RepairOrder
         {
+            Id = Guid.NewGuid(),
             OrderNumber = 1,
             CustomerEmail = "",
             Business = business
         };
 
-        await _sut.SendOrderCreatedAsync(order);
+        await _sut.OrderCreatedAsync(business, order);
 
         _emailServiceMock.Verify(
             x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -113,32 +87,88 @@ public class NotificationServiceTests
     }
 
     [Fact]
-    public async Task SendOrderProcessedAsync_CompletesWithoutThrowing()
+    public async Task OrderProcessedAsync_WhenEmailEnabled_SendsEmail()
     {
-        var order = new RepairOrder { OrderNumber = 1 };
+        var business = new Business { EnableEmailNotifications = true };
+        var order = new RepairOrder
+        {
+            Id = Guid.NewGuid(),
+            CustomerEmail = "a@b.com",
+            Business = business
+        };
+        _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
 
-        var act = () => _sut.SendOrderProcessedAsync(order);
+        await _sut.OrderProcessedAsync(business, order);
 
-        await act.Should().NotThrowAsync();
+        _emailServiceMock.Verify(
+            x => x.SendAsync(business, "a@b.com", It.Is<string>(s => s.Contains("proceso")), It.IsAny<string>()),
+            Times.Once);
     }
 
     [Fact]
-    public async Task SendOrderDeliveredAsync_CompletesWithoutThrowing()
+    public async Task OrderProcessedAsync_WhenEmailDisabled_DoesNotCallEmailService()
     {
-        var order = new RepairOrder { OrderNumber = 1 };
+        var business = new Business { EnableEmailNotifications = false };
+        var order = new RepairOrder { Id = Guid.NewGuid(), CustomerEmail = "a@b.com", Business = business };
 
-        var act = () => _sut.SendOrderDeliveredAsync(order);
+        await _sut.OrderProcessedAsync(business, order);
 
-        await act.Should().NotThrowAsync();
+        _emailServiceMock.Verify(
+            x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task SendOrderCancelledAsync_CompletesWithoutThrowing()
+    public async Task OrderDeliveredAsync_WhenEmailEnabled_SendsEmail()
     {
-        var order = new RepairOrder { OrderNumber = 1 };
+        var business = new Business { EnableEmailNotifications = true };
+        var order = new RepairOrder
+        {
+            Id = Guid.NewGuid(),
+            CustomerEmail = "a@b.com",
+            Business = business
+        };
+        _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
 
-        var act = () => _sut.SendOrderCancelledAsync(order);
+        await _sut.OrderDeliveredAsync(business, order);
 
-        await act.Should().NotThrowAsync();
+        _emailServiceMock.Verify(
+            x => x.SendAsync(business, "a@b.com", It.Is<string>(s => s.Contains("entrega")), It.IsAny<string>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task OrderCancelledAsync_WhenEmailEnabled_SendsEmail()
+    {
+        var business = new Business { EnableEmailNotifications = true };
+        var order = new RepairOrder
+        {
+            Id = Guid.NewGuid(),
+            CustomerEmail = "a@b.com",
+            Business = business
+        };
+        _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        await _sut.OrderCancelledAsync(business, order);
+
+        _emailServiceMock.Verify(
+            x => x.SendAsync(business, "a@b.com", It.Is<string>(s => s.Contains("cancelada")), It.IsAny<string>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task OrderCancelledAsync_WhenEmailDisabled_DoesNotCallEmailService()
+    {
+        var business = new Business { EnableEmailNotifications = false };
+        var order = new RepairOrder { Id = Guid.NewGuid(), CustomerEmail = "a@b.com", Business = business };
+
+        await _sut.OrderCancelledAsync(business, order);
+
+        _emailServiceMock.Verify(
+            x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
     }
 }

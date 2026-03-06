@@ -4,6 +4,7 @@ using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Domain.Enums;
+using BusinessEntity = MiNegocioCR.Api.Domain.Entities.Business;
 using RepairOrderEntity = MiNegocioCR.Api.Domain.Entities.RepairOrder;
 using MiNegocioCR.Api.Domain.Exceptions;
 using MiNegocioCR.Api.Infrastructure.Persistence;
@@ -48,7 +49,7 @@ public class UpdateRepairOrderStatusUseCaseTests
     }
 
     [Fact]
-    public async Task Execute_WhenTransitionToProcessed_InvokesSendOrderProcessedAsync()
+    public async Task Execute_WhenTransitionToProcessed_InvokesOrderProcessedAsync()
     {
         await using var context = CreateInMemoryContext();
         var order = new RepairOrderEntity
@@ -58,6 +59,9 @@ public class UpdateRepairOrderStatusUseCaseTests
             OrderNumber = 1,
             Status = (int)RepairOrderStatus.InProcess
         };
+        // El use case hace FindAsync(order.Id) para business; añadimos un business con ese Id para que lo encuentre
+        var business = new BusinessEntity { Id = order.Id, Name = "Test" };
+        context.Businesses.Add(business);
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
@@ -68,7 +72,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         await sut.Execute(order.Id, request);
 
         notificationMock.Verify(
-            x => x.SendOrderProcessedAsync(It.Is<RepairOrderEntity>(o => o.Id == order.Id)),
+            x => x.OrderProcessedAsync(It.IsAny<BusinessEntity>(), It.Is<RepairOrderEntity>(o => o.Id == order.Id)),
             Times.Once);
     }
 
