@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Business;
-using MiNegocioCR.Api.Application.UseCases.Business;
-using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.API.Controllers;
 
@@ -14,17 +12,23 @@ public class BusinessesController : ControllerBase
     private readonly IConfigureSmtpUseCase _configureSmtpUseCase;
     private readonly ISetBusinessActiveStatusUseCase _setBusinessActiveStatusUseCase;
     private readonly IGetBusinessByIdUseCase _getBusinessByIdUseCase;
+    private readonly IBusinessRepository _businessRepository;
+    private readonly IEmailService _emailService;
 
     public BusinessesController(
         ICreateBusinessUseCase createBusinessUseCase,
         IConfigureSmtpUseCase configureSmtpUseCase,
         ISetBusinessActiveStatusUseCase setBusinessActiveStatusUseCase,
-        IGetBusinessByIdUseCase getBusinessByIdUseCase  )
+        IGetBusinessByIdUseCase getBusinessByIdUseCase,
+        IBusinessRepository businessRepository,
+        IEmailService emailService)
     {
         _createBusinessUseCase = createBusinessUseCase;
         _configureSmtpUseCase = configureSmtpUseCase;
         _setBusinessActiveStatusUseCase = setBusinessActiveStatusUseCase;
         _getBusinessByIdUseCase = getBusinessByIdUseCase;
+        _businessRepository = businessRepository;
+        _emailService = emailService;
     }
 
     [HttpPost]
@@ -62,6 +66,28 @@ public class BusinessesController : ControllerBase
             return NotFound();
 
         return Ok(result);
+    }
+
+    [HttpPost("{businessId}/test-email")]
+    public async Task<IActionResult> SendTestEmail(
+    Guid businessId,
+    [FromBody] TestEmailRequest request)
+    {
+        var business = await _businessRepository.GetByIdAsync(businessId);
+
+        if (business == null)
+            return NotFound("Business not found");
+
+        if (string.IsNullOrEmpty(business.SmtpHost))
+            return BadRequest("SMTP is not configured");
+
+        await _emailService.SendAsync(
+            business,
+            request.Email,
+            "SMTP Test - Mi-NegocioCR",
+            "<h2>SMTP configurado correctamente</h2><p>Tu correo está funcionando.</p>");
+
+        return Ok(new { message = "Test email sent successfully" });
     }
 
 }

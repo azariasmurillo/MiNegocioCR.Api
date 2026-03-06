@@ -1,7 +1,8 @@
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
-using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
 
@@ -40,15 +41,18 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
         order.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(CancellationToken.None);
+        var business = await _context.Businesses.FindAsync(id);
+        if (business == null)        
+            throw new NotFoundException("Business", "Business not found");
 
-        if (newStatus == RepairOrderStatus.Processed)
-            await _notificationService.SendOrderProcessedAsync(order);
+        if (newStatus == RepairOrderStatus.Processed)        
+            await _notificationService.OrderProcessedAsync(business, order);                    
 
         if (newStatus == RepairOrderStatus.Delivered)
-            await _notificationService.SendOrderDeliveredAsync(order);
+            await _notificationService.OrderDeliveredAsync(business,order);
 
         if (newStatus == RepairOrderStatus.Cancelled)
-            await _notificationService.SendOrderCancelledAsync(order);
+            await _notificationService.OrderCancelledAsync(business,order);
 
         return new
         {
