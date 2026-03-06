@@ -1,0 +1,136 @@
+using FluentAssertions;
+using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
+using MiNegocioCR.Api.Application.UseCases.Whatsapp;
+using MiNegocioCR.Api.Domain.Exceptions;
+using Moq;
+using Xunit;
+
+namespace MiNegocioCR.Tests.UseCases.Whatsapp;
+
+public class WhatsappApplicationServiceTests
+{
+    private readonly Mock<IWhatsappService> _whatsappServiceMock;
+    private readonly Mock<IAppDbContext> _contextMock;
+    private readonly Mock<IEncryptionService> _encryptionServiceMock;
+    private readonly Mock<IWhatsappMessageRepository> _messageRepositoryMock;
+    private readonly Mock<IGetBusinessByIdUseCase> _getBusinessByIdMock;
+    private readonly WhatsappApplicationService _sut;
+
+    public WhatsappApplicationServiceTests()
+    {
+        _whatsappServiceMock = new Mock<IWhatsappService>();
+        _contextMock = new Mock<IAppDbContext>();
+        _encryptionServiceMock = new Mock<IEncryptionService>();
+        _messageRepositoryMock = new Mock<IWhatsappMessageRepository>();
+        _getBusinessByIdMock = new Mock<IGetBusinessByIdUseCase>();
+        _sut = new WhatsappApplicationService(
+            _whatsappServiceMock.Object,
+            _contextMock.Object,
+            _encryptionServiceMock.Object,
+            _messageRepositoryMock.Object,
+            _getBusinessByIdMock.Object);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenBusinessExistsAndWhatsappEnabled_SendsAndSavesMessage()
+    {
+        var businessId = Guid.NewGuid();
+        var businessDto = new GetBusinessByIdResultDto
+        {
+            Id = businessId,
+            Name = "Test",
+            EnableWhatsappNotifications = true,
+            WhatsappPhoneNumberId = "phone-id"
+        };
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+        _whatsappServiceMock.Setup(x => x.SendAsync(It.IsAny<GetBusinessByIdResultDto>(), "123", "Hello"))
+            .Returns(Task.CompletedTask);
+        _messageRepositoryMock.Setup(x => x.SaveAsync(It.IsAny<MiNegocioCR.Api.Domain.Entities.WhatsAppMessage>()))
+            .Returns(Task.CompletedTask);
+        _messageRepositoryMock.Setup(x => x.UpdateConversationAsync(businessId, "123", "Hello"))
+            .Returns(Task.CompletedTask);
+
+        await _sut.SendAsync(businessId, "123", "Hello");
+
+        _whatsappServiceMock.Verify(
+            x => x.SendAsync(businessDto, "123", "Hello"),
+            Times.Once);
+        _messageRepositoryMock.Verify(
+            x => x.SaveAsync(It.Is<MiNegocioCR.Api.Domain.Entities.WhatsAppMessage>(m =>
+                m.BusinessId == businessId && m.Body == "Hello" && m.PhoneNumber == "123")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenBusinessNotFound_ThrowsNotFoundException()
+    {
+        var businessId = Guid.NewGuid();
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync((GetBusinessByIdResultDto?)null);
+
+        var act = () => _sut.SendAsync(businessId, "123", "Hi");
+
+        await act.Should().ThrowAsync<NotFoundException>()
+            .Where(ex => ex.Resource == "Business");
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenWhatsappNotEnabled_ThrowsException()
+    {
+        var businessId = Guid.NewGuid();
+        var businessDto = new GetBusinessByIdResultDto
+        {
+            Id = businessId,
+            EnableWhatsappNotifications = false
+        };
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+
+        var act = () => _sut.SendAsync(businessId, "123", "Hi");
+
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage("*Whatsapp not enabled*");
+    }
+
+    [Fact]
+    public async Task ConnectAsync_WhenBusinessExistsAndValidCredentials_UpdatesBusinessAndSaves()
+    {
+        var businessId = Guid.NewGuid();
+        var businessDto = new GetBusinessByIdResultDto { Id = businessId, Name = "Test" };
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+        _whatsappServiceMock.Setup(x => x.ValidateAsync("phone-id", "token")).ReturnsAsync(true);
+        _encryptionServiceMock.Setup(x => x.Encrypt("token")).Returns("encrypted");
+        _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        await _sut.ConnectAsync(businessId, "phone-id", "token");
+
+        _contextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ConnectAsync_WhenBusinessNotFound_ThrowsNotFoundException()
+    {
+        var businessId = Guid.NewGuid();
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync((GetBusinessByIdResultDto?)null);
+
+        var act = () => _sut.ConnectAsync(businessId, "phone-id", "token");
+
+        await act.Should().ThrowAsync<NotFoundException>()
+            .Where(ex => ex.Resource == "Business");
+    }
+
+    [Fact]
+    public async Task ConnectAsync_WhenValidationFails_ThrowsException()
+    {
+        var businessId = Guid.NewGuid();
+        var businessDto = new GetBusinessByIdResultDto { Id = businessId };
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+        _whatsappServiceMock.Setup(x => x.ValidateAsync("phone-id", "token")).ReturnsAsync(false);
+
+        var act = () => _sut.ConnectAsync(businessId, "phone-id", "token");
+
+        await act.Should().ThrowAsync<Exception>()
+            .WithMessage("*Invalid WhatsApp credentials*");
+    }
+}
