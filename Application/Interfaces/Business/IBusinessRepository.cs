@@ -5,5 +5,6 @@ namespace MiNegocioCR.Api.Application.Interfaces.Business
     public interface IBusinessRepository
     {
         Task<BusinessEntity?> GetByWhatsappPhoneNumberIdAsync(string phoneNumberId);
+        Task<BusinessEntity?> GetByIdAsync(Guid businessId);
     }
 }

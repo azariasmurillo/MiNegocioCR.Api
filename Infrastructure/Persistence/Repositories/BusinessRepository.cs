@@ -13,6 +13,12 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
+        public async Task<Business?> GetByIdAsync(Guid businessId)
+        {
+            return await _context.Businesses
+                        .FirstOrDefaultAsync(x => x.Id == businessId);
+        }
+
         public async Task<Business?> GetByWhatsappPhoneNumberIdAsync(string phoneNumberId)
         {
             return await _context.Businesses

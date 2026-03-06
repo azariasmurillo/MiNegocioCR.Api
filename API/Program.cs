@@ -1,8 +1,11 @@
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
@@ -13,12 +16,39 @@ using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
+using MiNegocioCR.Api.Infrastructure.Auth;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using MiNegocioCR.Api.Infrastructure.Security;
 using MiNegocioCR.Api.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS");
+
+if (FirebaseApp.DefaultInstance == null)
+{
+    if (!string.IsNullOrEmpty(firebaseJson))
+    {
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromJson(firebaseJson)
+        });
+    }
+    else
+    {
+        var path = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "Infrastructure",
+            "Auth",
+            "firebase-adminsdk.json");
+
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromFile(path)
+        });
+    }
+}
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -61,6 +91,9 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, RegisterSaleUseCase>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 
@@ -78,6 +111,7 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 app.UseRouting(); // 👈 AGREGA ESTO
+app.UseMiddleware<FirebaseAuthMiddleware>();
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{

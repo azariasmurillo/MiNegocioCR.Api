@@ -54,8 +54,11 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
 
         await _context.SaveChangesAsync(CancellationToken.None);
         await transaction.CommitAsync();
-
-        await _notificationService.SendOrderCreatedAsync(order);
+        var business = await _context.Businesses.FindAsync(businessId);
+        if(business == null) 
+            throw new NotFoundException("Business", "Business not found.");
+        
+        await _notificationService.OrderCreatedAsync(business, order);
 
         return new
         {
