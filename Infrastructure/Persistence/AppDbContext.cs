@@ -30,6 +30,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<PurchaseItem> PurchaseItems => Set<PurchaseItem>();
         public DbSet<Sale> Sales => Set<Sale>();
         public DbSet<SaleItem> SaleItems => Set<SaleItem>();
+        public DbSet<ConversationState> ConversationStates => Set<ConversationState>();
+        public DbSet<AITokenUsage> AITokenUsages => Set<AITokenUsage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

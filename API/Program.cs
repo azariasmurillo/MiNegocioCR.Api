@@ -4,6 +4,18 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Filters;
+using MiNegocioCR.Api.Application.AI.Cache;
+using MiNegocioCR.Api.Application.AI.Guardrails;
+using MiNegocioCR.Api.Application.AI.Intent;
+using MiNegocioCR.Api.Application.AI.Interfaces;
+using MiNegocioCR.Api.Application.AI.Limits;
+using MiNegocioCR.Api.Application.AI.Memory;
+using MiNegocioCR.Api.Application.AI.Models;
+using MiNegocioCR.Api.Application.AI.Prompts;
+using MiNegocioCR.Api.Application.AI.Routing;
+using MiNegocioCR.Api.Application.AI.Services;
+using MiNegocioCR.Api.Application.AI.State;
+using MiNegocioCR.Api.Application.AI.Tools;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
@@ -16,11 +28,13 @@ using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
+using MiNegocioCR.Api.Infrastructure.AI;
 using MiNegocioCR.Api.Infrastructure.Auth;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using MiNegocioCR.Api.Infrastructure.Security;
 using MiNegocioCR.Api.Infrastructure.Services;
+using MiNegocioCR.Api.Application.AI.Sales;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,10 +108,30 @@ builder.Services.AddScoped<ISaleRepository, SaleRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddHttpClient<IAIClient, OpenAIClient>();
+builder.Services.AddScoped<IAIService, AIService>();
+builder.Services.AddScoped<IAITool, InventoryTool>();
+builder.Services.AddScoped<IAITool, RepairOrderTool>();
+builder.Services.AddScoped<IAITool, SalesTool>();
+builder.Services.AddScoped<IConversationMemoryService, ConversationMemoryService>();
+builder.Services.AddScoped<IModelRouter, ModelRouter>();
+builder.Services.AddScoped<IResponseCache, ResponseCache>();
+builder.Services.AddScoped<ITokenLimiter, TokenLimiter>();
+builder.Services.AddScoped<IConversationStateService, ConversationStateService>();
+builder.Services.AddScoped<ISetEnableAIChatUseCase, SetEnableAIChatUseCase>();
+builder.Services.AddScoped<ToolSelector>();
+builder.Services.AddScoped<SaleService>();
+builder.Services.AddScoped<AITokenBudgetService>();
+
+builder.Services.AddSingleton<SalesPromptBuilder>();
+builder.Services.AddSingleton<DomainFilter>();
+builder.Services.AddSingleton<IntentClassifier>();
 
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 
 builder.Services.AddControllers(options => {options.Filters.Add<DomainExceptionFilter>();});
+
+builder.Services.AddMemoryCache();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -150,6 +184,7 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.MapControllers();
+
 Console.WriteLine("🔥🔥🔥 VERSION 100% NUEVA ACTIVA 🔥🔥🔥");
 
 app.MapGet("/privacy", () =>

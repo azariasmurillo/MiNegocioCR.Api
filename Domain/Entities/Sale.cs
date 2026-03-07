@@ -11,5 +11,8 @@
         public decimal Total { get; set; }
 
         public ICollection<SaleItem> Items { get; set; } = new List<SaleItem>();
+        public DateTime CreatedAt { get; internal set; }
+        public string CustomerPhone { get; internal set; }
+        public decimal TotalAmount { get; internal set; }
     }
 }

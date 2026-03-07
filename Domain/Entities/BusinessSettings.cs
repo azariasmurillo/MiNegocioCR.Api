@@ -6,4 +6,5 @@ public class BusinessSettings
     public int NextOrderNumber { get; set; } = 1;
 
     public Business Business { get; set; } = null!;
+    public bool EnableAIChat { get; set; } = true;
 }

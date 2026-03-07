@@ -13,5 +13,7 @@
         public decimal Price { get; set; }
 
         public Sale Sale { get; set; }
+        public decimal UnitPrice { get; internal set; }
+        public decimal Total { get; internal set; }
     }
 }
