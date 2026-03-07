@@ -14,6 +14,7 @@ public class BusinessesController : ControllerBase
     private readonly IGetBusinessByIdUseCase _getBusinessByIdUseCase;
     private readonly IBusinessRepository _businessRepository;
     private readonly IEmailService _emailService;
+    private readonly ISetEnableAIChatUseCase _setEnableAIChatUseCase;
 
     public BusinessesController(
         ICreateBusinessUseCase createBusinessUseCase,
@@ -21,7 +22,8 @@ public class BusinessesController : ControllerBase
         ISetBusinessActiveStatusUseCase setBusinessActiveStatusUseCase,
         IGetBusinessByIdUseCase getBusinessByIdUseCase,
         IBusinessRepository businessRepository,
-        IEmailService emailService)
+        IEmailService emailService,
+        ISetEnableAIChatUseCase setEnableAIChatUseCase)
     {
         _createBusinessUseCase = createBusinessUseCase;
         _configureSmtpUseCase = configureSmtpUseCase;
@@ -29,6 +31,7 @@ public class BusinessesController : ControllerBase
         _getBusinessByIdUseCase = getBusinessByIdUseCase;
         _businessRepository = businessRepository;
         _emailService = emailService;
+        _setEnableAIChatUseCase = setEnableAIChatUseCase;
     }
 
     [HttpPost]
@@ -88,6 +91,16 @@ public class BusinessesController : ControllerBase
             "<h2>SMTP configurado correctamente</h2><p>Tu correo está funcionando.</p>");
 
         return Ok(new { message = "Test email sent successfully" });
+    }
+
+    [HttpPatch("{businessId}/ai-chat")]
+    public async Task<IActionResult> SetEnableAIChat(Guid businessId, [FromBody] SetEnableAIChatDto dto)
+    {
+        if (dto == null)
+            return BadRequest("Request body is required.");
+
+        await _setEnableAIChatUseCase.ExecuteAsync(businessId, dto.Enable);
+        return Ok(new { enableAIChat = dto.Enable });
     }
 
 }
