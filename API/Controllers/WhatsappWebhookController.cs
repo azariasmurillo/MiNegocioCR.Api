@@ -11,11 +11,16 @@ namespace MiNegocioCR.Api.API.Controllers
     {
         private readonly IWhatsappMessageService _whatsappMessageService;
         private readonly IWhatsappWebhookLogRepository _whatsappWebhookLogRepository;
+        private readonly ILogger<WhatsappWebhookController> _logger;
 
-        public WhatsappWebhookController(IWhatsappMessageService whatsappMessageService, IWhatsappWebhookLogRepository whatsappWebhookLogRepository)
+        public WhatsappWebhookController(
+            IWhatsappMessageService whatsappMessageService,
+            IWhatsappWebhookLogRepository whatsappWebhookLogRepository,
+            ILogger<WhatsappWebhookController> logger)
         {
             _whatsappMessageService = whatsappMessageService;
             _whatsappWebhookLogRepository = whatsappWebhookLogRepository;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -23,13 +28,16 @@ namespace MiNegocioCR.Api.API.Controllers
             [FromBody] JsonElement body,
             CancellationToken cancellationToken)
         {
+            var hasEntry = body.TryGetProperty("entry", out _);
+            _logger.LogInformation(
+                "[WhatsApp Webhook] POST recibido. Tiene entry: {HasEntry}, payload length: {Length}",
+                hasEntry, body.GetRawText().Length);
+
             await _whatsappWebhookLogRepository.SaveAsync(body.ToString());
 
             await _whatsappMessageService.ProcessWebhookAsync(body);
 
             return Ok();
         }
-
-
     }
 }
