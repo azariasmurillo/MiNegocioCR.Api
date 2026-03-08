@@ -1,9 +1,11 @@
-﻿namespace MiNegocioCR.Api.Application.AI.Interfaces
+﻿using MiNegocioCR.Api.Application.AI.Models;
+
+namespace MiNegocioCR.Api.Application.AI.Interfaces
 {
     public interface IAITool
     {
         string Name { get; }
 
-        Task<string> ExecuteAsync(Guid businessId, string query);
+        Task<ToolResult> ExecuteAsync(Guid businessId, string message);
     }
 }

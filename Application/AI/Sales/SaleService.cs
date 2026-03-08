@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 
 namespace MiNegocioCR.Api.Application.AI.Sales
 {
-    public class SaleService
+    public class SaleService : ISaleService
     {
         private readonly AppDbContext _context;
 
@@ -16,7 +16,8 @@ namespace MiNegocioCR.Api.Application.AI.Sales
         public async Task<string> CreateSaleAsync(
             Guid businessId,
             Guid variantId,
-            string phoneNumber)
+            string phoneNumber,
+            int quantity)
         {
             var variant = await _context.CatalogVariants
                 .Include(v => v.CatalogItem)
@@ -25,8 +26,11 @@ namespace MiNegocioCR.Api.Application.AI.Sales
             if (variant == null)
                 return "Producto no encontrado.";
 
-            if (variant.StockQuantity <= 0)
-                return "Lo siento, ese producto está agotado.";
+            if (variant.StockQuantity < quantity)
+                return "No hay suficiente stock. Disponible: " + variant.StockQuantity + ".";
+
+            var unitPrice = variant.Price;
+            var totalAmount = unitPrice * quantity;
 
             var sale = new Sale
             {
@@ -34,7 +38,7 @@ namespace MiNegocioCR.Api.Application.AI.Sales
                 BusinessId = businessId,
                 CreatedAt = DateTime.UtcNow,
                 CustomerPhone = phoneNumber,
-                TotalAmount = variant.Price
+                TotalAmount = totalAmount,
             };
 
             _context.Sales.Add(sale);
@@ -44,21 +48,21 @@ namespace MiNegocioCR.Api.Application.AI.Sales
                 Id = Guid.NewGuid(),
                 SaleId = sale.Id,
                 CatalogVariantId = variant.Id,
-                Quantity = 1,
-                UnitPrice = variant.Price,
-                Total = variant.Price
+                Quantity = quantity,
+                UnitPrice = unitPrice,
+                Total = totalAmount
             };
 
             _context.SaleItems.Add(item);
 
-            variant.StockQuantity -= 1;
+            variant.StockQuantity -= quantity;
 
             var movement = new InventoryMovement
             {
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
                 CatalogVariantId = variant.Id,
-                Quantity = -1,
+                Quantity = -quantity,
                 Type = Domain.Enums.InventoryMovementType.Sale,
                 CreatedAt = DateTime.UtcNow
             };
@@ -67,7 +71,7 @@ namespace MiNegocioCR.Api.Application.AI.Sales
 
             await _context.SaveChangesAsync();
 
-            return $"Compra confirmada ✅\nProducto: {variant.CatalogItem.Name}\nPrecio: ₡{variant.Price}";
+            return $"Perfecto. Registré la compra de {quantity} {variant.CatalogItem.Name}. Total: ₡{totalAmount:N0}.";
         }
     }
 }

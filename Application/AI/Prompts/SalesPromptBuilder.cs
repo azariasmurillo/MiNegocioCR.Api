@@ -1,6 +1,8 @@
-﻿namespace MiNegocioCR.Api.Application.AI.Prompts
+using MiNegocioCR.Api.Application.AI.Interfaces;
+
+namespace MiNegocioCR.Api.Application.AI.Prompts
 {
-    public class SalesPromptBuilder
+    public class SalesPromptBuilder : IPromptBuilder
     {
         public string BuildPrompt(string businessName, string userMessage)
         {

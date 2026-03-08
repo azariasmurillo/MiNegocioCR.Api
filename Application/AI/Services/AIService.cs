@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Cache;
 using MiNegocioCR.Api.Application.AI.Guardrails;
 using MiNegocioCR.Api.Application.AI.Intent;
@@ -11,14 +11,16 @@ using MiNegocioCR.Api.Application.AI.Routing;
 using MiNegocioCR.Api.Application.AI.Sales;
 using MiNegocioCR.Api.Application.AI.State;
 using MiNegocioCR.Api.Application.AI.Tools;
+using MiNegocioCR.Api.Application.AI.Upsell;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 
 namespace MiNegocioCR.Api.Application.AI.Services
 {
     public class AIService : IAIService
     {
-        private readonly SalesPromptBuilder _promptBuilder;
-        private readonly DomainFilter _domainFilter;
+        private readonly IPromptBuilder _promptBuilder;
+        private readonly IDomainFilter _domainFilter;
         private readonly IAIClient _aiClient;
         private readonly IEnumerable<IAITool> _tools;
         private readonly IModelRouter _modelRouter;
@@ -26,15 +28,17 @@ namespace MiNegocioCR.Api.Application.AI.Services
         private readonly ITokenLimiter _tokenLimiter;
         private readonly IConversationMemoryService _memory;
         private readonly IConversationStateService _state;
-        private readonly SaleService _saleService;
-        private readonly IntentClassifier _intentClassifier;
-        private readonly ToolSelector _toolSelector;
+        private readonly IIntentClassifier _intentClassifier;
+        private readonly IToolSelector _toolSelector;
         private readonly AppDbContext _context;
-        private readonly AITokenBudgetService _tokenBudget;
+        private readonly IAITokenBudgetService _tokenBudget;
+        private readonly IUpsellService _upsellService;
+        private readonly IAIChatRequestValidator _requestValidator;
+        private readonly ISalesConversationHandler _salesConversationHandler;
 
         public AIService(
-            SalesPromptBuilder promptBuilder,
-            DomainFilter domainFilter,
+            IPromptBuilder promptBuilder,
+            IDomainFilter domainFilter,
             IAIClient aiClient,
             IEnumerable<IAITool> tools,
             IModelRouter modelRouter,
@@ -42,11 +46,13 @@ namespace MiNegocioCR.Api.Application.AI.Services
             ITokenLimiter tokenLimiter,
             IConversationMemoryService memory,
             IConversationStateService state,
-            IntentClassifier intentClassifier,
-            ToolSelector toolSelector,
-            SaleService saleService,
-            AITokenBudgetService tokenBudget,
-            AppDbContext context)
+            IIntentClassifier intentClassifier,
+            IToolSelector toolSelector,
+            IAITokenBudgetService tokenBudget,
+            AppDbContext context,
+            IUpsellService upsellService,
+            IAIChatRequestValidator requestValidator,
+            ISalesConversationHandler salesConversationHandler)
         {
             _promptBuilder = promptBuilder;
             _domainFilter = domainFilter;
@@ -57,100 +63,152 @@ namespace MiNegocioCR.Api.Application.AI.Services
             _tokenLimiter = tokenLimiter;
             _memory = memory;
             _state = state;
-            _saleService = saleService;
             _intentClassifier = intentClassifier;
             _toolSelector = toolSelector;
             _context = context;
             _tokenBudget = tokenBudget;
+            _upsellService = upsellService;
+            _requestValidator = requestValidator;
+            _salesConversationHandler = salesConversationHandler;
         }
 
         public async Task<string> AskAsync(AIRequest request)
         {
-            var settings = await _context.BusinessSettings
-                .FirstOrDefaultAsync(x => x.BusinessId == request.BusinessId);
+            var validation = await _requestValidator.ValidateAsync(request);
+            if (!validation.CanContinue)
+                return validation.EarlyResponse ?? "";
 
-            if (settings != null && !settings.EnableAIChat)
-            {
-                return "";
-            }
+            var normalizedMessage = validation.NormalizedMessage;
 
-            // 1️⃣ Guardrail
-            if (!_domainFilter.IsAllowed(request.UserMessage))
-            {
-                return "Lo siento, solo puedo ayudarte con productos, servicios o reparaciones del negocio.";
-            }
+            await _memory.SaveMessageAsync(
+                request.BusinessId,
+                request.PhoneNumber ?? "",
+                "user",
+                request.UserMessage);
 
-            var normalizedMessage = request.UserMessage.Trim().ToLower();
-
-            // 2️⃣ Revisar estado de conversación
             var conversationState = await _state.GetAsync(
                 request.BusinessId,
                 request.PhoneNumber);
 
-            if (conversationState != null &&
-                conversationState.Step == "awaiting_confirmation")
+            if (conversationState == null && !_domainFilter.IsAllowed(request.UserMessage))
             {
-                if (normalizedMessage.Contains("si") || normalizedMessage.Contains("sí"))
-                {
-                    var result = await _saleService.CreateSaleAsync(
-                        request.BusinessId,
-                        conversationState.ProductId!.Value,
-                        request.PhoneNumber);
-
-                    await _state.ClearAsync(
-                        request.BusinessId,
-                        request.PhoneNumber);
-
-                    return result;
-                }
-
-                if (normalizedMessage.Contains("no"))
-                {
-                    await _state.ClearAsync(
-                        request.BusinessId,
-                        request.PhoneNumber);
-
-                    return "Compra cancelada.";
-                }
+                return "Lo siento, solo puedo ayudarte con productos, servicios o reparaciones del negocio.";
             }
 
-            // 3️⃣ Cache
-            var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var salesResponse = await _salesConversationHandler.HandleAsync(
+                request.BusinessId,
+                request.PhoneNumber ?? "",
+                normalizedMessage,
+                conversationState);
 
-            var cacheKey =
-                $"{request.BusinessId}:{request.PhoneNumber}:{today}:{normalizedMessage}";
+            if (salesResponse != null)
+                return salesResponse;
+
+            // Cache
+            var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var cacheKey = $"{request.BusinessId}:{request.PhoneNumber}:{today}:{normalizedMessage}";
 
             var cached = await _cache.GetAsync(cacheKey);
-
             if (cached != null)
                 return cached;
 
-            // 4️⃣ Seleccionar Tool
-            IAITool selectedTool;
-
+            // Seleccionar y ejecutar tool
             var intent = _intentClassifier.Classify(normalizedMessage);
+            var selectedTool = _toolSelector.Select(intent);
 
-            selectedTool = _toolSelector.Select(intent);
+            ToolResult toolData;
+            if (selectedTool.Name == "repair_order_search")
+            {
+                toolData = await selectedTool.ExecuteAsync(
+                    request.BusinessId,
+                    request.PhoneNumber ?? "");
+            }
+            else
+            {
+                toolData = await selectedTool.ExecuteAsync(
+                    request.BusinessId,
+                    request.UserMessage);
+            }
 
-            // 5️⃣ Ejecutar tool
-            var toolData = await selectedTool.ExecuteAsync(
+            if (selectedTool.Name == "repair_service_search")
+            {
+                return toolData.Message;
+            }
+
+            if (toolData.ProductId == null)
+            {
+                var fallback = _tools.FirstOrDefault(t => t.Name == "inventory_search");
+                if (fallback != null)
+                {
+                    var fallbackResult = await fallback.ExecuteAsync(
+                        request.BusinessId,
+                        request.UserMessage);
+
+                    if (fallbackResult.ProductId != null)
+                        toolData = fallbackResult;
+                }
+            }
+
+            if (toolData.ProductId != null)
+            {
+                var variant = await _context.CatalogVariants
+                    .AsNoTracking()
+                    .Include(v => v.CatalogItem)
+                    .FirstOrDefaultAsync(v => v.Id == toolData.ProductId.Value);
+
+                if (variant != null)
+                {
+                    var upsells = await _upsellService.GetUpsell(
+                        request.BusinessId,
+                        variant.CatalogItemId);
+
+                    if (upsells.Any())
+                    {
+                        var suggestion = upsells.First();
+                        toolData.Message +=
+                            $"\n\nTambién podrías agregar {suggestion.Name} por ₡{suggestion.BasePrice:N0}.";
+                    }
+                    else
+                    {
+                        var fallbackUpsell = await _upsellService.GetFallbackUpsell(request.BusinessId);
+                        if (fallbackUpsell.Any())
+                        {
+                            toolData.Message += "\n\nTambién podrías agregar:\n";
+                            foreach (var item in fallbackUpsell.Take(2))
+                                toolData.Message += $"• {item.Name} ₡{item.BasePrice:N0}\n";
+                        }
+                    }
+                }
+
+                await _state.SaveAsync(new ConversationState
+                {
+                    Id = Guid.NewGuid(),
+                    BusinessId = request.BusinessId,
+                    PhoneNumber = request.PhoneNumber ?? "",
+                    ProductId = toolData.ProductId,
+                    ProductName = variant?.CatalogItem?.Name ?? toolData.ProductName,
+                    Step = "awaiting_confirmation",
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+
+            var history = await _memory.GetConversationContextAsync(
                 request.BusinessId,
-                request.UserMessage);
+                request.PhoneNumber ?? "",
+                10);
 
-            // 6️⃣ Construir prompt
             var prompt = $"""
-{_promptBuilder.BuildPrompt("Mi Negocio", request.UserMessage)}
+            Conversación reciente:
+            {history}
 
-Data:
-{toolData}
-""";
+            {_promptBuilder.BuildPrompt("Mi Negocio", request.UserMessage)}
 
-            // 7️⃣ Modelo
+            Data:
+            {toolData.Message}
+            """;
+
             var model = _modelRouter.SelectModel(prompt);
-
-            // 8️⃣ Tokens
             var maxTokens = _tokenLimiter.GetMaxTokens(prompt);
-
             var estimatedTokens = prompt.Length / 4;
 
             var allowed = await _tokenBudget.CanUseAsync(
@@ -158,14 +216,16 @@ Data:
                 estimatedTokens);
 
             if (!allowed)
-            {
                 return "La IA no está disponible en este momento.";
-            }
 
-            // 9️⃣ Llamar IA
             var response = await _aiClient.AskAsync(prompt, model, maxTokens);
 
-            // 🔟 Guardar cache
+            await _memory.SaveMessageAsync(
+                request.BusinessId,
+                request.PhoneNumber ?? "",
+                "assistant",
+                response);
+
             await _cache.SetAsync(cacheKey, response);
 
             return response;

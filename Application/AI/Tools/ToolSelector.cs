@@ -1,9 +1,9 @@
-﻿using MiNegocioCR.Api.Application.AI.Interfaces;
+using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Application.AI.Tools
 {
-    public class ToolSelector
+    public class ToolSelector : IToolSelector
     {
         private readonly IEnumerable<IAITool> _tools;
 
@@ -18,6 +18,9 @@ namespace MiNegocioCR.Api.Application.AI.Tools
             {
                 AIIntent.RepairOrder =>
                     _tools.First(x => x.Name == "repair_order_search"),
+
+                AIIntent.RepairService =>
+                    _tools.First(x => x.Name == "repair_service_search"),
 
                 AIIntent.Sales =>
                     _tools.First(x => x.Name == "sales_prepare"),

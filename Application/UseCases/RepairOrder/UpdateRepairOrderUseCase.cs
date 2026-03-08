@@ -1,3 +1,4 @@
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
@@ -27,7 +28,7 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 throw new ArgumentException("Delivered orders cannot be modified.");
 
             order.CustomerName = request.CustomerName;
-            order.CustomerPhone = request.CustomerPhone;
+            order.CustomerPhone = PhoneSanitizer.Sanitize(request.CustomerPhone);
             order.CustomerEmail = request.CustomerEmail;
             order.DeviceDescription = request.DeviceDescription;
             order.ProblemDescription = request.ProblemDescription;

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
@@ -43,7 +44,7 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             BusinessId = businessId,
             OrderNumber = orderNumber,
             CustomerName = request.CustomerName,
-            CustomerPhone = request.CustomerPhone,
+            CustomerPhone = PhoneSanitizer.Sanitize(request.CustomerPhone),
             CustomerEmail = request.CustomerEmail,
             DeviceDescription = request.DeviceDescription,
             ProblemDescription = request.ProblemDescription,

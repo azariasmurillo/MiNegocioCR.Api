@@ -1,10 +1,10 @@
-﻿using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace MiNegocioCR.Api.Application.AI.Limits
 {
-    public class AITokenBudgetService
+    public class AITokenBudgetService : IAITokenBudgetService
     {
         private readonly AppDbContext _context;
 
