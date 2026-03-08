@@ -4,6 +4,7 @@
     {
         Inventory,
         RepairOrder,
-        Sales
+        Sales,
+        RepairService
     }
 }

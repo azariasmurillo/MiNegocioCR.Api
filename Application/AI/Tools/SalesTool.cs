@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MailKit.Search;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Interfaces;
+using MiNegocioCR.Api.Application.AI.Models;
 using MiNegocioCR.Api.Infrastructure.Persistence;
+using System.Text.Json;
 
 namespace MiNegocioCR.Api.Application.AI.Tools
 {
@@ -15,7 +18,7 @@ namespace MiNegocioCR.Api.Application.AI.Tools
             _context = context;
         }
 
-        public async Task<string> ExecuteAsync(Guid businessId, string query)
+        public async Task<ToolResult> ExecuteAsync(Guid businessId, string query)
         {
             query = query.ToLower();
 
@@ -34,9 +37,17 @@ namespace MiNegocioCR.Api.Application.AI.Tools
                 .ToListAsync();
 
             if (!items.Any())
-                return "No encontramos productos con ese nombre.";
+            {
+                new ToolResult
+                {
+                    Message = "No encontramos productos con ese nombre."
+                };                
+            }
 
-            return System.Text.Json.JsonSerializer.Serialize(items);
+            return new ToolResult
+            {
+                Message = JsonSerializer.Serialize(items)
+            };
         }
     }
 }

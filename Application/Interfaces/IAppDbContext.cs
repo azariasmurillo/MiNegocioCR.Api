@@ -15,6 +15,7 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<CatalogItem> CatalogItems { get; }
         DbSet<InventoryMovement> InventoryMovements { get; }
         DatabaseFacade Database { get; }
+        DbSet<UpsellRule> UpsellRules { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

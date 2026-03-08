@@ -15,5 +15,7 @@
         public string Step { get; set; } = null!;
 
         public DateTime UpdatedAt { get; set; }
+
+        public string? ProductName { get; set; }
     }
 }

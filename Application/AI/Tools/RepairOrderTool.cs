@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Interfaces;
+using MiNegocioCR.Api.Application.AI.Models;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using System.Text.Json;
 
@@ -16,49 +17,61 @@ namespace MiNegocioCR.Api.Application.AI.Tools
             _context = context;
         }
 
-        public async Task<string> ExecuteAsync(Guid businessId, string query)
+        public async Task<ToolResult> ExecuteAsync(Guid businessId, string phoneNumber)
         {
-            query = query.ToLower();
-
-            var rows = await _context.RepairOrders
+            var orders = await _context.RepairOrders
                 .Where(r =>
                     r.BusinessId == businessId &&
-                    (
-                        query.Contains(r.OrderNumber.ToString()) ||
-                        query.Contains(r.CustomerPhone)
-                    )
-                )
-                .Select(r => new
-                {
-                    r.OrderNumber,
-                    r.CustomerName,
-                    r.CustomerPhone,
-                    r.DeviceDescription,
-                    r.ProblemDescription,
-                    r.Status,
-                    r.CreatedAt
-                })
+                    r.CustomerPhone == phoneNumber)
+                .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
 
-            var orders = rows.Select(r => new
+            if (!orders.Any())
             {
-                r.OrderNumber,
-                r.CustomerName,
-                r.CustomerPhone,
-                r.DeviceDescription,
-                r.ProblemDescription,
-                Status = r.Status switch
+                return new ToolResult
                 {
-                    0 => "Pendiente",
-                    1 => "En proceso",
-                    2 => "Finalizada",
-                    3 => "Entregada",
-                    _ => "Desconocido"
-                },
-                r.CreatedAt
-            }).ToList();
+                    Message = "No encontré reparaciones registradas con este número."
+                };
+            }
 
-            return JsonSerializer.Serialize(orders);
+            var activeOrders = orders
+                .Where(o => o.Status != 3)
+                .ToList();
+
+            if (activeOrders.Any())
+            {
+                var message = "Encontré estas reparaciones activas:\n\n";
+
+                foreach (var o in activeOrders.Take(3))
+                {
+                    var status = GetStatus(o.Status);
+
+                    message += $"• {o.DeviceDescription} — {status}\n";
+                }
+
+                return new ToolResult
+                {
+                    Message = message
+                };
+            }            
+
+            var lastOrder = orders.First();
+
+            return new ToolResult
+            {
+                Message = $"Tu última reparación ({lastOrder.DeviceDescription}) ya fue entregada."
+            };
+        }
+        private static string GetStatus(int status)
+        {
+            return status switch
+            {
+                0 => "Pendiente",
+                1 => "En proceso",
+                2 => "Finalizada",
+                3 => "Entregada",
+                _ => "Desconocido"
+            };
         }
     }
 }

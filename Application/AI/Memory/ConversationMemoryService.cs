@@ -15,10 +15,10 @@ namespace MiNegocioCR.Api.Application.AI.Memory
             _context = context;
         }
 
-        public async Task<string> GetConversationContextAsync(string phoneNumber, int lastMessages = 10)
+        public async Task<string> GetConversationContextAsync(Guid businessId, string phoneNumber, int lastMessages = 10)
         {
             var messages = await _context.WhatsAppMessages
-                .Where(x => x.PhoneNumber == phoneNumber)
+                .Where(x => x.BusinessId == businessId && x.PhoneNumber == phoneNumber)
                 .OrderByDescending(x => x.CreatedAt)
                 .Take(lastMessages)
                 .OrderBy(x => x.CreatedAt)
@@ -29,7 +29,6 @@ namespace MiNegocioCR.Api.Application.AI.Memory
             foreach (var msg in messages)
             {
                 var role = msg.Direction == MessageDirection.Inbound ? "user" : "assistant";
-
                 sb.AppendLine($"{role}: {msg.Body}");
             }
 
@@ -46,17 +45,22 @@ namespace MiNegocioCR.Api.Application.AI.Memory
                     ? MessageDirection.Inbound
                     : MessageDirection.Outbound;
 
-                var msg = new WhatsAppMessage
-                {
-                    Id = Guid.NewGuid(),
-                    BusinessId = businessId,
-                    PhoneNumber = phoneNumber,
-                    Body = message,
-                    Direction = direction,
-                    CreatedAt = DateTime.UtcNow
-                };
+            var msg = new WhatsAppMessage
+            {
+                Id = Guid.NewGuid(),
+                BusinessId = businessId,
+                MessageId = $"ai-{Guid.NewGuid():N}",
+                PhoneNumber = phoneNumber,
+                From = direction == MessageDirection.Inbound ? phoneNumber : "ai",
+                To = direction == MessageDirection.Inbound ? "ai" : phoneNumber,
+                Body = message,
+                Timestamp = DateTime.UtcNow,
+                Direction = direction,
+                Status = MessageStatus.Sent,
+                CreatedAt = DateTime.UtcNow
+            };
 
-                _context.WhatsAppMessages.Add(msg);
+            _context.WhatsAppMessages.Add(msg);
                 await _context.SaveChangesAsync();
             }
     }
