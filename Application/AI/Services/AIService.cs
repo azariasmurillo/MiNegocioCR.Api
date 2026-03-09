@@ -223,7 +223,7 @@ namespace MiNegocioCR.Api.Application.AI.Services
                 return "La IA no está disponible en este momento.";
 
             var response = await _aiClient.AskAsync(prompt, model, maxTokens);
-            _logger.LogInformation("AI Response: {Response}", response);
+            _logger.LogInformation("AI RAW RESPONSE: {Response}", response);
 
             await _memory.SaveMessageAsync(
                 request.BusinessId,
