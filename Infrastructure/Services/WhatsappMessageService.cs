@@ -122,6 +122,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
                 if (!string.IsNullOrWhiteSpace(response))
                 {
+                    _logger.LogInformation("[WhatsApp] Enviando respuesta IA: {Response}", response);
                     await _whatsappAppService.SendAsync(business.Id, from, response);
                     _logger.LogInformation("[WhatsApp] Respuesta IA enviada a {From}, longitud: {Len}", from, response.Length);
                 }
