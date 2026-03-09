@@ -61,7 +61,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             }
             catch (Exception ex) when (IsTokenExpiredError(ex))
             {
-                _logger.LogWarning("[SendAsync] Error 190/token expirado, reintentando tras refresh. Ex: {Message}", ex.Message);
+                _logger.LogWarning("[SendAsync] Error 190/token expirado, reintentando tras refresh Jeta. Ex: {Message}", ex.Message);
                 // Error 190: token expirado → renovar y reintentar una vez
                 var businessEntity = await _businessRepository.GetByIdAsync(businessId);
                 if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
