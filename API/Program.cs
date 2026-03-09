@@ -102,6 +102,7 @@ builder.Services.AddScoped<IWhatsappApplicationService, WhatsappApplicationServi
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IWhatsappWebhookService, WhatsappWebhookService>();
 builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
+builder.Services.AddScoped<IWhatsAppTokenService, WhatsAppTokenService>();
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 
 // --- Repair orders ---

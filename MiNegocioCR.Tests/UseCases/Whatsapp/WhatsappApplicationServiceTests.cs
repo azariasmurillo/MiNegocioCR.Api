@@ -17,6 +17,8 @@ public class WhatsappApplicationServiceTests
     private readonly Mock<IEncryptionService> _encryptionServiceMock;
     private readonly Mock<IWhatsappMessageRepository> _messageRepositoryMock;
     private readonly Mock<IGetBusinessByIdUseCase> _getBusinessByIdMock;
+    private readonly Mock<IWhatsAppTokenService> _whatsAppTokenServiceMock;
+    private readonly Mock<IBusinessRepository> _businessRepositoryMock;
     private readonly WhatsappApplicationService _sut;
 
     public WhatsappApplicationServiceTests()
@@ -26,12 +28,16 @@ public class WhatsappApplicationServiceTests
         _encryptionServiceMock = new Mock<IEncryptionService>();
         _messageRepositoryMock = new Mock<IWhatsappMessageRepository>();
         _getBusinessByIdMock = new Mock<IGetBusinessByIdUseCase>();
+        _whatsAppTokenServiceMock = new Mock<IWhatsAppTokenService>();
+        _businessRepositoryMock = new Mock<IBusinessRepository>();
         _sut = new WhatsappApplicationService(
             _whatsappServiceMock.Object,
             _contextMock.Object,
             _encryptionServiceMock.Object,
             _messageRepositoryMock.Object,
-            _getBusinessByIdMock.Object);
+            _getBusinessByIdMock.Object,
+            _whatsAppTokenServiceMock.Object,
+            _businessRepositoryMock.Object);
     }
 
     [Fact]

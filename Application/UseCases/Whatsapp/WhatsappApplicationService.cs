@@ -15,19 +15,25 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
         private readonly IEncryptionService _encryptionService;
         private readonly IWhatsappMessageRepository _whatsappMessageRepository;
         private readonly IGetBusinessByIdUseCase _getBusinessByIdUseCase;
+        private readonly IWhatsAppTokenService _whatsAppTokenService;
+        private readonly IBusinessRepository _businessRepository;
 
-        public WhatsappApplicationService(            
+        public WhatsappApplicationService(
             IWhatsappService whatsappService,
             IAppDbContext context,
             IEncryptionService encryptionService,
             IWhatsappMessageRepository whatsappMessageRepository,
-            IGetBusinessByIdUseCase _getBusinessByIdUseCase)
-        {            
+            IGetBusinessByIdUseCase getBusinessByIdUseCase,
+            IWhatsAppTokenService whatsAppTokenService,
+            IBusinessRepository businessRepository)
+        {
             _whatsappService = whatsappService;
             _context = context;
             _encryptionService = encryptionService;
             _whatsappMessageRepository = whatsappMessageRepository;
-            this._getBusinessByIdUseCase = _getBusinessByIdUseCase;
+            _getBusinessByIdUseCase = getBusinessByIdUseCase;
+            _whatsAppTokenService = whatsAppTokenService;
+            _businessRepository = businessRepository;
         }
 
         public async Task SendAsync(Guid businessId, string phone, string message)
@@ -40,7 +46,35 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             if (!business.EnableWhatsappNotifications)
                 throw new Exception("Whatsapp not enabled for this business");
 
-            await _whatsappService.SendAsync(business, phone, message);
+            // Renovar token si está próximo a expirar (menos de 5 días)
+            if (business.WhatsappTokenExpiresAt.HasValue &&
+                business.WhatsappTokenExpiresAt.Value < DateTime.UtcNow.AddDays(5))
+            {
+                var businessEntity = await _businessRepository.GetByIdAsync(businessId);
+                if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
+                {
+                    await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
+                    business = await _getBusinessByIdUseCase.Execute(businessId);
+                }
+            }
+
+            try
+            {
+                await _whatsappService.SendAsync(business, phone, message);
+            }
+            catch (Exception ex) when (IsTokenExpiredError(ex))
+            {
+                // Error 190: token expirado → renovar y reintentar una vez
+                var businessEntity = await _businessRepository.GetByIdAsync(businessId);
+                if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
+                {
+                    await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
+                    business = await _getBusinessByIdUseCase.Execute(businessId);
+                    await _whatsappService.SendAsync(business!, phone, message);
+                }
+                else
+                    throw;
+            }
 
             var entity = new WhatsAppMessage
             {
@@ -77,6 +111,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             business.WhatsappTokenExpiresAt = DateTime.UtcNow.AddMonths(2);
 
             await _context.SaveChangesAsync(cancellationToken);
-        }        
+        }
+
+        private static bool IsTokenExpiredError(Exception ex)
+        {
+            var msg = ex.Message ?? "";
+            return msg.Contains("190") || msg.Contains("Error validating access token", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
