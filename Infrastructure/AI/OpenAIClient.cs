@@ -1,4 +1,5 @@
-﻿using MiNegocioCR.Api.Application.AI.Interfaces;
+using MiNegocioCR.Api.Application.AI.Interfaces;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -9,11 +10,13 @@ namespace MiNegocioCR.Api.Infrastructure.AI
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<OpenAIClient> _logger;
 
-        public OpenAIClient(HttpClient httpClient, IConfiguration configuration)
+        public OpenAIClient(HttpClient httpClient, IConfiguration configuration, ILogger<OpenAIClient> logger)
         {
             _httpClient = httpClient;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<string> AskAsync(string prompt, string model, int maxTokens)
@@ -57,17 +60,19 @@ namespace MiNegocioCR.Api.Infrastructure.AI
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("OpenAI RAW: {Json}", responseContent);
 
                 var doc = JsonDocument.Parse(responseContent);
-
-                var result = doc
-                    .RootElement
+                var choice = doc.RootElement
                     .GetProperty("choices")[0]
-                    .GetProperty("message")
-                    .GetProperty("content")
-                    .GetString();
+                    .GetProperty("message");
 
-                return result ?? "";
+                string result = "";
+                if (choice.TryGetProperty("content", out var contentProp))
+                {
+                    result = contentProp.GetString() ?? "";
+                }
+                return result;
             }
             catch
             {
