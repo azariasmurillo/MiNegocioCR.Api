@@ -118,6 +118,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 };
 
                 var response = await _aiService.AskAsync(aiRequest);
+                _logger.LogInformation("AI RESPONSE: {Response}", response);
 
                 if (!string.IsNullOrWhiteSpace(response))
                 {
