@@ -52,10 +52,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
 
             if (!business.EnableWhatsappNotifications)
                 throw new Exception("Whatsapp not enabled for this business");
-
+            _logger.LogDebug("[SendAsync] Llamando a WhatsappService.SendAsync.");
             try
-            {
-                _logger.LogDebug("[SendAsync] Llamando a WhatsappService.SendAsync.");
+            {                
                 await _whatsappService.SendAsync(business, phone, message);
                 _logger.LogDebug("[SendAsync] WhatsappService.SendAsync completado OK.");
             }
