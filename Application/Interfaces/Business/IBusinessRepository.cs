@@ -1,4 +1,4 @@
-﻿using BusinessEntity = MiNegocioCR.Api.Domain.Entities.Business;
+using BusinessEntity = MiNegocioCR.Api.Domain.Entities.Business;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Business
 {
@@ -6,5 +6,6 @@ namespace MiNegocioCR.Api.Application.Interfaces.Business
     {
         Task<BusinessEntity?> GetByWhatsappPhoneNumberIdAsync(string phoneNumberId);
         Task<BusinessEntity?> GetByIdAsync(Guid businessId);
+        Task<IReadOnlyList<BusinessEntity>> GetAllAsync();
     }
 }

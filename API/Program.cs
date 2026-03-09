@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Content;
 using MiNegocioCR.Api.API.Filters;
+using MiNegocioCR.Api.API.Services;
 using MiNegocioCR.Api.Application.AI.Cache;
 using MiNegocioCR.Api.Application.AI.Guardrails;
 using MiNegocioCR.Api.Application.AI.Intent;
@@ -119,6 +120,7 @@ builder.Services.AddScoped<CreateCatalogItemUseCase>();
 
 // --- Auth ---
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 
 // --- AI ---
 builder.Services.AddHttpClient<IAIClient, OpenAIClient>();
@@ -162,6 +164,29 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.MapGet("/privacy", () => Results.Content(PrivacyPageContent.Html, "text/html"));
+
+// --- Admin (página protegida) ---
+app.MapGet("/admin", (HttpContext ctx) =>
+{
+    var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
+    var cookie = ctx.Request.Cookies[AdminAuthService.CookieName];
+    if (auth.ValidateAuthCookie(cookie))
+        return Results.Redirect("/admin/dashboard", false);
+    return Results.Content(AdminPageContent.LoginHtml, "text/html");
+});
+app.MapGet("/admin/dashboard", (HttpContext ctx) =>
+{
+    var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
+    var cookie = ctx.Request.Cookies[AdminAuthService.CookieName];
+    if (!auth.ValidateAuthCookie(cookie))
+        return Results.Redirect("/admin", false);
+    return Results.Content(AdminPageContent.DashboardHtml, "text/html");
+});
+app.MapGet("/admin/logout", (HttpContext ctx) =>
+{
+    ctx.Response.Cookies.Delete(AdminAuthService.CookieName, new CookieOptions { Path = "/" });
+    return Results.Redirect("/admin", false);
+});
 
 app.MapControllers();
 

@@ -6,7 +6,7 @@ using System.Threading;
 namespace MiNegocioCR.Api.API.Controllers
 {
     [ApiController]
-    [Route("api/webhook/whatsapp")]
+    [Route("api/webhook")]
     public class WhatsappWebhookController : ControllerBase
     {
         private readonly IWhatsappMessageService _whatsappMessageService;

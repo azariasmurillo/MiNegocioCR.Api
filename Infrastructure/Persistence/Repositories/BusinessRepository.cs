@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Domain.Entities;
 
@@ -23,6 +23,13 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         {
             return await _context.Businesses
                 .FirstOrDefaultAsync(x => x.WhatsappPhoneNumberId == phoneNumberId);
+        }
+
+        public async Task<IReadOnlyList<Business>> GetAllAsync()
+        {
+            return await _context.Businesses
+                .OrderBy(x => x.Name)
+                .ToListAsync();
         }
     }
 }

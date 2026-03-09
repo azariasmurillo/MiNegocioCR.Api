@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 
@@ -35,6 +36,7 @@ public class BusinessesController : ControllerBase
     }
 
     [HttpPost]
+    [AdminOnly]
     public async Task<IActionResult> Create([FromBody] CreateBusinessRequestDto request)
     {
         if (request == null)
@@ -55,6 +57,7 @@ public class BusinessesController : ControllerBase
     }
 
     [HttpPatch("{businessId}/status")]
+    [AdminOnly]
     public async Task<IActionResult> SetStatus(Guid businessId, [FromQuery] bool isActive)
     {
         await _setBusinessActiveStatusUseCase.Execute(businessId, isActive);
@@ -88,7 +91,7 @@ public class BusinessesController : ControllerBase
             business,
             request.Email,
             "SMTP Test - Mi-NegocioCR",
-            "<h2>SMTP configurado correctamente</h2><p>Tu correo está funcionando.</p>");
+            "<h2>SMTP configurado correctamente</h2><p>Tu correo est? funcionando.</p>");
 
         return Ok(new { message = "Test email sent successfully" });
     }
