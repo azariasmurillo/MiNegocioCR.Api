@@ -95,9 +95,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
 
         public async Task ConnectAsync(Guid businessId, string phoneNumberId, string accessToken, CancellationToken cancellationToken = default)
         {
-            var business = await _getBusinessByIdUseCase.Execute(businessId);            
+            var entity = await _businessRepository.GetByIdAsync(businessId);
 
-            if (business == null)
+            if (entity == null)
                 throw new NotFoundException("Business", "Business not found");
 
             var isValid = await _whatsappService.ValidateAsync(phoneNumberId, accessToken);
@@ -105,10 +105,10 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             if (!isValid)
                 throw new Exception("Invalid WhatsApp credentials");
 
-            business.WhatsappPhoneNumberId = phoneNumberId;
-            business.WhatsappAccessToken = _encryptionService.Encrypt(accessToken); 
-            business.EnableWhatsappNotifications = true;
-            business.WhatsappTokenExpiresAt = DateTime.UtcNow.AddMonths(2);
+            entity.WhatsappPhoneNumberId = phoneNumberId;
+            entity.WhatsappAccessToken = _encryptionService.Encrypt(accessToken);
+            entity.EnableWhatsappNotifications = true;
+            entity.WhatsappTokenExpiresAt = DateTime.UtcNow.AddMonths(2);
 
             await _context.SaveChangesAsync(cancellationToken);
         }

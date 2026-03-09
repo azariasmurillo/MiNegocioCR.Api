@@ -77,7 +77,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // --- Db ---
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<IAppDbContext, AppDbContext>();
+builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
 // --- Repositories ---
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
