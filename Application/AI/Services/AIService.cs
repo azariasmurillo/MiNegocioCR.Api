@@ -14,6 +14,7 @@ using MiNegocioCR.Api.Application.AI.Tools;
 using MiNegocioCR.Api.Application.AI.Upsell;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.Persistence;
+using Microsoft.Extensions.Logging;
 
 namespace MiNegocioCR.Api.Application.AI.Services
 {
@@ -35,6 +36,7 @@ namespace MiNegocioCR.Api.Application.AI.Services
         private readonly IUpsellService _upsellService;
         private readonly IAIChatRequestValidator _requestValidator;
         private readonly ISalesConversationHandler _salesConversationHandler;
+        private readonly ILogger<AIService> _logger;
 
         public AIService(
             IPromptBuilder promptBuilder,
@@ -52,7 +54,8 @@ namespace MiNegocioCR.Api.Application.AI.Services
             AppDbContext context,
             IUpsellService upsellService,
             IAIChatRequestValidator requestValidator,
-            ISalesConversationHandler salesConversationHandler)
+            ISalesConversationHandler salesConversationHandler,
+            ILogger<AIService> logger)
         {
             _promptBuilder = promptBuilder;
             _domainFilter = domainFilter;
@@ -70,6 +73,7 @@ namespace MiNegocioCR.Api.Application.AI.Services
             _upsellService = upsellService;
             _requestValidator = requestValidator;
             _salesConversationHandler = salesConversationHandler;
+            _logger = logger;
         }
 
         public async Task<string> AskAsync(AIRequest request)
@@ -219,6 +223,7 @@ namespace MiNegocioCR.Api.Application.AI.Services
                 return "La IA no está disponible en este momento.";
 
             var response = await _aiClient.AskAsync(prompt, model, maxTokens);
+            _logger.LogInformation("AI Response: {Response}", response);
 
             await _memory.SaveMessageAsync(
                 request.BusinessId,
