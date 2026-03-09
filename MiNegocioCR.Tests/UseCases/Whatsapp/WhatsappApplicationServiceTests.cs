@@ -37,7 +37,8 @@ public class WhatsappApplicationServiceTests
             _messageRepositoryMock.Object,
             _getBusinessByIdMock.Object,
             _whatsAppTokenServiceMock.Object,
-            _businessRepositoryMock.Object);
+            _businessRepositoryMock.Object,
+            new Microsoft.Extensions.Logging.Abstractions.NullLogger<WhatsappApplicationService>());
     }
 
     [Fact]

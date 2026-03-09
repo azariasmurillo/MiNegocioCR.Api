@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
@@ -17,6 +18,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
         private readonly IGetBusinessByIdUseCase _getBusinessByIdUseCase;
         private readonly IWhatsAppTokenService _whatsAppTokenService;
         private readonly IBusinessRepository _businessRepository;
+        private readonly ILogger<WhatsappApplicationService> _logger;
 
         public WhatsappApplicationService(
             IWhatsappService whatsappService,
@@ -25,7 +27,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             IWhatsappMessageRepository whatsappMessageRepository,
             IGetBusinessByIdUseCase getBusinessByIdUseCase,
             IWhatsAppTokenService whatsAppTokenService,
-            IBusinessRepository businessRepository)
+            IBusinessRepository businessRepository,
+            ILogger<WhatsappApplicationService> logger)
         {
             _whatsappService = whatsappService;
             _context = context;
@@ -34,11 +37,15 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             _getBusinessByIdUseCase = getBusinessByIdUseCase;
             _whatsAppTokenService = whatsAppTokenService;
             _businessRepository = businessRepository;
+            _logger = logger;
         }
 
         public async Task SendAsync(Guid businessId, string phone, string message)
         {
+            _logger.LogInformation("[SendAsync] Inicio. BusinessId: {BusinessId}, Phone: {Phone}, MessageLen: {Len}", businessId, phone, message?.Length ?? 0);
+
             var business = await _getBusinessByIdUseCase.Execute(businessId);
+            _logger.LogDebug("[SendAsync] Business obtenido: {Found}", business != null);
 
             if (business == null)
                 throw new NotFoundException("Business", "Business not found");
@@ -50,20 +57,25 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             if (business.WhatsappTokenExpiresAt.HasValue &&
                 business.WhatsappTokenExpiresAt.Value < DateTime.UtcNow.AddDays(5))
             {
+                _logger.LogInformation("[SendAsync] Token próximo a expirar, intentando refresh. ExpiresAt: {ExpiresAt}", business.WhatsappTokenExpiresAt);
                 var businessEntity = await _businessRepository.GetByIdAsync(businessId);
                 if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
                 {
                     await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
                     business = await _getBusinessByIdUseCase.Execute(businessId);
+                    _logger.LogDebug("[SendAsync] Token refrescado, business recargado.");
                 }
             }
 
             try
             {
+                _logger.LogDebug("[SendAsync] Llamando a WhatsappService.SendAsync.");
                 await _whatsappService.SendAsync(business, phone, message);
+                _logger.LogDebug("[SendAsync] WhatsappService.SendAsync completado OK.");
             }
             catch (Exception ex) when (IsTokenExpiredError(ex))
             {
+                _logger.LogWarning("[SendAsync] Error 190/token expirado, reintentando tras refresh. Ex: {Message}", ex.Message);
                 // Error 190: token expirado → renovar y reintentar una vez
                 var businessEntity = await _businessRepository.GetByIdAsync(businessId);
                 if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
@@ -71,11 +83,13 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
                     await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
                     business = await _getBusinessByIdUseCase.Execute(businessId);
                     await _whatsappService.SendAsync(business!, phone, message);
+                    _logger.LogInformation("[SendAsync] Reintento tras refresh OK.");
                 }
                 else
                     throw;
             }
 
+            _logger.LogDebug("[SendAsync] Guardando WhatsAppMessage y actualizando conversación.");
             var entity = new WhatsAppMessage
             {
                 Id = Guid.NewGuid(),
@@ -91,6 +105,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
 
             await _whatsappMessageRepository.SaveAsync(entity);
             await _whatsappMessageRepository.UpdateConversationAsync( businessId,phone,message);
+            _logger.LogInformation("[SendAsync] Fin OK. Mensaje guardado y conversación actualizada.");
         }
 
         public async Task ConnectAsync(Guid businessId, string phoneNumberId, string accessToken, CancellationToken cancellationToken = default)
