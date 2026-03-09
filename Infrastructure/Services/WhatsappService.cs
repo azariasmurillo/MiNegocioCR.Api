@@ -1,8 +1,9 @@
+using MiNegocioCR.Api.API.Controllers;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Exceptions;
-using MiNegocioCR.Api.Application.Interfaces;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -13,11 +14,13 @@ namespace MiNegocioCR.Api.Infrastructure.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IEncryptionService _encryptionService;
+        private readonly ILogger<WhatsappWebhookController> _logger;
 
-        public WhatsappService(HttpClient httpClient, IEncryptionService _encryptionService)
+        public WhatsappService(HttpClient httpClient, IEncryptionService _encryptionService, ILogger<WhatsappWebhookController> logger)
         {
             _httpClient = httpClient;
             this._encryptionService = _encryptionService;
+            _logger = logger;
         }        
         
         public async Task SendAsync(GetBusinessByIdResultDto business, string phone, string message)
@@ -46,6 +49,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 Encoding.UTF8,
                 "application/json");
 
+            _logger.LogInformation("Token usado: {token}", decryptedToken);
             var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
