@@ -70,6 +70,18 @@ public class WhatsAppTokenService : IWhatsAppTokenService
         if (!response.IsSuccessStatusCode)
         {
             var errorBody = await response.Content.ReadAsStringAsync();
+            var isSessionExpired = errorBody.Contains("Session has expired", StringComparison.OrdinalIgnoreCase)
+                || errorBody.Contains("error_subcode\":463", StringComparison.Ordinal);
+
+            if (isSessionExpired)
+            {
+                _logger.LogWarning(
+                    "[WhatsApp Token] Token ya expirado (session expired). No se puede canjear. Negocio {BusinessId} debe reconectar WhatsApp. Response: {Response}",
+                    business.Id, errorBody);
+                throw new InvalidOperationException(
+                    "WhatsApp token has expired and cannot be refreshed. The business must reconnect WhatsApp from the app.");
+            }
+
             _logger.LogError("[WhatsApp Token] Token refresh fallido. Status: {Status}, Response: {Response}",
                 response.StatusCode, errorBody);
             throw new InvalidOperationException($"Meta token exchange failed: {response.StatusCode}. {errorBody}");

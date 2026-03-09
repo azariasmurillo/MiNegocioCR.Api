@@ -134,6 +134,9 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[WhatsApp] Error al procesar IA o enviar respuesta. BusinessId: {BusinessId}, From: {From}", business.Id, from);
+                var msg = ex.Message + (ex.InnerException?.Message ?? "");
+                if (msg.Contains("reconnect WhatsApp", StringComparison.OrdinalIgnoreCase) || msg.Contains("Session has expired", StringComparison.OrdinalIgnoreCase))
+                    _logger.LogWarning("[WhatsApp] Token expirado. El negocio {BusinessId} debe reconectar WhatsApp para volver a enviar respuestas.", business.Id);
             }
         }
 
