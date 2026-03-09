@@ -63,15 +63,25 @@ namespace MiNegocioCR.Api.Infrastructure.AI
                 _logger.LogInformation("OpenAI RAW: {Json}", responseContent);
 
                 var doc = JsonDocument.Parse(responseContent);
-                var choice = doc.RootElement
+
+                var message = doc.RootElement
                     .GetProperty("choices")[0]
                     .GetProperty("message");
 
                 string result = "";
-                if (choice.TryGetProperty("content", out var contentProp))
+
+                if (message.TryGetProperty("content", out var content))
                 {
-                    result = contentProp.GetString() ?? "";
+                    if (content.ValueKind == JsonValueKind.String)
+                    {
+                        result = content.GetString() ?? "";
+                    }
+                    else if (content.ValueKind == JsonValueKind.Array)
+                    {
+                        result = content[0].GetProperty("text").GetString() ?? "";
+                    }
                 }
+
                 return result;
             }
             catch
