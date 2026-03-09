@@ -116,6 +116,8 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                     PhoneNumber = from,
                     Channel = "whatsapp"
                 };
+                
+                _logger.LogInformation("Entro al AI AskAsync");
 
                 var response = await _aiService.AskAsync(aiRequest);
                 _logger.LogInformation("AI RESPONSE: {Response}", response);

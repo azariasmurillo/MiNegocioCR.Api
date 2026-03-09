@@ -78,7 +78,14 @@ namespace MiNegocioCR.Api.Application.AI.Services
 
         public async Task<string> AskAsync(AIRequest request)
         {
-            var validation = await _requestValidator.ValidateAsync(request);
+            try
+            {
+                _logger.LogInformation("[AskAsync] Inicio. BusinessId: {BusinessId}, Phone: {Phone}, UserMessageLen: {Len}",
+                    request.BusinessId, request.PhoneNumber ?? "(null)", request.UserMessage?.Length ?? 0);
+
+                var validation = await _requestValidator.ValidateAsync(request);
+            _logger.LogDebug("[AskAsync] Validación. CanContinue: {CanContinue}, EarlyResponse: {EarlyResponse}",
+                validation.CanContinue, validation.EarlyResponse != null ? "(set)" : "(null)");
             if (!validation.CanContinue)
                 return validation.EarlyResponse ?? "";
 
@@ -93,9 +100,12 @@ namespace MiNegocioCR.Api.Application.AI.Services
             var conversationState = await _state.GetAsync(
                 request.BusinessId,
                 request.PhoneNumber);
+            _logger.LogDebug("[AskAsync] ConversationState: {HasState}, DomainFilter allowed: {Allowed}",
+                conversationState != null, _domainFilter.IsAllowed(request.UserMessage));
 
             if (conversationState == null && !_domainFilter.IsAllowed(request.UserMessage))
             {
+                _logger.LogInformation("[AskAsync] Salida por dominio no permitido.");
                 return "Lo siento, solo puedo ayudarte con productos, servicios o reparaciones del negocio.";
             }
 
@@ -106,7 +116,10 @@ namespace MiNegocioCR.Api.Application.AI.Services
                 conversationState);
 
             if (salesResponse != null)
+            {
+                _logger.LogInformation("[AskAsync] Salida por sales response (longitud {Len}).", salesResponse.Length);
                 return salesResponse;
+            }
 
             // Cache
             var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
@@ -114,11 +127,15 @@ namespace MiNegocioCR.Api.Application.AI.Services
 
             var cached = await _cache.GetAsync(cacheKey);
             if (cached != null)
+            {
+                _logger.LogInformation("[AskAsync] Salida por cache hit.");
                 return cached;
+            }
 
             // Seleccionar y ejecutar tool
             var intent = _intentClassifier.Classify(normalizedMessage);
             var selectedTool = _toolSelector.Select(intent);
+            _logger.LogInformation("[AskAsync] Intent: {Intent}, Tool: {Tool}", intent, selectedTool?.Name ?? "(null)");
 
             ToolResult toolData;
             if (selectedTool.Name == "repair_order_search")
@@ -134,8 +151,12 @@ namespace MiNegocioCR.Api.Application.AI.Services
                     request.UserMessage);
             }
 
+            _logger.LogDebug("[AskAsync] Tool ejecutado. ProductId: {ProductId}, MessageLen: {Len}",
+                toolData?.ProductId, toolData?.Message?.Length ?? 0);
+
             if (selectedTool.Name == "repair_service_search")
             {
+                _logger.LogInformation("[AskAsync] Salida por repair_service_search.");
                 return toolData.Message;
             }
 
@@ -151,10 +172,12 @@ namespace MiNegocioCR.Api.Application.AI.Services
                     if (fallbackResult.ProductId != null)
                         toolData = fallbackResult;
                 }
+                _logger.LogDebug("[AskAsync] Fallback inventory. ProductId después: {ProductId}", toolData?.ProductId);
             }
 
             if (toolData.ProductId != null)
             {
+                _logger.LogDebug("[AskAsync] Buscando variante y upsell para ProductId: {ProductId}", toolData.ProductId);
                 var variant = await _context.CatalogVariants
                     .AsNoTracking()
                     .Include(v => v.CatalogItem)
@@ -162,6 +185,7 @@ namespace MiNegocioCR.Api.Application.AI.Services
 
                 if (variant != null)
                 {
+                    _logger.LogDebug("[AskAsync] Variante encontrada, aplicando upsell.");
                     var upsells = await _upsellService.GetUpsell(
                         request.BusinessId,
                         variant.CatalogItemId);
@@ -194,8 +218,10 @@ namespace MiNegocioCR.Api.Application.AI.Services
                     Step = "awaiting_confirmation",
                     UpdatedAt = DateTime.UtcNow
                 });
+                _logger.LogDebug("[AskAsync] ConversationState guardado.");
             }
 
+            _logger.LogDebug("[AskAsync] Construyendo prompt y llamando a IA.");
             var history = await _memory.GetConversationContextAsync(
                 request.BusinessId,
                 request.PhoneNumber ?? "",
@@ -218,12 +244,16 @@ namespace MiNegocioCR.Api.Application.AI.Services
             var allowed = await _tokenBudget.CanUseAsync(
                 request.BusinessId,
                 estimatedTokens);
+            _logger.LogDebug("[AskAsync] Token budget allowed: {Allowed}, model: {Model}, maxTokens: {MaxTokens}", allowed, model, maxTokens);
 
             if (!allowed)
+            {
+                _logger.LogWarning("[AskAsync] Salida por token budget agotado.");
                 return "La IA no está disponible en este momento.";
+            }
 
             var response = await _aiClient.AskAsync(prompt, model, maxTokens);
-            _logger.LogInformation("AI RAW RESPONSE: {Response}", response);
+            _logger.LogInformation("[AskAsync] Respuesta IA recibida (longitud {Len}).", response?.Length ?? 0);
 
             await _memory.SaveMessageAsync(
                 request.BusinessId,
@@ -233,7 +263,13 @@ namespace MiNegocioCR.Api.Application.AI.Services
 
             await _cache.SetAsync(cacheKey, response);
 
-            return response;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AskAsync] Excepción. BusinessId: {BusinessId}, Phone: {Phone}", request.BusinessId, request.PhoneNumber ?? "(null)");
+                throw;
+            }
         }
     }
 }
