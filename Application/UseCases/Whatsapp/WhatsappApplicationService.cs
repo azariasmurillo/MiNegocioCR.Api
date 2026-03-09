@@ -53,20 +53,6 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             if (!business.EnableWhatsappNotifications)
                 throw new Exception("Whatsapp not enabled for this business");
 
-            // Renovar token si está próximo a expirar (menos de 5 días)
-            if (business.WhatsappTokenExpiresAt.HasValue &&
-                business.WhatsappTokenExpiresAt.Value < DateTime.UtcNow.AddDays(5))
-            {
-                _logger.LogInformation("[SendAsync] Token próximo a expirar, intentando refresh. ExpiresAt: {ExpiresAt}", business.WhatsappTokenExpiresAt);
-                var businessEntity = await _businessRepository.GetByIdAsync(businessId);
-                if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
-                {
-                    await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
-                    business = await _getBusinessByIdUseCase.Execute(businessId);
-                    _logger.LogDebug("[SendAsync] Token refrescado, business recargado.");
-                }
-            }
-
             try
             {
                 _logger.LogDebug("[SendAsync] Llamando a WhatsappService.SendAsync.");
