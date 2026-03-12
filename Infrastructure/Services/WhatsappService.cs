@@ -23,7 +23,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             _logger = logger;
         }        
         
-        public async Task SendAsync(GetBusinessByIdResultDto business, string phone, string message)
+        public async Task SendAsync(GetBusinessByIdResultDto business, string phone, string message, string? attachmentUrl = null, string? attachmentType = null)
         {
             if (string.IsNullOrWhiteSpace(business.WhatsappPhoneNumberId) ||
                 string.IsNullOrWhiteSpace(business.WhatsappAccessToken))
@@ -31,13 +31,33 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
             var url = $"https://graph.facebook.com/v19.0/{business.WhatsappPhoneNumberId}/messages";
 
-            var payload = new
+            object payload;
+
+            if (!string.IsNullOrEmpty(attachmentUrl) && !string.IsNullOrEmpty(attachmentType))
             {
-                messaging_product = "whatsapp",
-                to = phone,
-                type = "text",
-                text = new { body = message }
-            };
+                payload = new
+                {
+                    messaging_product = "whatsapp",
+                    to = phone,
+                    type = attachmentType,
+                    image = attachmentType == "image" ? new { link = attachmentUrl } : null,
+                    document = attachmentType == "document" ? new { link = attachmentUrl } : null,
+                    audio = attachmentType == "audio" ? new { link = attachmentUrl } : null,
+                    video = attachmentType == "video" ? new { link = attachmentUrl } : null
+                };
+            }
+            else
+            {
+                payload = new
+                {
+                    messaging_product = "whatsapp",
+                    to = phone,
+                    type = "text",
+                    text = new { body = message }
+                };
+            }
+
+
             var decryptedToken = _encryptionService.Decrypt(business.WhatsappAccessToken);
 
             var request = new HttpRequestMessage(HttpMethod.Post, url);

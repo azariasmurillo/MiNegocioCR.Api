@@ -1,4 +1,6 @@
-﻿using MiNegocioCR.Api.Domain.Entities;
+﻿using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Whatsapp
@@ -7,8 +9,10 @@ namespace MiNegocioCR.Api.Application.Interfaces.Whatsapp
     {
         Task SaveAsync(WhatsAppMessage message);
         Task UpdateStatusAsync(string messageId, MessageStatus status);
-        Task<List<WhatsAppMessage>> GetMessagesAsync(Guid businessId, string phoneNumber);
-        Task<List<string>> GetConversationsAsync(Guid businessId);
-        Task UpdateConversationAsync(Guid businessId,string phone,string messageBody);
+        Task<List<MessageDto>> GetMessagesAsync(Guid businessId, string phoneNumber, int limit = 50);
+        Task<List<ConversationDto>> GetConversationsAsync(Guid businessId, string? search, 
+            string? phone,string? name);
+        Task UpdateConversationAsync(Guid businessId,string phone,string messageBody, MessageDirection direction);
+        Task<int> GetUnreadTotalAsync(Guid businessId);
     }
 }

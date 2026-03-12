@@ -22,6 +22,8 @@ using MiNegocioCR.Api.Application.AI.Upsell;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.Contacts;
+using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
@@ -32,6 +34,7 @@ using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.AI;
 using MiNegocioCR.Api.Infrastructure.Auth;
 using MiNegocioCR.Api.Infrastructure.Persistence;
@@ -104,6 +107,15 @@ builder.Services.AddScoped<IWhatsappWebhookService, WhatsappWebhookService>();
 builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
 builder.Services.AddScoped<IWhatsAppTokenService, WhatsAppTokenService>();
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<IGetUnreadTotalUseCase, GetUnreadTotalUseCase>();
+
+// --- Conversation Tag ---
+builder.Services.AddScoped<IConversationTag, MiNegocioCR.Api.Application.ConversationTag.ConversationTag>();
+
+// --- Contact Tag ---
+builder.Services.AddScoped<IContact, MiNegocioCR.Api.Application.Contact.Contacts>();
 
 // --- Repair orders ---
 builder.Services.AddScoped<ICreateRepairOrderUseCase, CreateRepairOrderUseCase>();

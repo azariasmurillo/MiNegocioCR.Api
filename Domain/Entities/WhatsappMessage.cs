@@ -22,6 +22,10 @@ namespace MiNegocioCR.Api.Domain.Entities
         public string? MetaMessageId { get; set; }        
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        public string? AttachmentUrl { get; set; }
+        public string? AttachmentType { get; set; }
+
     }
 }
 

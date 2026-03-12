@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Application.AI.Models;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
@@ -12,6 +14,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
     {
         private readonly IWhatsappMessageRepository _messageRepository;
         private readonly IBusinessRepository _businessRepository;
+        private readonly IAppDbContext _context;
         private readonly IAIService _aiService;
         private readonly IWhatsappApplicationService _whatsappAppService;
         private readonly ILogger<WhatsappMessageService> _logger;
@@ -19,12 +22,14 @@ namespace MiNegocioCR.Api.Infrastructure.Services
         public WhatsappMessageService(
             IWhatsappMessageRepository repository,
             IBusinessRepository businessRepository,
+            IAppDbContext context,
             IAIService aiService,
             IWhatsappApplicationService whatsappAppService,
             ILogger<WhatsappMessageService> logger)
         {
             _messageRepository = repository;
             _businessRepository = businessRepository;
+            _context = context;
             _aiService = aiService;
             _whatsappAppService = whatsappAppService;
             _logger = logger;
@@ -48,8 +53,11 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
             if (value.TryGetProperty("messages", out var messages) && messages.GetArrayLength() > 0)
             {
-                _logger.LogInformation("[WhatsApp] Webhook con mensaje(s), procesando.");
-                await ProcessIncomingMessage(messages, value);
+                _logger.LogInformation("[WhatsApp] Webhook con {Count} mensaje(s), procesando.", messages.GetArrayLength());
+                for (var i = 0; i < messages.GetArrayLength(); i++)
+                {
+                    await ProcessIncomingMessage(messages[i], value);
+                }
             }
 
             if (value.TryGetProperty("statuses", out var statuses) && statuses.GetArrayLength() > 0)
@@ -71,8 +79,38 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 return;
 
             var body = "";
+            string? attachmentUrl = string.Empty;
+            string? attachmentType = string.Empty;
+
             if (message.TryGetProperty("text", out var textObj) && textObj.TryGetProperty("body", out var bodyProp))
-                body = bodyProp.GetString() ?? "";
+                body = bodyProp.GetString() ?? "";            
+
+            if (message.TryGetProperty("image", out var image))
+            {
+                attachmentType = "image";
+                attachmentUrl = image.TryGetProperty("id", out var imageId) ? imageId.GetString() : null;
+            }
+            else if (message.TryGetProperty("audio", out var audio))
+            {
+                attachmentType = "audio";
+                attachmentUrl = audio.TryGetProperty("id", out var audioId) ? audioId.GetString() : null;
+            }
+            else if (message.TryGetProperty("document", out var document))
+            {
+                attachmentType = "document";
+                attachmentUrl = document.TryGetProperty("id", out var docId) ? docId.GetString() : null;
+            }
+            else if (message.TryGetProperty("video", out var video))
+            {
+                attachmentType = "video";
+                attachmentUrl = video.TryGetProperty("id", out var videoId) ? videoId.GetString() : null;
+            }
+
+            var userMessageForAi = !string.IsNullOrWhiteSpace(body)
+                ? body
+                : !string.IsNullOrWhiteSpace(attachmentType)
+                    ? $"[{attachmentType}]"
+                    : "";
 
             if (!value.TryGetProperty("metadata", out var metadata) || !metadata.TryGetProperty("phone_number_id", out var phoneProp))
                 return;
@@ -101,10 +139,30 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 Body = body,
                 Timestamp = DateTime.UtcNow,
                 Direction = MessageDirection.Inbound,
-                Status = MessageStatus.Received
+                Status = MessageStatus.Received,
+                AttachmentUrl = attachmentUrl,
+                AttachmentType = attachmentType
             };
 
             await _messageRepository.SaveAsync(entity);
+
+            //OJO  CUANDO TENGA QUE REVISAR IMAGENES PODEMOS MEJORAR ESTO PARA QUE NO SE LLAME A LA IA
+            //SI SOLO HAY UNA IMAGEN, PERO POR AHORA LO DEJAMOS ASI PARA QUE RESPONDA CON [image] O [document] ETC
+            if (string.IsNullOrWhiteSpace(userMessageForAi))
+            {
+                _logger.LogDebug("[WhatsApp] Sin texto ni adjunto, no se llama a la IA.");
+                await _messageRepository.UpdateConversationAsync(business.Id, from, body, MessageDirection.Inbound);
+                return;
+            }
+
+            var settings = await _context.BusinessSettings
+                .FirstOrDefaultAsync(s => s.BusinessId == business.Id);
+            if (settings != null && !settings.EnableAIChat)
+            {
+                _logger.LogDebug("[WhatsApp] IA deshabilitada para el negocio {BusinessId}, no se llama a AskAsync.", business.Id);
+                await _messageRepository.UpdateConversationAsync(business.Id, from, body, MessageDirection.Inbound);
+                return;
+            }
 
             // Conectar IA: obtener respuesta y enviarla por WhatsApp
             try
@@ -112,7 +170,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 var aiRequest = new AIRequest
                 {
                     BusinessId = business.Id,
-                    UserMessage = body,
+                    UserMessage = userMessageForAi,
                     PhoneNumber = from,
                     Channel = "whatsapp"
                 };
@@ -140,6 +198,11 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 if (msg.Contains("reconnect WhatsApp", StringComparison.OrdinalIgnoreCase) || msg.Contains("Session has expired", StringComparison.OrdinalIgnoreCase))
                     _logger.LogWarning("[WhatsApp] Token expirado. El negocio {BusinessId} debe reconectar WhatsApp para volver a enviar respuestas.", business.Id);
             }
+            await _messageRepository.UpdateConversationAsync(
+                business.Id,
+                from,
+                body,
+                MessageDirection.Inbound);
         }
 
         private async Task ProcessStatusUpdate(JsonElement statuses)

@@ -3,6 +3,7 @@ using System;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312001654_WhatsAppChatUpgrade")]
+    partial class WhatsAppChatUpgrade
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -293,37 +296,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.ToTable("CatalogVariants");
                 });
 
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Contact", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BusinessId", "Phone")
-                        .IsUnique();
-
-                    b.ToTable("Contacts");
-                });
-
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationState", b =>
                 {
                     b.Property<Guid>("Id")
@@ -356,26 +328,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ConversationStates");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationTag", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ConversationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Tag")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConversationId", "Tag");
-
-                    b.ToTable("ConversationTags");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
@@ -466,30 +418,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasIndex("PurchaseId");
 
                     b.ToTable("PurchaseItems");
-                });
-
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.QuickReplyTemplate", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BusinessId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("MessageText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BusinessId", "Name");
-
-                    b.ToTable("QuickReplyTemplates");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrder", b =>
@@ -719,6 +647,7 @@ namespace MiNegocioCR.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PhoneNumber")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid?>("RepairOrderId")
@@ -802,10 +731,11 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MessageId")
-                        .IsUnique();
+                    b.HasIndex("MessageId");
 
-                    b.HasIndex("BusinessId", "PhoneNumber", "Timestamp");
+                    b.HasIndex("BusinessId", "PhoneNumber");
+
+                    b.HasIndex("BusinessId", "Timestamp");
 
                     b.ToTable("WhatsAppMessages");
                 });
@@ -893,15 +823,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("CatalogItem");
                 });
 
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationTag", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", null)
-                        .WithMany()
-                        .HasForeignKey("ConversationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
                 {
                     b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogVariant", "Variant")
@@ -970,11 +891,9 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.RepairOrder", "RepairOrder")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.RepairOrder", null)
                         .WithMany()
                         .HasForeignKey("RepairOrderId");
-
-                    b.Navigation("RepairOrder");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppMessage", b =>

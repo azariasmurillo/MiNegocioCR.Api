@@ -40,7 +40,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             _logger = logger;
         }
 
-        public async Task SendAsync(Guid businessId, string phone, string message)
+        public async Task SendAsync(Guid businessId, string phone, string message, string? attachmentUrl = null,
+    string? attachmentType = null)
         {
             _logger.LogInformation("[SendAsync] Inicio. BusinessId: {BusinessId}, Phone: {Phone}, MessageLen: {Len}", businessId, phone, message?.Length ?? 0);
 
@@ -83,13 +84,15 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
                 From = business.WhatsappPhoneNumberId!,
                 To = phone,
                 Body = message,
+                AttachmentUrl = attachmentUrl,
+                AttachmentType = attachmentType,
                 Timestamp = DateTime.UtcNow,
                 Direction = MessageDirection.Outbound,
                 Status = MessageStatus.Sent
             };
 
             await _whatsappMessageRepository.SaveAsync(entity);
-            await _whatsappMessageRepository.UpdateConversationAsync( businessId,phone,message);
+            await _whatsappMessageRepository.UpdateConversationAsync( businessId,phone,message, MessageDirection.Inbound);
             _logger.LogInformation("[SendAsync] Fin OK. Mensaje guardado y conversación actualizada.");
         }
 
