@@ -5,7 +5,7 @@ using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
-    public class RegisterPurchaseUseCase
+    public class RegisterPurchaseUseCase : IRegisterPurchaseUseCase
     {
         private readonly IPurchaseRepository _purchaseRepository;
         private readonly IVariantRepository _variantRepository;

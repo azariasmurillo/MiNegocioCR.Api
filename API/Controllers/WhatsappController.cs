@@ -1,12 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
-using MiNegocioCR.Api.Application.Handler;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
-using MiNegocioCR.Api.Application.UseCases.Conversations;
-using MiNegocioCR.Api.Application.UseCases.Whatsapp;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
@@ -16,22 +12,22 @@ namespace MiNegocioCR.Api.API.Controllers
     {
         private readonly IWhatsappApplicationService _whatsappAppService;
         private readonly IWhatsappMessageRepository _whatsAppRepository;
-        private readonly MarkConversationReadHandler _markConversationReadHandler;
-        private readonly CreateConversationHandler _createConversationHandler;
-        private readonly UpdateConversationStatusHandler _updateConversationStatusHandler;
-        private readonly LinkConversationRepairOrderHandler _linkConversationRepairOrderHandler;
-        private readonly SendTemplateHandler _sendTemplateHandler;
+        private readonly IMarkConversationReadHandler _markConversationReadHandler;
+        private readonly ICreateConversationHandler _createConversationHandler;
+        private readonly IUpdateConversationStatusHandler _updateConversationStatusHandler;
+        private readonly ILinkConversationRepairOrderHandler _linkConversationRepairOrderHandler;
+        private readonly ISendTemplateHandler _sendTemplateHandler;
         private readonly IConversationTag _conversationTag;
         private readonly IContact _contact; 
         private readonly IGetUnreadTotalUseCase _getUnreadTotalUseCase;
 
         public WhatsappController(IWhatsappApplicationService whatsappAppService,
             IWhatsappMessageRepository repository,
-            MarkConversationReadHandler markConversationReadHandler,
-            CreateConversationHandler createConversationHandler,
-            UpdateConversationStatusHandler updateConversationStatusHandler,
-            LinkConversationRepairOrderHandler linkConversationRepairOrderHandler,
-            SendTemplateHandler sendTemplateHandler,
+            IMarkConversationReadHandler markConversationReadHandler,
+            ICreateConversationHandler createConversationHandler,
+            IUpdateConversationStatusHandler updateConversationStatusHandler,
+            ILinkConversationRepairOrderHandler linkConversationRepairOrderHandler,
+            ISendTemplateHandler sendTemplateHandler,
             IConversationTag conversationTag,
             IContact contact,
             IGetUnreadTotalUseCase getUnreadTotalUseCase)

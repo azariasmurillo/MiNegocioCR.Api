@@ -5,7 +5,7 @@ using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
-    public class AdjustInventoryUseCase
+    public class AdjustInventoryUseCase : IAdjustInventoryUseCase
     {
         private readonly IVariantRepository _variantRepository;
         private readonly IInventoryRepository _inventoryRepository;

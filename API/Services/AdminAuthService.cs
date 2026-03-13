@@ -4,6 +4,7 @@ namespace MiNegocioCR.Api.API.Services;
 
 public interface IAdminAuthService
 {
+    string CookieName { get; }
     bool ValidatePassword(string password);
     string CreateAuthCookieValue();
     bool ValidateAuthCookie(string? cookieValue);
@@ -11,7 +12,7 @@ public interface IAdminAuthService
 
 public class AdminAuthService : IAdminAuthService
 {
-    public const string CookieName = "AdminSession";
+    public string CookieName => "AdminSession";
     private const string Purpose = "MiNegocioCR.Admin.Auth";
     private readonly IDataProtectionProvider _dataProtection;
     private readonly string _adminPassword;

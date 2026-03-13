@@ -29,7 +29,10 @@ using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
+using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.Handler;
 using MiNegocioCR.Api.Application.UseCases.Business;
+using MiNegocioCR.Api.Application.UseCases.Conversations;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
@@ -108,13 +111,17 @@ builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
 builder.Services.AddScoped<IWhatsAppTokenService, WhatsAppTokenService>();
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
-builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IGetUnreadTotalUseCase, GetUnreadTotalUseCase>();
+builder.Services.AddScoped<IMarkConversationReadHandler, MarkConversationReadHandler>();
+builder.Services.AddScoped<ICreateConversationHandler, CreateConversationHandler>();
+builder.Services.AddScoped<IUpdateConversationStatusHandler, UpdateConversationStatusHandler>();
+builder.Services.AddScoped<ILinkConversationRepairOrderHandler, LinkConversationRepairOrderHandler>();
+builder.Services.AddScoped<ISendTemplateHandler, SendTemplateHandler>();
 
 // --- Conversation Tag ---
 builder.Services.AddScoped<IConversationTag, MiNegocioCR.Api.Application.ConversationTag.ConversationTag>();
 
-// --- Contact Tag ---
+// --- Contacts ---
 builder.Services.AddScoped<IContact, MiNegocioCR.Api.Application.Contact.Contacts>();
 
 // --- Repair orders ---
@@ -129,7 +136,10 @@ builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepai
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.UseCases.Sales.RegisterSaleUseCase>();
-builder.Services.AddScoped<CreateCatalogItemUseCase>();
+builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
+builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
+builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
+builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();
 
 // --- Auth ---
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
@@ -182,7 +192,7 @@ app.MapGet("/privacy", () => Results.Content(PrivacyPageContent.Html, "text/html
 app.MapGet("/admin", (HttpContext ctx) =>
 {
     var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
-    var cookie = ctx.Request.Cookies[AdminAuthService.CookieName];
+    var cookie = ctx.Request.Cookies[auth.CookieName];
     if (auth.ValidateAuthCookie(cookie))
         return Results.Redirect("/admin/dashboard", false);
     return Results.Content(AdminPageContent.LoginHtml, "text/html");
@@ -190,14 +200,15 @@ app.MapGet("/admin", (HttpContext ctx) =>
 app.MapGet("/admin/dashboard", (HttpContext ctx) =>
 {
     var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
-    var cookie = ctx.Request.Cookies[AdminAuthService.CookieName];
+    var cookie = ctx.Request.Cookies[auth.CookieName];
     if (!auth.ValidateAuthCookie(cookie))
         return Results.Redirect("/admin", false);
     return Results.Content(AdminPageContent.DashboardHtml, "text/html");
 });
 app.MapGet("/admin/logout", (HttpContext ctx) =>
 {
-    ctx.Response.Cookies.Delete(AdminAuthService.CookieName, new CookieOptions { Path = "/" });
+    var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
+    ctx.Response.Cookies.Delete(auth.CookieName, new CookieOptions { Path = "/" });
     return Results.Redirect("/admin", false);
 });
 

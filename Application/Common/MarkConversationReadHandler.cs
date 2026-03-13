@@ -1,9 +1,9 @@
-﻿using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 
 namespace MiNegocioCR.Api.Application.Common
 {
-    public class MarkConversationReadHandler
+    public class MarkConversationReadHandler : IMarkConversationReadHandler
     {
         private readonly IConversationService _conversationService;
 

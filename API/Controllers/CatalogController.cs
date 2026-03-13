@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Application.UseCases.Repository;
+using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.DTOs;
 
 namespace MiNegocioCR.Api.API.Controllers
@@ -8,9 +8,9 @@ namespace MiNegocioCR.Api.API.Controllers
     [Route("api/catalog")]
     public class CatalogController : ControllerBase
     {
-        private readonly CreateCatalogItemUseCase _createCatalogItem;
+        private readonly ICreateCatalogItemUseCase _createCatalogItem;
 
-        public CatalogController(CreateCatalogItemUseCase createCatalogItem)
+        public CatalogController(ICreateCatalogItemUseCase createCatalogItem)
         {
             _createCatalogItem = createCatalogItem;
         }

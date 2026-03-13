@@ -1,9 +1,9 @@
-﻿using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 
 namespace MiNegocioCR.Api.Application.Handler
 {
-    public class LinkConversationRepairOrderHandler
+    public class LinkConversationRepairOrderHandler : ILinkConversationRepairOrderHandler
     {
         private readonly IConversationService _conversationService;
 

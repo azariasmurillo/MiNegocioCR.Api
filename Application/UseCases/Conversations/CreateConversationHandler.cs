@@ -1,9 +1,9 @@
-﻿using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 
 namespace MiNegocioCR.Api.Application.UseCases.Conversations
 {
-    public class CreateConversationHandler
+    public class CreateConversationHandler : ICreateConversationHandler
     {
         private readonly IConversationService _conversationService;
 
