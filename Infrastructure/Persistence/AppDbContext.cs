@@ -33,7 +33,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<ConversationState> ConversationStates => Set<ConversationState>();
         public DbSet<AITokenUsage> AITokenUsages => Set<AITokenUsage>();
         public DbSet<UpsellRule> UpsellRules => Set<UpsellRule>();
-        
+        public DbSet<QuickReplyTemplate> QuickReplyTemplates { get; set; }
+        public DbSet<ConversationTag> ConversationTags { get; set; }
+        public DbSet<Contact> Contacts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,17 +47,27 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .IsUnique();
 
             modelBuilder.Entity<WhatsAppMessage>()
-                .HasIndex(x => x.MessageId);
+                .HasIndex(x => x.MessageId)
+                .IsUnique();
 
             modelBuilder.Entity<WhatsAppMessage>()
-                .HasIndex(x => new { x.BusinessId, x.PhoneNumber });
-
-            modelBuilder.Entity<WhatsAppMessage>()
-                .HasIndex(x => new { x.BusinessId, x.Timestamp });
+                .HasIndex(x => new { x.BusinessId, x.PhoneNumber, x.Timestamp });            
 
             modelBuilder.Entity<WhatsAppConversation>()
                 .HasIndex(x => new { x.BusinessId, x.PhoneNumber })
                 .IsUnique();
+
+            modelBuilder.Entity<WhatsAppConversation>()
+                .HasOne(x => x.RepairOrder)
+                .WithMany()
+                .HasForeignKey(x => x.RepairOrderId)
+                .IsRequired(false);
+
+            modelBuilder.Entity<WhatsAppConversation>()
+                .HasIndex(x => x.LastMessageAt);
+
+            modelBuilder.Entity<WhatsAppConversation>()
+                .HasIndex(x => x.IsArchived);
 
             modelBuilder.Entity<CatalogItem>()
                 .HasOne(x => x.Category)
@@ -111,6 +123,22 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .HasForeignKey(x => x.SaleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<ConversationTag>()
+                .HasOne<WhatsAppConversation>()
+                .WithMany()
+                .HasForeignKey(x => x.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Contact>()
+                .HasIndex(x => new { x.BusinessId, x.Phone })
+                .IsUnique();
+
+            modelBuilder.Entity<Contact>()
+                .HasIndex(x => x.BusinessId);
+
+            modelBuilder.Entity<ConversationTag>()
+                .HasIndex(x => new { x.ConversationId, x.Tag });
+
             modelBuilder.Entity<CatalogCategory>()
                 .HasIndex(x => x.BusinessId);
 
@@ -155,6 +183,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
             modelBuilder.Entity<SaleItem>()
                 .HasIndex(x => x.SaleId);
+
+            modelBuilder.Entity<QuickReplyTemplate>()
+                .HasIndex(x => new { x.BusinessId, x.Name });
         }
     }
 }

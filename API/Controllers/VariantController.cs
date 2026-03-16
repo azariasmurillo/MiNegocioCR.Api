@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
-using MiNegocioCR.Api.Application.UseCases.Repository;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
@@ -8,9 +8,9 @@ namespace MiNegocioCR.Api.API.Controllers
     [Route("api/variants")]
     public class VariantController : ControllerBase
     {
-        private readonly CreateVariantUseCase _createVariant;
+        private readonly ICreateVariantUseCase _createVariant;
 
-        public VariantController(CreateVariantUseCase createVariant)
+        public VariantController(ICreateVariantUseCase createVariant)
         {
             _createVariant = createVariant;
         }

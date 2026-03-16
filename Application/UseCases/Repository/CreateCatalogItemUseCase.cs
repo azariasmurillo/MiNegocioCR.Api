@@ -1,10 +1,10 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
-    public class CreateCatalogItemUseCase
+    public class CreateCatalogItemUseCase : ICreateCatalogItemUseCase
     {
         private readonly ICatalogRepository _catalogRepository;
 

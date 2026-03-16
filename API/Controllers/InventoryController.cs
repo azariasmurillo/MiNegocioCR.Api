@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Application.UseCases.Repository;
+using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.DTOs;
 
 namespace MiNegocioCR.Api.API.Controllers
@@ -8,9 +8,9 @@ namespace MiNegocioCR.Api.API.Controllers
     [Route("api/inventory")]
     public class InventoryController : ControllerBase
     {
-        private readonly AdjustInventoryUseCase _adjustInventory;
+        private readonly IAdjustInventoryUseCase _adjustInventory;
 
-        public InventoryController(AdjustInventoryUseCase adjustInventory)
+        public InventoryController(IAdjustInventoryUseCase adjustInventory)
         {
             _adjustInventory = adjustInventory;
         }

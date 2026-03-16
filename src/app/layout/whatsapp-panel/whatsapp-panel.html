@@ -1,0 +1,24 @@
+<div class="whatsapp-panel">
+  @if (view === 'conversations') {
+    <div class="conversation-list">
+      @for (conv of conversations; track conv.id) {
+        <button type="button" class="conversation-item" (click)="selectConversation(conv)">
+          <img [src]="conv.avatar" [alt]="conv.name" class="avatar" />
+          <div class="info">
+            <span class="name">{{ conv.name }}</span>
+            <span class="last-message">{{ conv.lastMessage }}</span>
+            <span class="time">{{ conv.time }}</span>
+            @if (conv.unread > 0) {
+              <span class="unread">{{ conv.unread }}</span>
+            }
+          </div>
+        </button>
+      }
+    </div>
+  } @else if (selectedConversation && view === 'chat') {
+    <div class="chat-view">
+      <header>{{ selectedConversation.name }}</header>
+      <!-- messages + input; scrollBottom(); SignalR; typing indicator sin cambios -->
+    </div>
+  }
+</div>

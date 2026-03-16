@@ -1,12 +1,15 @@
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Application.AI.Models;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Services;
 using Moq;
 using Xunit;
@@ -17,6 +20,7 @@ public class WhatsappMessageServiceTests
 {
     private readonly Mock<IWhatsappMessageRepository> _messageRepositoryMock;
     private readonly Mock<IBusinessRepository> _businessRepositoryMock;
+    private readonly IAppDbContext _context;
     private readonly Mock<IAIService> _aiServiceMock;
     private readonly Mock<IWhatsappApplicationService> _whatsappAppServiceMock;
     private readonly WhatsappMessageService _sut;
@@ -25,13 +29,19 @@ public class WhatsappMessageServiceTests
     {
         _messageRepositoryMock = new Mock<IWhatsappMessageRepository>();
         _businessRepositoryMock = new Mock<IBusinessRepository>();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(databaseName: "WhatsappMessageServiceTests")
+            .Options;
+        _context = new AppDbContext(options);
         _aiServiceMock = new Mock<IAIService>();
         _whatsappAppServiceMock = new Mock<IWhatsappApplicationService>();
         _aiServiceMock.Setup(x => x.AskAsync(It.IsAny<AIRequest>())).ReturnsAsync("OK");
         _whatsappAppServiceMock.Setup(x => x.SendAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+        _messageRepositoryMock.Setup(x => x.UpdateConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<MessageDirection>())).Returns(Task.CompletedTask);
         _sut = new WhatsappMessageService(
             _messageRepositoryMock.Object,
             _businessRepositoryMock.Object,
+            _context,
             _aiServiceMock.Object,
             _whatsappAppServiceMock.Object,
             NullLogger<WhatsappMessageService>.Instance);

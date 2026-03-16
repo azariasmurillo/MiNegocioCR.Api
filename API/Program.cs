@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Content;
 using MiNegocioCR.Api.API.Filters;
+using MiNegocioCR.Api.API.Hubs;
 using MiNegocioCR.Api.API.Services;
 using MiNegocioCR.Api.Application.AI.Cache;
 using MiNegocioCR.Api.Application.AI.Guardrails;
@@ -19,19 +20,27 @@ using MiNegocioCR.Api.Application.AI.Services;
 using MiNegocioCR.Api.Application.AI.State;
 using MiNegocioCR.Api.Application.AI.Tools;
 using MiNegocioCR.Api.Application.AI.Upsell;
+using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.Handler;
 using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces.ArchiveConversation;
 using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
+using MiNegocioCR.Api.Application.Interfaces.Contacts;
+using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
+using MiNegocioCR.Api.Application.UseCases.ArchiveConversationUseCase;
 using MiNegocioCR.Api.Application.UseCases.Business;
+using MiNegocioCR.Api.Application.UseCases.Conversations;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.AI;
 using MiNegocioCR.Api.Infrastructure.Auth;
 using MiNegocioCR.Api.Infrastructure.Persistence;
@@ -54,12 +63,25 @@ if (FirebaseApp.DefaultInstance == null)
     }
 }
 
+builder.Services.AddSignalR();
+
 // --- Core ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFilter>());
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
 Directory.CreateDirectory(keysPath);
@@ -103,7 +125,22 @@ builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IWhatsappWebhookService, WhatsappWebhookService>();
 builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
 builder.Services.AddScoped<IWhatsAppTokenService, WhatsAppTokenService>();
+builder.Services.AddScoped<IQuickReplyService, QuickReplyService>();
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<IGetUnreadTotalUseCase, GetUnreadTotalUseCase>();
+builder.Services.AddScoped<IMarkConversationReadHandler, MarkConversationReadHandler>();
+builder.Services.AddScoped<ICreateConversationHandler, CreateConversationHandler>();
+builder.Services.AddScoped<IUpdateConversationStatusHandler, UpdateConversationStatusHandler>();
+builder.Services.AddScoped<ILinkConversationRepairOrderHandler, LinkConversationRepairOrderHandler>();
+builder.Services.AddScoped<ISendTemplateHandler, SendTemplateHandler>();
+builder.Services.AddScoped<IArchiveConversationUseCase, ArchiveConversationUseCase>();
+
+// --- Conversation Tag ---
+builder.Services.AddScoped<IConversationTag, MiNegocioCR.Api.Application.ConversationTag.ConversationTag>();
+
+// --- Contacts ---
+builder.Services.AddScoped<IContact, MiNegocioCR.Api.Application.Contact.Contacts>();
 
 // --- Repair orders ---
 builder.Services.AddScoped<ICreateRepairOrderUseCase, CreateRepairOrderUseCase>();
@@ -117,7 +154,10 @@ builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepai
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.UseCases.Sales.RegisterSaleUseCase>();
-builder.Services.AddScoped<CreateCatalogItemUseCase>();
+builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
+builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
+builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
+builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();
 
 // --- Auth ---
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
@@ -151,6 +191,7 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 app.UseRouting();
+app.UseCors();
 app.UseMiddleware<FirebaseAuthMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -170,7 +211,7 @@ app.MapGet("/privacy", () => Results.Content(PrivacyPageContent.Html, "text/html
 app.MapGet("/admin", (HttpContext ctx) =>
 {
     var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
-    var cookie = ctx.Request.Cookies[AdminAuthService.CookieName];
+    var cookie = ctx.Request.Cookies[auth.CookieName];
     if (auth.ValidateAuthCookie(cookie))
         return Results.Redirect("/admin/dashboard", false);
     return Results.Content(AdminPageContent.LoginHtml, "text/html");
@@ -178,16 +219,21 @@ app.MapGet("/admin", (HttpContext ctx) =>
 app.MapGet("/admin/dashboard", (HttpContext ctx) =>
 {
     var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
-    var cookie = ctx.Request.Cookies[AdminAuthService.CookieName];
+    var cookie = ctx.Request.Cookies[auth.CookieName];
     if (!auth.ValidateAuthCookie(cookie))
         return Results.Redirect("/admin", false);
     return Results.Content(AdminPageContent.DashboardHtml, "text/html");
 });
 app.MapGet("/admin/logout", (HttpContext ctx) =>
 {
-    ctx.Response.Cookies.Delete(AdminAuthService.CookieName, new CookieOptions { Path = "/" });
+    var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
+    ctx.Response.Cookies.Delete(auth.CookieName, new CookieOptions { Path = "/" });
     return Results.Redirect("/admin", false);
 });
+
+// SignalR: exponer en /chatHub y en /api/chatHub (por proxy o si el front usa baseUrl + /api)
+app.MapHub<ChatHub>("/chatHub");
+app.MapHub<ChatHub>("/api/chatHub");
 
 app.MapControllers();
 

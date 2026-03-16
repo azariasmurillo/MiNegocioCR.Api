@@ -15,7 +15,7 @@ public class AdminOnlyAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
-        var cookie = context.HttpContext.Request.Cookies[AdminAuthService.CookieName];
+        var cookie = context.HttpContext.Request.Cookies[authService.CookieName];
         if (!authService.ValidateAuthCookie(cookie))
         {
             context.Result = new UnauthorizedResult();

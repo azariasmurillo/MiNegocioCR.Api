@@ -1,9 +1,9 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
-    public class CreateVariantUseCase
+    public class CreateVariantUseCase : ICreateVariantUseCase
     {
         private readonly IVariantRepository _variantRepository;
 

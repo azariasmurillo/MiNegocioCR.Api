@@ -33,7 +33,7 @@ public class AdminController : ControllerBase
             MaxAge = TimeSpan.FromHours(24),
             Path = "/"
         };
-        Response.Cookies.Append(AdminAuthService.CookieName, _adminAuth.CreateAuthCookieValue(), cookieOptions);
+        Response.Cookies.Append(_adminAuth.CookieName, _adminAuth.CreateAuthCookieValue(), cookieOptions);
         return Ok(new { success = true });
     }
 

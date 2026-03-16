@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Exceptions;
+namespace MiNegocioCR.Api.Domain.Exceptions;
 
 public class NotFoundException : Exception
 {
@@ -8,5 +8,13 @@ public class NotFoundException : Exception
     public NotFoundException(string resource, string message) : base(message)
     {
         Resource = resource;
+    }
+
+    /// <summary>
+    /// Crea una excepción con solo el mensaje; Resource se establece en "Entity".
+    /// </summary>
+    public NotFoundException(string message) : base(message)
+    {
+        Resource = "Entity";
     }
 }
