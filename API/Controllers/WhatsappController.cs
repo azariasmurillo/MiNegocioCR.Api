@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.ArchiveConversation;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
@@ -20,6 +21,7 @@ namespace MiNegocioCR.Api.API.Controllers
         private readonly IConversationTag _conversationTag;
         private readonly IContact _contact; 
         private readonly IGetUnreadTotalUseCase _getUnreadTotalUseCase;
+        private readonly IArchiveConversationUseCase _archiveConversationUseCase;
 
         public WhatsappController(IWhatsappApplicationService whatsappAppService,
             IWhatsappMessageRepository repository,
@@ -30,7 +32,8 @@ namespace MiNegocioCR.Api.API.Controllers
             ISendTemplateHandler sendTemplateHandler,
             IConversationTag conversationTag,
             IContact contact,
-            IGetUnreadTotalUseCase getUnreadTotalUseCase)
+            IGetUnreadTotalUseCase getUnreadTotalUseCase,
+            IArchiveConversationUseCase archiveConversationUseCase)
         {
             _whatsappAppService = whatsappAppService;
             _whatsAppRepository = repository;
@@ -42,6 +45,7 @@ namespace MiNegocioCR.Api.API.Controllers
             _conversationTag = conversationTag;
             _contact = contact;
             _getUnreadTotalUseCase = getUnreadTotalUseCase;
+            _archiveConversationUseCase = archiveConversationUseCase;
         }
 
         [HttpPost("send")]
@@ -182,6 +186,18 @@ namespace MiNegocioCR.Api.API.Controllers
             var total = await _getUnreadTotalUseCase.Execute(businessId);
 
             return Ok(total);
+        }
+
+        [HttpPatch("conversations/{conversationId}")]
+        public async Task<IActionResult> ArchiveConversation(
+            Guid conversationId,
+            [FromBody] ArchiveConversationDto request)
+        {
+            await _archiveConversationUseCase.Execute(
+                conversationId,
+                request.IsArchived);
+
+            return Ok();
         }
 
     }

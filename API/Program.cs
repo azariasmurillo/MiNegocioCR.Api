@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Content;
 using MiNegocioCR.Api.API.Filters;
+using MiNegocioCR.Api.API.Hubs;
 using MiNegocioCR.Api.API.Services;
 using MiNegocioCR.Api.Application.AI.Cache;
 using MiNegocioCR.Api.Application.AI.Guardrails;
@@ -19,7 +20,10 @@ using MiNegocioCR.Api.Application.AI.Services;
 using MiNegocioCR.Api.Application.AI.State;
 using MiNegocioCR.Api.Application.AI.Tools;
 using MiNegocioCR.Api.Application.AI.Upsell;
+using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.Handler;
 using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces.ArchiveConversation;
 using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
@@ -29,8 +33,7 @@ using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
-using MiNegocioCR.Api.Application.Common;
-using MiNegocioCR.Api.Application.Handler;
+using MiNegocioCR.Api.Application.UseCases.ArchiveConversationUseCase;
 using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Application.UseCases.Conversations;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
@@ -60,12 +63,25 @@ if (FirebaseApp.DefaultInstance == null)
     }
 }
 
+builder.Services.AddSignalR();
+
 // --- Core ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFilter>());
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 var keysPath = Path.Combine(Directory.GetCurrentDirectory(), "DataProtection-Keys");
 Directory.CreateDirectory(keysPath);
@@ -109,6 +125,7 @@ builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IWhatsappWebhookService, WhatsappWebhookService>();
 builder.Services.AddScoped<IWhatsappMessageService, WhatsappMessageService>();
 builder.Services.AddScoped<IWhatsAppTokenService, WhatsAppTokenService>();
+builder.Services.AddScoped<IQuickReplyService, QuickReplyService>();
 builder.Services.AddHttpClient<IWhatsappService, WhatsappService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IGetUnreadTotalUseCase, GetUnreadTotalUseCase>();
@@ -117,6 +134,7 @@ builder.Services.AddScoped<ICreateConversationHandler, CreateConversationHandler
 builder.Services.AddScoped<IUpdateConversationStatusHandler, UpdateConversationStatusHandler>();
 builder.Services.AddScoped<ILinkConversationRepairOrderHandler, LinkConversationRepairOrderHandler>();
 builder.Services.AddScoped<ISendTemplateHandler, SendTemplateHandler>();
+builder.Services.AddScoped<IArchiveConversationUseCase, ArchiveConversationUseCase>();
 
 // --- Conversation Tag ---
 builder.Services.AddScoped<IConversationTag, MiNegocioCR.Api.Application.ConversationTag.ConversationTag>();
@@ -173,6 +191,7 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 app.UseRouting();
+app.UseCors();
 app.UseMiddleware<FirebaseAuthMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -211,6 +230,10 @@ app.MapGet("/admin/logout", (HttpContext ctx) =>
     ctx.Response.Cookies.Delete(auth.CookieName, new CookieOptions { Path = "/" });
     return Results.Redirect("/admin", false);
 });
+
+// SignalR: exponer en /chatHub y en /api/chatHub (por proxy o si el front usa baseUrl + /api)
+app.MapHub<ChatHub>("/chatHub");
+app.MapHub<ChatHub>("/api/chatHub");
 
 app.MapControllers();
 

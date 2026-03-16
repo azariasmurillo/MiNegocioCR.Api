@@ -14,5 +14,6 @@ namespace MiNegocioCR.Api.Application.Interfaces.Whatsapp
             string? phone,string? name);
         Task UpdateConversationAsync(Guid businessId,string phone,string messageBody, MessageDirection direction);
         Task<int> GetUnreadTotalAsync(Guid businessId);
+        Task ArchiveConversationAsync(Guid conversationId, bool isArchived);
     }
 }

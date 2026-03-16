@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Infrastructure.Services
 {
-    public class QuickReplyService 
+    public class QuickReplyService : IQuickReplyService
     {
         private readonly IAppDbContext _context;
         private readonly IWhatsappApplicationService _whatsappApplicationService;

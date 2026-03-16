@@ -68,7 +68,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             ,string? name)
         {
             var query = _context.WhatsAppConversations
-                .Where(x => x.BusinessId == businessId)
+                .Where(x => x.BusinessId == businessId && !x.IsArchived)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(phone))
@@ -137,6 +137,19 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             return await _context.WhatsAppConversations
                 .Where(x => x.BusinessId == businessId && x.UnreadCount > 0)
                 .SumAsync(x => x.UnreadCount);
+        }
+
+        public async Task ArchiveConversationAsync(Guid conversationId, bool isArchived)
+        {
+            var conversation = await _context.WhatsAppConversations
+                .FirstOrDefaultAsync(x => x.Id == conversationId);
+
+            if (conversation == null)
+                throw new Exception("Conversation not found");
+
+            conversation.IsArchived = isArchived;
+
+            await _context.SaveChangesAsync();
         }
     }
 }
