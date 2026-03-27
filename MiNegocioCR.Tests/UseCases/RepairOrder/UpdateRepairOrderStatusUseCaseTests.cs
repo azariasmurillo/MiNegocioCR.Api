@@ -34,6 +34,8 @@ public class UpdateRepairOrderStatusUseCaseTests
             OrderNumber = 1,
             Status = (int)RepairOrderStatus.Pending
         };
+        var business = new BusinessEntity { Id = order.BusinessId, Name = "Test" };
+        context.Businesses.Add(business);
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
@@ -59,8 +61,7 @@ public class UpdateRepairOrderStatusUseCaseTests
             OrderNumber = 1,
             Status = (int)RepairOrderStatus.InProcess
         };
-        // El use case hace FindAsync(order.Id) para business; añadimos un business con ese Id para que lo encuentre
-        var business = new BusinessEntity { Id = order.Id, Name = "Test" };
+        var business = new BusinessEntity { Id = order.BusinessId, Name = "Test" };
         context.Businesses.Add(business);
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();

@@ -1,9 +1,11 @@
-﻿using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Application.DTOs
 {
     public class MessageDto
     {
+        public Guid Id { get; set; }
+        public Guid ConversationId { get; set; }
         public string PhoneNumber { get; set; } = default!;
         public string? Body { get; set; }
         public DateTime Timestamp { get; set; }

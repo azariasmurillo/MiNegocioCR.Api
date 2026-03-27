@@ -1,10 +1,12 @@
-﻿using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Domain.Entities
 {
+    /// <summary>
+    /// Agregado raíz del chat WhatsApp (único por BusinessId + PhoneNumber).
+    /// </summary>
     public class WhatsAppConversation
     {
-        public RepairOrder? RepairOrder { get; set; }
         public Guid Id { get; set; }
         public Guid BusinessId { get; set; }
         public string? PhoneNumber { get; set; }
@@ -14,7 +16,10 @@ namespace MiNegocioCR.Api.Domain.Entities
         public int UnreadCount { get; set; }
         public ConversationStatus Status { get; set; }
         public bool IsArchived { get; set; }
-        public Guid? RepairOrderId { get; set; }
-        public DateTime CreatedAt { get; set; }        
+        public DateTime CreatedAt { get; set; }
+
+        public Business Business { get; set; } = null!;
+        public ICollection<WhatsAppMessage> Messages { get; set; } = new List<WhatsAppMessage>();
+        public ICollection<ConversationTag> Tags { get; set; } = new List<ConversationTag>();
     }
 }

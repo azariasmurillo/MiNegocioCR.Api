@@ -3,6 +3,7 @@ using System;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260321020549_WhatsappConversationMessagingRefactor")]
+    partial class WhatsappConversationMessagingRefactor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -757,6 +760,9 @@ namespace MiNegocioCR.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ConversationId")
                         .HasColumnType("uuid");
 
@@ -799,10 +805,12 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ConversationId");
+
                     b.HasIndex("MessageId")
                         .IsUnique();
 
-                    b.HasIndex("ConversationId", "Timestamp");
+                    b.HasIndex("BusinessId", "PhoneNumber", "Timestamp");
 
                     b.ToTable("WhatsAppMessages");
                 });
@@ -892,13 +900,11 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationTag", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", "Conversation")
-                        .WithMany("Tags")
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", null)
+                        .WithMany()
                         .HasForeignKey("ConversationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Conversation");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
@@ -967,24 +973,21 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("Business");
                 });
 
-            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", b =>
-                {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Business", "Business")
-                        .WithMany("WhatsAppConversations")
-                        .HasForeignKey("BusinessId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Business");
-                });
-
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppMessage", b =>
                 {
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Business", "Business")
+                        .WithMany()
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", "Conversation")
                         .WithMany("Messages")
                         .HasForeignKey("ConversationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Business");
 
                     b.Navigation("Conversation");
                 });
@@ -996,8 +999,6 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("Settings");
 
                     b.Navigation("Users");
-
-                    b.Navigation("WhatsAppConversations");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogCategory", b =>
@@ -1030,8 +1031,6 @@ namespace MiNegocioCR.Api.Migrations
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", b =>
                 {
                     b.Navigation("Messages");
-
-                    b.Navigation("Tags");
                 });
 #pragma warning restore 612, 618
         }

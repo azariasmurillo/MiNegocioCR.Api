@@ -6,7 +6,6 @@ using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
 
-
 namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
 {
     public class WhatsappApplicationService : IWhatsappApplicationService
@@ -40,63 +39,76 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             _logger = logger;
         }
 
-        public async Task SendAsync(Guid businessId, string phone, string message, string? attachmentUrl = null,
-    string? attachmentType = null)
+        public async Task SendByConversationIdAsync(Guid businessId, Guid conversationId, string message,
+            string? attachmentUrl = null, string? attachmentType = null)
         {
-            _logger.LogInformation("[SendAsync] Inicio. BusinessId: {BusinessId}, Phone: {Phone}, MessageLen: {Len}", businessId, phone, message?.Length ?? 0);
+            _logger.LogInformation(
+                "[SendByConversationId] BusinessId: {BusinessId}, ConversationId: {ConversationId}",
+                businessId, conversationId);
+
+            var conv = await _whatsappMessageRepository.GetConversationByIdAsync(conversationId, businessId);
+            if (conv == null)
+                throw new NotFoundException("WhatsAppConversation", "Conversation not found");
+
+            var phone = conv.PhoneNumber ?? throw new InvalidOperationException("Conversation has no phone number.");
 
             var business = await _getBusinessByIdUseCase.Execute(businessId);
-            _logger.LogDebug("[SendAsync] Business obtenido: {Found}", business != null);
-
             if (business == null)
                 throw new NotFoundException("Business", "Business not found");
 
             if (!business.EnableWhatsappNotifications)
-                throw new Exception("Whatsapp not enabled for this business");
-            _logger.LogDebug("[SendAsync] Llamando a WhatsappService.SendAsync.");
+                throw new InvalidOperationException("Whatsapp not enabled for this business");
+
             try
-            {                
-                await _whatsappService.SendAsync(business, phone, message);
-                _logger.LogDebug("[SendAsync] WhatsappService.SendAsync completado OK.");
+            {
+                await _whatsappService.SendAsync(business, phone, message, attachmentUrl, attachmentType);
             }
             catch (Exception ex) when (IsTokenExpiredError(ex))
             {
-                _logger.LogWarning("[SendAsync] Error 190/token expirado, reintentando tras refresh Jeta. Ex: {Message}", ex.Message);
-                // Error 190: token expirado → renovar y reintentar una vez
                 var businessEntity = await _businessRepository.GetByIdAsync(businessId);
                 if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
                 {
                     await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
                     business = await _getBusinessByIdUseCase.Execute(businessId);
-                    await _whatsappService.SendAsync(business!, phone, message);
-                    _logger.LogInformation("[SendAsync] Reintento tras refresh OK.");
+                    await _whatsappService.SendAsync(business!, phone, message, attachmentUrl, attachmentType);
                 }
                 else
                     throw;
             }
 
-            _logger.LogDebug("[SendAsync] Guardando WhatsAppMessage y actualizando conversación.");
+            var messageId = Guid.NewGuid();
             var entity = new WhatsAppMessage
             {
-                Id = Guid.NewGuid(),
-                BusinessId = businessId,
+                Id = messageId,
+                MessageId = $"out-{messageId:N}",
+                ConversationId = conversationId,
                 PhoneNumber = phone,
                 From = business.WhatsappPhoneNumberId!,
                 To = phone,
-                Body = message,
+                Body = message ?? "",
                 AttachmentUrl = attachmentUrl,
                 AttachmentType = attachmentType,
                 Timestamp = DateTime.UtcNow,
                 Direction = MessageDirection.Outbound,
-                Status = MessageStatus.Sent
+                Status = MessageStatus.Sent,
+                CreatedAt = DateTime.UtcNow
             };
 
             await _whatsappMessageRepository.SaveAsync(entity);
-            await _whatsappMessageRepository.UpdateConversationAsync( businessId,phone,message, MessageDirection.Inbound);
-            _logger.LogInformation("[SendAsync] Fin OK. Mensaje guardado y conversación actualizada.");
+
+            await _whatsappMessageRepository.UpdateConversationAfterMessageAsync(conversationId, message ?? "",
+                MessageDirection.Outbound);
         }
 
-        public async Task ConnectAsync(Guid businessId, string phoneNumberId, string accessToken, CancellationToken cancellationToken = default)
+        public async Task SendAsync(Guid businessId, string phone, string message, string? attachmentUrl = null,
+            string? attachmentType = null)
+        {
+            var conv = await _whatsappMessageRepository.GetOrCreateConversationAsync(businessId, phone, null);
+            await SendByConversationIdAsync(businessId, conv.Id, message, attachmentUrl, attachmentType);
+        }
+
+        public async Task ConnectAsync(Guid businessId, string phoneNumberId, string accessToken,
+            CancellationToken cancellationToken = default)
         {
             var entity = await _businessRepository.GetByIdAsync(businessId);
 
@@ -106,7 +118,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             var isValid = await _whatsappService.ValidateAsync(phoneNumberId, accessToken);
 
             if (!isValid)
-                throw new Exception("Invalid WhatsApp credentials");
+                throw new InvalidOperationException("Invalid WhatsApp credentials");
 
             entity.WhatsappPhoneNumberId = phoneNumberId;
             entity.WhatsappAccessToken = _encryptionService.Encrypt(accessToken);

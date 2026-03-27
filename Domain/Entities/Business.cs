@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities;
+namespace MiNegocioCR.Api.Domain.Entities;
 
 public class Business
 {
@@ -24,4 +24,5 @@ public class Business
     public BusinessSettings? Settings { get; set; }
     public ICollection<User> Users { get; set; } = new List<User>();
     public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
+    public ICollection<WhatsAppConversation> WhatsAppConversations { get; set; } = new List<WhatsAppConversation>();
 }

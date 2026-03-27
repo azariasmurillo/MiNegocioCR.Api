@@ -51,17 +51,23 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .IsUnique();
 
             modelBuilder.Entity<WhatsAppMessage>()
-                .HasIndex(x => new { x.BusinessId, x.PhoneNumber, x.Timestamp });            
+                .HasIndex(x => new { x.ConversationId, x.Timestamp });
 
             modelBuilder.Entity<WhatsAppConversation>()
                 .HasIndex(x => new { x.BusinessId, x.PhoneNumber })
                 .IsUnique();
 
             modelBuilder.Entity<WhatsAppConversation>()
-                .HasOne(x => x.RepairOrder)
-                .WithMany()
-                .HasForeignKey(x => x.RepairOrderId)
-                .IsRequired(false);
+                .HasOne(x => x.Business)
+                .WithMany(x => x.WhatsAppConversations)
+                .HasForeignKey(x => x.BusinessId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<WhatsAppMessage>()
+                .HasOne(x => x.Conversation)
+                .WithMany(x => x.Messages)
+                .HasForeignKey(x => x.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<WhatsAppConversation>()
                 .HasIndex(x => x.LastMessageAt);
@@ -124,8 +130,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ConversationTag>()
-                .HasOne<WhatsAppConversation>()
-                .WithMany()
+                .HasOne(x => x.Conversation)
+                .WithMany(x => x.Tags)
                 .HasForeignKey(x => x.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
 

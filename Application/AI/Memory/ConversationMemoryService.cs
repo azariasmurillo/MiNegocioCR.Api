@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Infrastructure.Persistence;
@@ -9,16 +10,22 @@ namespace MiNegocioCR.Api.Application.AI.Memory
     public class ConversationMemoryService : IConversationMemoryService
     {
         private readonly AppDbContext _context;
+        private readonly IWhatsappMessageRepository _whatsappMessageRepository;
 
-        public ConversationMemoryService(AppDbContext context)
+        public ConversationMemoryService(
+            AppDbContext context,
+            IWhatsappMessageRepository whatsappMessageRepository)
         {
             _context = context;
+            _whatsappMessageRepository = whatsappMessageRepository;
         }
 
         public async Task<string> GetConversationContextAsync(Guid businessId, string phoneNumber, int lastMessages = 10)
         {
             var messages = await _context.WhatsAppMessages
-                .Where(x => x.BusinessId == businessId && x.PhoneNumber == phoneNumber)
+                .Where(x =>
+                    x.PhoneNumber == phoneNumber &&
+                    x.Conversation.BusinessId == businessId)
                 .OrderByDescending(x => x.CreatedAt)
                 .Take(lastMessages)
                 .OrderBy(x => x.CreatedAt)
@@ -36,19 +43,21 @@ namespace MiNegocioCR.Api.Application.AI.Memory
         }
 
         public async Task SaveMessageAsync(
-        Guid businessId,
-        string phoneNumber,
-        string role,
-        string message)
-            {
-                var direction = role == "user"
-                    ? MessageDirection.Inbound
-                    : MessageDirection.Outbound;
+            Guid businessId,
+            string phoneNumber,
+            string role,
+            string message)
+        {
+            var direction = role == "user"
+                ? MessageDirection.Inbound
+                : MessageDirection.Outbound;
+
+            var conversation = await _whatsappMessageRepository.GetOrCreateConversationAsync(businessId, phoneNumber, null);
 
             var msg = new WhatsAppMessage
             {
                 Id = Guid.NewGuid(),
-                BusinessId = businessId,
+                ConversationId = conversation.Id,
                 MessageId = $"ai-{Guid.NewGuid():N}",
                 PhoneNumber = phoneNumber,
                 From = direction == MessageDirection.Inbound ? phoneNumber : "ai",
@@ -61,7 +70,7 @@ namespace MiNegocioCR.Api.Application.AI.Memory
             };
 
             _context.WhatsAppMessages.Add(msg);
-                await _context.SaveChangesAsync();
-            }
+            await _context.SaveChangesAsync();
+        }
     }
 }

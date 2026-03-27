@@ -132,7 +132,6 @@ builder.Services.AddScoped<IGetUnreadTotalUseCase, GetUnreadTotalUseCase>();
 builder.Services.AddScoped<IMarkConversationReadHandler, MarkConversationReadHandler>();
 builder.Services.AddScoped<ICreateConversationHandler, CreateConversationHandler>();
 builder.Services.AddScoped<IUpdateConversationStatusHandler, UpdateConversationStatusHandler>();
-builder.Services.AddScoped<ILinkConversationRepairOrderHandler, LinkConversationRepairOrderHandler>();
 builder.Services.AddScoped<ISendTemplateHandler, SendTemplateHandler>();
 builder.Services.AddScoped<IArchiveConversationUseCase, ArchiveConversationUseCase>();
 

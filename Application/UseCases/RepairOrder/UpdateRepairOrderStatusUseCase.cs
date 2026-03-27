@@ -1,6 +1,5 @@
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
-using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
@@ -41,8 +40,8 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
         order.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(CancellationToken.None);
-        var business = await _context.Businesses.FindAsync(id);
-        if (business == null)        
+        var business = await _context.Businesses.FindAsync(order.BusinessId);
+        if (business == null)
             throw new NotFoundException("Business", "Business not found");
 
         if (newStatus == RepairOrderStatus.Processed)        

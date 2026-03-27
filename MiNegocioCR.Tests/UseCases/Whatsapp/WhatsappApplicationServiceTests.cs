@@ -1,9 +1,13 @@
+using System.Threading;
 using FluentAssertions;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
+using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Enums;
+using BusinessEntity = MiNegocioCR.Api.Domain.Entities.Business;
 using MiNegocioCR.Api.Domain.Exceptions;
 using Moq;
 using Xunit;
@@ -45,6 +49,13 @@ public class WhatsappApplicationServiceTests
     public async Task SendAsync_WhenBusinessExistsAndWhatsappEnabled_SendsAndSavesMessage()
     {
         var businessId = Guid.NewGuid();
+        var convId = Guid.NewGuid();
+        var conv = new WhatsAppConversation
+        {
+            Id = convId,
+            BusinessId = businessId,
+            PhoneNumber = "123"
+        };
         var businessDto = new GetBusinessByIdResultDto
         {
             Id = businessId,
@@ -53,21 +64,25 @@ public class WhatsappApplicationServiceTests
             WhatsappPhoneNumberId = "phone-id"
         };
         _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
-        _whatsappServiceMock.Setup(x => x.SendAsync(It.IsAny<GetBusinessByIdResultDto>(), "123", "Hello"))
+        _messageRepositoryMock.Setup(x => x.GetOrCreateConversationAsync(businessId, "123", null))
+            .ReturnsAsync(conv);
+        _messageRepositoryMock.Setup(x => x.GetConversationByIdAsync(convId, businessId))
+            .ReturnsAsync(conv);
+        _whatsappServiceMock.Setup(x => x.SendAsync(It.IsAny<GetBusinessByIdResultDto>(), "123", "Hello", null, null))
             .Returns(Task.CompletedTask);
-        _messageRepositoryMock.Setup(x => x.SaveAsync(It.IsAny<MiNegocioCR.Api.Domain.Entities.WhatsAppMessage>()))
+        _messageRepositoryMock.Setup(x => x.SaveAsync(It.IsAny<WhatsAppMessage>()))
             .Returns(Task.CompletedTask);
-        _messageRepositoryMock.Setup(x => x.UpdateConversationAsync(businessId, "123", "Hello"))
+        _messageRepositoryMock.Setup(x => x.UpdateConversationAfterMessageAsync(convId, "Hello", MessageDirection.Outbound))
             .Returns(Task.CompletedTask);
 
         await _sut.SendAsync(businessId, "123", "Hello");
 
         _whatsappServiceMock.Verify(
-            x => x.SendAsync(businessDto, "123", "Hello"),
+            x => x.SendAsync(businessDto, "123", "Hello", null, null),
             Times.Once);
         _messageRepositoryMock.Verify(
-            x => x.SaveAsync(It.Is<MiNegocioCR.Api.Domain.Entities.WhatsAppMessage>(m =>
-                m.BusinessId == businessId && m.Body == "Hello" && m.PhoneNumber == "123")),
+            x => x.SaveAsync(It.Is<WhatsAppMessage>(m =>
+                m.Body == "Hello" && m.PhoneNumber == "123" && m.ConversationId == convId)),
             Times.Once);
     }
 
@@ -75,6 +90,12 @@ public class WhatsappApplicationServiceTests
     public async Task SendAsync_WhenBusinessNotFound_ThrowsNotFoundException()
     {
         var businessId = Guid.NewGuid();
+        var convId = Guid.NewGuid();
+        var conv = new WhatsAppConversation { Id = convId, BusinessId = businessId, PhoneNumber = "123" };
+        _messageRepositoryMock.Setup(x => x.GetOrCreateConversationAsync(businessId, "123", null))
+            .ReturnsAsync(conv);
+        _messageRepositoryMock.Setup(x => x.GetConversationByIdAsync(convId, businessId))
+            .ReturnsAsync(conv);
         _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync((GetBusinessByIdResultDto?)null);
 
         var act = () => _sut.SendAsync(businessId, "123", "Hi");
@@ -87,6 +108,12 @@ public class WhatsappApplicationServiceTests
     public async Task SendAsync_WhenWhatsappNotEnabled_ThrowsException()
     {
         var businessId = Guid.NewGuid();
+        var convId = Guid.NewGuid();
+        var conv = new WhatsAppConversation { Id = convId, BusinessId = businessId, PhoneNumber = "123" };
+        _messageRepositoryMock.Setup(x => x.GetOrCreateConversationAsync(businessId, "123", null))
+            .ReturnsAsync(conv);
+        _messageRepositoryMock.Setup(x => x.GetConversationByIdAsync(convId, businessId))
+            .ReturnsAsync(conv);
         var businessDto = new GetBusinessByIdResultDto
         {
             Id = businessId,
@@ -96,7 +123,7 @@ public class WhatsappApplicationServiceTests
 
         var act = () => _sut.SendAsync(businessId, "123", "Hi");
 
-        await act.Should().ThrowAsync<Exception>()
+        await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*Whatsapp not enabled*");
     }
 
@@ -104,8 +131,8 @@ public class WhatsappApplicationServiceTests
     public async Task ConnectAsync_WhenBusinessExistsAndValidCredentials_UpdatesBusinessAndSaves()
     {
         var businessId = Guid.NewGuid();
-        var businessDto = new GetBusinessByIdResultDto { Id = businessId, Name = "Test" };
-        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+        var entity = new BusinessEntity { Id = businessId, Name = "Test" };
+        _businessRepositoryMock.Setup(x => x.GetByIdAsync(businessId)).ReturnsAsync(entity);
         _whatsappServiceMock.Setup(x => x.ValidateAsync("phone-id", "token")).ReturnsAsync(true);
         _encryptionServiceMock.Setup(x => x.Encrypt("token")).Returns("encrypted");
         _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
@@ -119,7 +146,7 @@ public class WhatsappApplicationServiceTests
     public async Task ConnectAsync_WhenBusinessNotFound_ThrowsNotFoundException()
     {
         var businessId = Guid.NewGuid();
-        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync((GetBusinessByIdResultDto?)null);
+        _businessRepositoryMock.Setup(x => x.GetByIdAsync(businessId)).ReturnsAsync((BusinessEntity?)null);
 
         var act = () => _sut.ConnectAsync(businessId, "phone-id", "token");
 
@@ -131,13 +158,13 @@ public class WhatsappApplicationServiceTests
     public async Task ConnectAsync_WhenValidationFails_ThrowsException()
     {
         var businessId = Guid.NewGuid();
-        var businessDto = new GetBusinessByIdResultDto { Id = businessId };
-        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+        var entity = new BusinessEntity { Id = businessId };
+        _businessRepositoryMock.Setup(x => x.GetByIdAsync(businessId)).ReturnsAsync(entity);
         _whatsappServiceMock.Setup(x => x.ValidateAsync("phone-id", "token")).ReturnsAsync(false);
 
         var act = () => _sut.ConnectAsync(businessId, "phone-id", "token");
 
-        await act.Should().ThrowAsync<Exception>()
+        await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*Invalid WhatsApp credentials*");
     }
 }
