@@ -1,0 +1,24 @@
+---
+description: Backend MiNegocioCR.Api — arquitectura, patrones y reglas (solo este repo API)
+alwaysApply: true
+---
+
+# MiNegocioCR.Api — reglas de backend
+
+**Alcance:** Este workspace es el **API/backend (.NET)**. No mezclar convenciones del frontend (otro repositorio). Las reglas detalladas viven en:
+
+- `.cursor/backend/architecture.md` — capas, flujo, multi-tenant
+- `.cursor/backend/patterns.md` — repositorios, acceso a datos
+- `.cursor/backend/rules.md` — SOLID, validación defensiva
+
+Antes de implementar cambios, alinéate con esos tres archivos.
+
+## Resumen operativo
+
+- **Arquitectura:** Domain → Application → Infrastructure → API. Sin lógica de negocio en controllers. Domain no depende de Infrastructure.
+- **Datos:** Todo acceso a BD vía **repositorios**; no uses `DbContext` directo desde controllers.
+- **Multi-tenant:** Entidades con `BusinessId`; queries filtradas por negocio; no cruzar datos entre negocios.
+- **DI:** Interfaces en Application/Domain; implementaciones en Infrastructure.
+- **Validación:** Inputs y nulls en **Application** (defensive programming).
+
+Si algo no está cubierto ahí, seguir el estilo existente del proyecto y las capas anteriores.

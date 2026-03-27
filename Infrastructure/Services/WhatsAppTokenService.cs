@@ -30,8 +30,9 @@ public class WhatsAppTokenService : IWhatsAppTokenService
 
     public async Task<string> RefreshTokenAsync(Domain.Entities.Business business)
     {
-        var appId = _configuration["WhatsApp:AppId"] ?? _configuration["Meta:AppId"];
-        var appSecret = _configuration["WhatsApp:AppSecret"] ?? _configuration["Meta:AppSecret"];
+        // Si "WhatsApp:AppId" existe pero está en "", el operador ?? NO usa Meta (solo sustituye null).
+        var appId = FirstNonEmpty(_configuration["WhatsApp:AppId"], _configuration["Meta:AppId"]);
+        var appSecret = FirstNonEmpty(_configuration["WhatsApp:AppSecret"], _configuration["Meta:AppSecret"]);
 
         if (string.IsNullOrEmpty(appId) || string.IsNullOrEmpty(appSecret))
         {
@@ -110,5 +111,15 @@ public class WhatsAppTokenService : IWhatsAppTokenService
             business.Id, expiresAt);
 
         return newToken;
+    }
+
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v))
+                return v;
+        }
+        return null;
     }
 }
