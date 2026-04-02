@@ -16,6 +16,7 @@ public class Business
     public string? WhatsappDisplayPhoneNumber { get; set; }
     public string? WhatsappAccessToken { get; set; }
     public string? WhatsappBusinessAccountId { get; set; }
+    /// <summary>UTC expiry for user long-lived tokens (from Meta <c>expires_in</c>). Null for System User tokens.</summary>
     public DateTime? WhatsappTokenExpiresAt { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

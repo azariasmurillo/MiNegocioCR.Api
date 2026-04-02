@@ -1,3 +1,5 @@
+using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.DTOs;
 using Microsoft.Extensions.Logging;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
@@ -59,22 +61,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             if (!business.EnableWhatsappNotifications)
                 throw new InvalidOperationException("Whatsapp not enabled for this business");
 
-            try
-            {
-                await _whatsappService.SendAsync(business, phone, message, attachmentUrl, attachmentType);
-            }
-            catch (Exception ex) when (IsTokenExpiredError(ex))
-            {
-                var businessEntity = await _businessRepository.GetByIdAsync(businessId);
-                if (businessEntity != null && !string.IsNullOrEmpty(businessEntity.WhatsappAccessToken))
-                {
-                    await _whatsAppTokenService.RefreshTokenAsync(businessEntity);
-                    business = await _getBusinessByIdUseCase.Execute(businessId);
-                    await _whatsappService.SendAsync(business!, phone, message, attachmentUrl, attachmentType);
-                }
-                else
-                    throw;
-            }
+            EnsureWhatsappAccessTokenNotExpired(business);
+
+            await _whatsappService.SendAsync(business, phone, message, attachmentUrl, attachmentType);
 
             var messageId = Guid.NewGuid();
             var entity = new WhatsAppMessage
@@ -120,18 +109,44 @@ namespace MiNegocioCR.Api.Application.UseCases.Whatsapp
             if (!isValid)
                 throw new InvalidOperationException("Invalid WhatsApp credentials");
 
+            // fb_exchange_token: short-lived user token → long-lived + real expires_in (UtcNow + seconds).
+            // Si el exchange falla (p. ej. System User), guardar el token tal cual — sin error.
+            var exchange = await _whatsAppTokenService.ExchangeUserTokenAsync(accessToken, cancellationToken);
+
             entity.WhatsappPhoneNumberId = phoneNumberId;
-            entity.WhatsappAccessToken = _encryptionService.Encrypt(accessToken);
             entity.EnableWhatsappNotifications = true;
-            entity.WhatsappTokenExpiresAt = DateTime.UtcNow.AddMonths(2);
+
+            if (exchange.Succeeded && !string.IsNullOrEmpty(exchange.LongLivedAccessToken))
+            {
+                entity.WhatsappAccessToken = _encryptionService.Encrypt(exchange.LongLivedAccessToken);
+                entity.WhatsappTokenExpiresAt = exchange.ExpiresAtUtc;
+                _logger.LogInformation(
+                    "[Connect WhatsApp] Long-lived token stored for business {BusinessId}. ExpiresInSeconds: {ExpiresIn}, ExpiresUtc: {Expires}",
+                    businessId, exchange.ExpiresInSeconds, exchange.ExpiresAtUtc);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "[Connect WhatsApp] Exchange not applied (System User, expired, missing AppId/Secret, etc.); storing token as provided. BusinessId: {BusinessId}. AppCredentialsMissing: {Missing}, SessionExpired: {Expired}, Meta: {Meta}",
+                    businessId, exchange.AppCredentialsMissing, exchange.SessionExpired, TokenLogMask.TruncateForLog(exchange.ErrorBody));
+                entity.WhatsappAccessToken = _encryptionService.Encrypt(accessToken);
+                entity.WhatsappTokenExpiresAt = null;
+            }
 
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        private static bool IsTokenExpiredError(Exception ex)
+        /// <summary>
+        /// User long-lived tokens store <see cref="GetBusinessByIdResultDto.WhatsappTokenExpiresAt"/> from Meta <c>expires_in</c>.
+        /// System User tokens leave expiry null — no DB-based expiry check.
+        /// </summary>
+        private static void EnsureWhatsappAccessTokenNotExpired(GetBusinessByIdResultDto business)
         {
-            var msg = ex.Message ?? "";
-            return msg.Contains("190") || msg.Contains("Error validating access token", StringComparison.OrdinalIgnoreCase);
+            if (business.WhatsappTokenExpiresAt is not { } expiresAtUtc)
+                return;
+
+            if (DateTime.UtcNow >= expiresAtUtc)
+                throw new UnauthorizedAccessException(WhatsappReconnectRequired.Code);
         }
     }
 }

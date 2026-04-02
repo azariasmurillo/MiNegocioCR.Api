@@ -1,5 +1,6 @@
 using System.Threading;
 using FluentAssertions;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Business;
@@ -61,7 +62,8 @@ public class WhatsappApplicationServiceTests
             Id = businessId,
             Name = "Test",
             EnableWhatsappNotifications = true,
-            WhatsappPhoneNumberId = "phone-id"
+            WhatsappPhoneNumberId = "phone-id",
+            WhatsappTokenExpiresAt = DateTime.UtcNow.AddDays(30)
         };
         _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
         _messageRepositoryMock.Setup(x => x.GetOrCreateConversationAsync(businessId, "123", null))
@@ -128,13 +130,47 @@ public class WhatsappApplicationServiceTests
     }
 
     [Fact]
+    public async Task SendAsync_WhenWhatsappTokenExpired_ThrowsUnauthorizedAccessException()
+    {
+        var businessId = Guid.NewGuid();
+        var convId = Guid.NewGuid();
+        var conv = new WhatsAppConversation { Id = convId, BusinessId = businessId, PhoneNumber = "123" };
+        _messageRepositoryMock.Setup(x => x.GetOrCreateConversationAsync(businessId, "123", null))
+            .ReturnsAsync(conv);
+        _messageRepositoryMock.Setup(x => x.GetConversationByIdAsync(convId, businessId))
+            .ReturnsAsync(conv);
+        var businessDto = new GetBusinessByIdResultDto
+        {
+            Id = businessId,
+            EnableWhatsappNotifications = true,
+            WhatsappPhoneNumberId = "phone-id",
+            WhatsappTokenExpiresAt = DateTime.UtcNow.AddHours(-1)
+        };
+        _getBusinessByIdMock.Setup(x => x.Execute(businessId)).ReturnsAsync(businessDto);
+
+        var act = () => _sut.SendAsync(businessId, "123", "Hi");
+
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .Where(ex => ex.Message == WhatsappReconnectRequired.Code);
+        _whatsappServiceMock.Verify(x => x.SendAsync(It.IsAny<GetBusinessByIdResultDto>(), It.IsAny<string>(), It.IsAny<string>(), null, null), Times.Never);
+    }
+
+    [Fact]
     public async Task ConnectAsync_WhenBusinessExistsAndValidCredentials_UpdatesBusinessAndSaves()
     {
         var businessId = Guid.NewGuid();
         var entity = new BusinessEntity { Id = businessId, Name = "Test" };
         _businessRepositoryMock.Setup(x => x.GetByIdAsync(businessId)).ReturnsAsync(entity);
         _whatsappServiceMock.Setup(x => x.ValidateAsync("phone-id", "token")).ReturnsAsync(true);
-        _encryptionServiceMock.Setup(x => x.Encrypt("token")).Returns("encrypted");
+        _whatsAppTokenServiceMock
+            .Setup(x => x.ExchangeUserTokenAsync("token", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new WhatsAppTokenExchangeResult
+            {
+                Succeeded = true,
+                LongLivedAccessToken = "long-lived",
+                ExpiresAtUtc = DateTime.UtcNow.AddDays(55)
+            });
+        _encryptionServiceMock.Setup(x => x.Encrypt("long-lived")).Returns("encrypted");
         _contextMock.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
         await _sut.ConnectAsync(businessId, "phone-id", "token");

@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.API.Filters;
@@ -90,6 +91,22 @@ public class DomainExceptionFilter : IExceptionFilter
                 StatusCode = (int)HttpStatusCode.BadRequest
             };
             context.ExceptionHandled = true;
+            return;
+        }
+
+        if (context.Exception is UnauthorizedAccessException unauthorized &&
+            unauthorized.Message == WhatsappReconnectRequired.Code)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = "WhatsApp session expired or revoked. Reconnect WhatsApp in the app.",
+                code = WhatsappReconnectRequired.Code
+            })
+            {
+                StatusCode = (int)HttpStatusCode.Unauthorized
+            };
+            context.ExceptionHandled = true;
+            return;
         }
     }
 }
