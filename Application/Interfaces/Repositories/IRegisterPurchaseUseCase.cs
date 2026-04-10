@@ -4,8 +4,6 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
     {
         Task ExecuteAsync(
             Guid businessId,
-            Guid variantId,
-            int quantity,
-            decimal cost);
+            IReadOnlyList<(Guid VariantId, int Quantity, decimal Cost)> items);
     }
 }

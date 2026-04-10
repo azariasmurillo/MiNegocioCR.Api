@@ -136,13 +136,47 @@ public class InventoryServiceTests
     }
 
     [Fact]
-    public async Task AdjustStockAsync_WhenQuantityZeroOrNegative_ThrowsArgumentException()
+    public async Task AdjustStockAsync_WhenQuantityZero_ThrowsArgumentException()
     {
         var variant = new CatalogVariant { Id = Guid.NewGuid(), StockQuantity = 10 };
         _variantRepositoryMock.Setup(x => x.GetVariantAsync(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(variant);
 
         var act = () => _sut.AdjustStockAsync(Guid.NewGuid(), variant.Id, 0, "reason");
 
-        await act.Should().ThrowAsync<ArgumentException>();
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithParameterName("quantity");
+    }
+
+    [Fact]
+    public async Task AdjustStockAsync_WithNegativeQuantity_DecreasesStockAndRecordsSignedQuantity()
+    {
+        var businessId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        var variant = new CatalogVariant { Id = variantId, StockQuantity = 10 };
+        _variantRepositoryMock.Setup(x => x.GetVariantAsync(variantId, businessId)).ReturnsAsync(variant);
+
+        await _sut.AdjustStockAsync(businessId, variantId, -3, "Merma");
+
+        variant.StockQuantity.Should().Be(7);
+        _inventoryRepositoryMock.Verify(
+            x => x.AddMovementAsync(It.Is<InventoryMovement>(m =>
+                m.Quantity == -3 &&
+                m.Type == MiNegocioCR.Api.Domain.Enums.InventoryMovementType.Adjustment &&
+                m.Notes == "Merma")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task AdjustStockAsync_WhenNegativeExceedsStock_ThrowsArgumentException()
+    {
+        var businessId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        var variant = new CatalogVariant { Id = variantId, StockQuantity = 2 };
+        _variantRepositoryMock.Setup(x => x.GetVariantAsync(variantId, businessId)).ReturnsAsync(variant);
+
+        var act = () => _sut.AdjustStockAsync(businessId, variantId, -5, "reason");
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Not enough stock*");
     }
 }

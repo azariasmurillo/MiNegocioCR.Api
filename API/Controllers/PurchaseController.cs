@@ -20,12 +20,11 @@ namespace MiNegocioCR.Api.API.Controllers
         {
             if (request == null) return BadRequest("RegisterPurchase - Request body is required.");
 
-            await _registerPurchase.ExecuteAsync(
-                request.BusinessId,
-                request.VariantId,
-                request.Quantity,
-                request.Cost
-            );
+            var lines = (request.Items ?? new List<RegisterPurchaseLineDto>())
+                .Select(x => (x.VariantId, x.Quantity, x.Cost))
+                .ToList();
+
+            await _registerPurchase.ExecuteAsync(request.BusinessId, lines);
 
             return Ok();
         }

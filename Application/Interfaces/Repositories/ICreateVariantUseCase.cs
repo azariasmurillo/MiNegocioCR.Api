@@ -1,11 +1,9 @@
+using MiNegocioCR.Api.Application.DTOs;
+
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
     public interface ICreateVariantUseCase
     {
-        Task<Guid> ExecuteAsync(
-            Guid catalogItemId,
-            string sku,
-            decimal price,
-            int initialStock);
+        Task<Guid> ExecuteAsync(CreateVariantRequestDto request);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities
+namespace MiNegocioCR.Api.Domain.Entities
 {
     public class Purchase
     {
@@ -6,13 +6,13 @@
 
         public Guid BusinessId { get; set; }
 
-        public Guid SupplierId { get; set; }
+        public Guid? SupplierId { get; set; }
 
         public DateTime PurchaseDate { get; set; }
 
         public decimal Total { get; set; }
 
-        public Supplier Supplier { get; set; } = null!;
+        public Supplier? Supplier { get; set; }
 
         public ICollection<PurchaseItem> Items { get; set; } = new List<PurchaseItem>();
     }

@@ -16,7 +16,7 @@ namespace MiNegocioCR.Api.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateItem(CreateCatalogItemRequestDto request)
+        public async Task<IActionResult> CreateItem([FromBody] CreateCatalogItemRequestDto request)
         {
             if (request == null) return BadRequest("Request body is required.");
             var id = await _createCatalogItem.ExecuteAsync(

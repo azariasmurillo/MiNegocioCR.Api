@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Application.Interfaces
+namespace MiNegocioCR.Api.Application.Interfaces
 {
     namespace MiNegocioCR.Api.Application.Interfaces.UseCases.Sales
     {
@@ -6,7 +6,8 @@
         {
             Task<Guid> ExecuteAsync(
                 Guid businessId,
-                List<(Guid variantId, int quantity, decimal price)> items);
+                List<(Guid variantId, int quantity, decimal price)> items,
+                string? customerPhone = null);
         }
     }
 }

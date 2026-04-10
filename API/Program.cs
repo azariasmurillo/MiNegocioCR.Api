@@ -2,6 +2,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Content;
 using MiNegocioCR.Api.API.Filters;
@@ -37,6 +38,7 @@ using MiNegocioCR.Api.Application.UseCases.ArchiveConversationUseCase;
 using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Application.UseCases.Conversations;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
+using MiNegocioCR.Api.Application.UseCases.Catalog;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
@@ -68,7 +70,12 @@ builder.Services.AddSignalR();
 // --- Core ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFilter>());
+builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFilter>())
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
+    });
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
@@ -106,6 +113,10 @@ builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<IWhatsappWebhookLogRepository, WhatsappWebhookLogRepository>();
 builder.Services.AddScoped<IWhatsappMessageRepository, WhatsappMessageRepository>();
 builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
+builder.Services.AddScoped<ICatalogCategoryRepository, CatalogCategoryRepository>();
+builder.Services.AddScoped<ICatalogOptionRepository, CatalogOptionRepository>();
+builder.Services.AddScoped<ICatalogOptionValueRepository, CatalogOptionValueRepository>();
+builder.Services.AddScoped<ICatalogVariantOptionValueRepository, CatalogVariantOptionValueRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IVariantRepository, VariantRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
@@ -154,6 +165,12 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.UseCases.Sales.RegisterSaleUseCase>();
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
+builder.Services.AddScoped<ICreateCategoryUseCase, CreateCategoryUseCase>();
+builder.Services.AddScoped<IGetCategoriesByBusinessUseCase, GetCategoriesByBusinessUseCase>();
+builder.Services.AddScoped<ICreateOptionUseCase, CreateOptionUseCase>();
+builder.Services.AddScoped<IGetOptionsByItemUseCase, GetOptionsByItemUseCase>();
+builder.Services.AddScoped<ICreateOptionValueUseCase, CreateOptionValueUseCase>();
+builder.Services.AddScoped<IGetValuesByOptionUseCase, GetValuesByOptionUseCase>();
 builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
 builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
 builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();

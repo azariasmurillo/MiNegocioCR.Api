@@ -1,8 +1,11 @@
 using FluentAssertions;
-using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using MiNegocioCR.Api.Application.Interfaces;
+using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.UseCases.Repository;
-using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Exceptions;
+using MiNegocioCR.Api.Infrastructure.Persistence;
 using Moq;
 using Xunit;
 
@@ -10,88 +13,86 @@ namespace MiNegocioCR.Tests.UseCases.Repository;
 
 public class AdjustInventoryUseCaseTests
 {
-    private readonly Mock<IVariantRepository> _variantRepositoryMock;
-    private readonly Mock<IInventoryRepository> _inventoryRepositoryMock;
-    private readonly AdjustInventoryUseCase _sut;
+    private readonly Mock<IInventoryService> _inventoryServiceMock;
 
     public AdjustInventoryUseCaseTests()
     {
-        _variantRepositoryMock = new Mock<IVariantRepository>();
-        _inventoryRepositoryMock = new Mock<IInventoryRepository>();
-        _sut = new AdjustInventoryUseCase(
-            _variantRepositoryMock.Object,
-            _inventoryRepositoryMock.Object);
+        _inventoryServiceMock = new Mock<IInventoryService>();
+    }
+
+    private static IAppDbContext CreateInMemoryAppContext()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+        return new AppDbContext(options);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithPositiveAdjustment_UpdatesVariantAndAddsMovement()
+    public async Task ExecuteAsync_WithPositiveAdjustment_CallsAdjustStockAsync()
     {
+        await using var context = (AppDbContext)CreateInMemoryAppContext();
+        var sut = new AdjustInventoryUseCase(_inventoryServiceMock.Object, context);
+
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
-        var variant = new CatalogVariant
-        {
-            Id = variantId,
-            StockQuantity = 10
-        };
-        _variantRepositoryMock
-            .Setup(x => x.GetVariantAsync(variantId, businessId))
-            .ReturnsAsync(variant);
 
-        await _sut.ExecuteAsync(businessId, variantId, 3, "Corrección por conteo");
+        await sut.ExecuteAsync(businessId, variantId, 3, "Corrección por conteo");
 
-        variant.StockQuantity.Should().Be(13);
-        _variantRepositoryMock.Verify(
-            x => x.UpdateVariantAsync(It.Is<CatalogVariant>(v => v.StockQuantity == 13)),
-            Times.Once);
-        _inventoryRepositoryMock.Verify(
-            x => x.AddMovementAsync(It.Is<InventoryMovement>(m =>
-                m.Quantity == 3 &&
-                m.Notes == "Corrección por conteo" &&
-                m.Type == MiNegocioCR.Api.Domain.Enums.InventoryMovementType.Adjustment)),
+        _inventoryServiceMock.Verify(
+            x => x.AdjustStockAsync(businessId, variantId, 3, "Corrección por conteo"),
             Times.Once);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithNegativeAdjustment_DecreasesStock()
+    public async Task ExecuteAsync_WithNegativeAdjustment_CallsAdjustStockAsync()
     {
+        await using var context = (AppDbContext)CreateInMemoryAppContext();
+        var sut = new AdjustInventoryUseCase(_inventoryServiceMock.Object, context);
+
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
-        var variant = new CatalogVariant { Id = variantId, StockQuantity = 10 };
-        _variantRepositoryMock
-            .Setup(x => x.GetVariantAsync(variantId, businessId))
-            .ReturnsAsync(variant);
 
-        await _sut.ExecuteAsync(businessId, variantId, -2, "Merma");
+        await sut.ExecuteAsync(businessId, variantId, -2, "Merma");
 
-        variant.StockQuantity.Should().Be(8);
-        _inventoryRepositoryMock.Verify(
-            x => x.AddMovementAsync(It.Is<InventoryMovement>(m => m.Quantity == -2)),
+        _inventoryServiceMock.Verify(
+            x => x.AdjustStockAsync(businessId, variantId, -2, "Merma"),
             Times.Once);
     }
 
     [Fact]
     public async Task ExecuteAsync_WhenAdjustmentIsZero_ThrowsArgumentException()
     {
+        await using var context = (AppDbContext)CreateInMemoryAppContext();
+        var sut = new AdjustInventoryUseCase(_inventoryServiceMock.Object, context);
+
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
 
-        var act = () => _sut.ExecuteAsync(businessId, variantId, 0, "reason");
+        var act = () => sut.ExecuteAsync(businessId, variantId, 0, "reason");
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Adjustment must be a non-zero value*")
             .WithParameterName("adjustment");
+        _inventoryServiceMock.Verify(
+            x => x.AdjustStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<string>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenVariantNotFound_ThrowsNotFoundException()
+    public async Task ExecuteAsync_WhenVariantNotFound_PropagatesNotFoundException()
     {
+        await using var context = (AppDbContext)CreateInMemoryAppContext();
+        var sut = new AdjustInventoryUseCase(_inventoryServiceMock.Object, context);
+
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
-        _variantRepositoryMock
-            .Setup(x => x.GetVariantAsync(variantId, businessId))
-            .ReturnsAsync((CatalogVariant?)null);
+        _inventoryServiceMock
+            .Setup(x => x.AdjustStockAsync(businessId, variantId, 5, "reason"))
+            .ThrowsAsync(new NotFoundException("CatalogVariant", "Variant not found"));
 
-        var act = () => _sut.ExecuteAsync(businessId, variantId, 5, "reason");
+        var act = () => sut.ExecuteAsync(businessId, variantId, 5, "reason");
 
         await act.Should().ThrowAsync<NotFoundException>()
             .Where(ex => ex.Resource == "CatalogVariant");

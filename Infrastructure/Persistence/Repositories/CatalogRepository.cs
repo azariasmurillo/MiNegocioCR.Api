@@ -13,6 +13,13 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             _context = context;
         }
 
+        public async Task<CatalogItem?> GetItemByIdAsync(Guid id)
+        {
+            return await _context.CatalogItems
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
         public async Task<CatalogItem?> GetItemAsync(Guid id, Guid businessId)
         {
             return await _context.CatalogItems
