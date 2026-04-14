@@ -1,8 +1,8 @@
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
-using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Infrastructure.Services;
 
@@ -28,10 +28,30 @@ public class WhatsAppTokenService : IWhatsAppTokenService
         _logger = logger;
     }
 
-    public async Task<string> RefreshTokenAsync(Domain.Entities.Business business)
+    /// <inheritdoc />
+    public async Task<WhatsAppTokenExchangeResult> ExchangeUserTokenAsync(string plainTextAccessToken,
+        CancellationToken cancellationToken = default)
     {
-        var appId = _configuration["WhatsApp:AppId"] ?? _configuration["Meta:AppId"];
-        var appSecret = _configuration["WhatsApp:AppSecret"] ?? _configuration["Meta:AppSecret"];
+        if (string.IsNullOrWhiteSpace(plainTextAccessToken))
+            throw new ArgumentException("Access token is required.", nameof(plainTextAccessToken));
+
+        var appId = FirstNonEmpty(_configuration["WhatsApp:AppId"], _configuration["Meta:AppId"]);
+        var appSecret = FirstNonEmpty(_configuration["WhatsApp:AppSecret"], _configuration["Meta:AppSecret"]);
+
+        var httpClient = _httpClientFactory.CreateClient();
+        return await WhatsAppTokenExchangeHelper.ExchangeTokenAsync(
+            httpClient,
+            appId ?? "",
+            appSecret ?? "",
+            plainTextAccessToken,
+            _logger,
+            cancellationToken);
+    }
+
+    public async Task<string> RefreshTokenAsync(MiNegocioCR.Api.Domain.Entities.Business business)
+    {
+        var appId = FirstNonEmpty(_configuration["WhatsApp:AppId"], _configuration["Meta:AppId"]);
+        var appSecret = FirstNonEmpty(_configuration["WhatsApp:AppSecret"], _configuration["Meta:AppSecret"]);
 
         if (string.IsNullOrEmpty(appId) || string.IsNullOrEmpty(appSecret))
         {
@@ -58,57 +78,55 @@ public class WhatsAppTokenService : IWhatsAppTokenService
             throw;
         }
 
-        var url = "https://graph.facebook.com/v19.0/oauth/access_token" +
-            $"?grant_type=fb_exchange_token" +
-            $"&client_id={Uri.EscapeDataString(appId)}" +
-            $"&client_secret={Uri.EscapeDataString(appSecret)}" +
-            $"&fb_exchange_token={Uri.EscapeDataString(currentToken)}";
-
         var httpClient = _httpClientFactory.CreateClient();
-        var response = await httpClient.GetAsync(url);
+        var result = await WhatsAppTokenExchangeHelper.ExchangeTokenAsync(
+            httpClient,
+            appId,
+            appSecret,
+            currentToken,
+            _logger,
+            CancellationToken.None);
 
-        if (!response.IsSuccessStatusCode)
+        if (result.Succeeded && result.LongLivedAccessToken != null && result.ExpiresAtUtc.HasValue)
         {
-            var errorBody = await response.Content.ReadAsStringAsync();
-            var isSessionExpired = errorBody.Contains("Session has expired", StringComparison.OrdinalIgnoreCase)
-                || errorBody.Contains("error_subcode\":463", StringComparison.Ordinal);
+            business.WhatsappAccessToken = _encryptionService.Encrypt(result.LongLivedAccessToken);
+            business.WhatsappTokenExpiresAt = result.ExpiresAtUtc;
+            await _context.SaveChangesAsync(CancellationToken.None);
 
-            if (isSessionExpired)
-            {
-                _logger.LogWarning(
-                    "[WhatsApp Token] Token ya expirado (session expired). No se puede canjear. Negocio {BusinessId} debe reconectar WhatsApp. Response: {Response}",
-                    business.Id, errorBody);
-                throw new InvalidOperationException(
-                    "WhatsApp token has expired and cannot be refreshed. The business must reconnect WhatsApp from the app.");
-            }
+            _logger.LogInformation(
+                "[WhatsApp Token] Token renovado exitosamente para negocio {BusinessId}. Expira: {ExpiresAt}.",
+                business.Id, result.ExpiresAtUtc);
 
-            _logger.LogError("[WhatsApp Token] Token refresh fallido. Status: {Status}, Response: {Response}",
-                response.StatusCode, errorBody);
-            throw new InvalidOperationException($"Meta token exchange failed: {response.StatusCode}. {errorBody}");
+            return result.LongLivedAccessToken;
         }
 
-        var json = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        if (!root.TryGetProperty("access_token", out var accessTokenEl) ||
-            !root.TryGetProperty("expires_in", out var expiresInEl))
+        if (result.SessionExpired)
         {
-            _logger.LogError("[WhatsApp Token] Respuesta de Meta sin access_token o expires_in: {Json}", json);
-            throw new InvalidOperationException("Invalid response from Meta: missing access_token or expires_in.");
+            _logger.LogWarning(
+                "[WhatsApp Token] Token ya expirado (session expired). No se puede canjear. Negocio {BusinessId} debe reconectar WhatsApp. Response: {Response}",
+                business.Id, TokenLogMask.TruncateForLog(result.ErrorBody));
+            throw new InvalidOperationException(
+                "WhatsApp token has expired and cannot be refreshed. The business must reconnect WhatsApp from the app.");
         }
 
-        var newToken = accessTokenEl.GetString() ?? "";
-        var expiresIn = expiresInEl.TryGetInt32(out var sec) ? sec : 0;
-        var expiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
+        if (result.AppCredentialsMissing)
+        {
+            throw new InvalidOperationException("WhatsApp AppId and AppSecret must be configured for token refresh.");
+        }
 
-        business.WhatsappAccessToken = _encryptionService.Encrypt(newToken);
-        business.WhatsappTokenExpiresAt = expiresAt;
-        await _context.SaveChangesAsync(CancellationToken.None);
+        _logger.LogError("[WhatsApp Token] Token refresh fallido. Response: {Response}", TokenLogMask.TruncateForLog(result.ErrorBody));
+        throw new InvalidOperationException(
+            $"Meta token exchange failed. The token may be a System User token (not exchangeable via fb_exchange_token). Response: {TokenLogMask.TruncateForLog(result.ErrorBody)}");
+    }
 
-        _logger.LogInformation(
-            "[WhatsApp Token] Token renovado exitosamente para negocio {BusinessId}. Expira: {ExpiresAt}.",
-            business.Id, expiresAt);
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v))
+                return v;
+        }
 
-        return newToken;
+        return null;
     }
 }

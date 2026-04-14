@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities
+namespace MiNegocioCR.Api.Domain.Entities
 {
     public class CatalogVariant
     {
@@ -17,5 +17,25 @@
         public bool IsActive { get; set; }
 
         public CatalogItem CatalogItem { get; set; }
+
+        public ICollection<CatalogVariantOptionValue> VariantOptionValues { get; set; } = new List<CatalogVariantOptionValue>();
+
+        public void IncreaseStock(int quantity)
+        {
+            if (quantity <= 0)
+                throw new ArgumentException("Quantity must be greater than zero", nameof(quantity));
+
+            StockQuantity += quantity;
+        }
+
+        public void DecreaseStock(int quantity)
+        {
+            if (quantity <= 0)
+                throw new ArgumentException("Quantity must be greater than zero", nameof(quantity));
+            if (StockQuantity < quantity)
+                throw new ArgumentException("Not enough stock");
+
+            StockQuantity -= quantity;
+        }
     }
 }

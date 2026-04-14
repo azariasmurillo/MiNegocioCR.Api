@@ -1,21 +1,18 @@
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
-using MiNegocioCR.Api.Domain.Entities;
-using MiNegocioCR.Api.Domain.Enums;
-using MiNegocioCR.Api.Domain.Exceptions;
+using MiNegocioCR.Api.Application.Interfaces.Services;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
     public class AdjustInventoryUseCase : IAdjustInventoryUseCase
     {
-        private readonly IVariantRepository _variantRepository;
-        private readonly IInventoryRepository _inventoryRepository;
+        private readonly IInventoryService _inventoryService;
+        private readonly IAppDbContext _context;
 
-        public AdjustInventoryUseCase(
-            IVariantRepository variantRepository,
-            IInventoryRepository inventoryRepository)
+        public AdjustInventoryUseCase(IInventoryService inventoryService, IAppDbContext context)
         {
-            _variantRepository = variantRepository;
-            _inventoryRepository = inventoryRepository;
+            _inventoryService = inventoryService;
+            _context = context;
         }
 
         public async Task ExecuteAsync(
@@ -26,28 +23,19 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         {
             if (adjustment == 0)
                 throw new ArgumentException("Adjustment must be a non-zero value.", nameof(adjustment));
-            
-            var variant = await _variantRepository.GetVariantAsync(variantId, businessId);
 
-            if (variant == null)
-                throw new NotFoundException("CatalogVariant", "Variant not found");
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            variant.StockQuantity += adjustment;
-
-            await _variantRepository.UpdateVariantAsync(variant);
-
-            var movement = new InventoryMovement
+            try
             {
-                Id = Guid.NewGuid(),
-                BusinessId = businessId,
-                CatalogVariantId = variantId,
-                Quantity = adjustment,
-                Type = InventoryMovementType.Adjustment,
-                Notes = reason,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _inventoryRepository.AddMovementAsync(movement);
+                await _inventoryService.AdjustStockAsync(businessId, variantId, adjustment, reason);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

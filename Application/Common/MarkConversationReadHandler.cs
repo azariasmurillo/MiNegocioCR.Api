@@ -16,7 +16,7 @@ namespace MiNegocioCR.Api.Application.Common
         {
             await _conversationService.MarkConversationReadAsync(
                 command.BusinessId,
-                command.PhoneNumber);
+                command.ConversationId);
         }
     }
 }

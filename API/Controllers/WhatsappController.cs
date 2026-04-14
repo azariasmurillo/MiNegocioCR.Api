@@ -16,10 +16,9 @@ namespace MiNegocioCR.Api.API.Controllers
         private readonly IMarkConversationReadHandler _markConversationReadHandler;
         private readonly ICreateConversationHandler _createConversationHandler;
         private readonly IUpdateConversationStatusHandler _updateConversationStatusHandler;
-        private readonly ILinkConversationRepairOrderHandler _linkConversationRepairOrderHandler;
         private readonly ISendTemplateHandler _sendTemplateHandler;
         private readonly IConversationTag _conversationTag;
-        private readonly IContact _contact; 
+        private readonly IContact _contact;
         private readonly IGetUnreadTotalUseCase _getUnreadTotalUseCase;
         private readonly IArchiveConversationUseCase _archiveConversationUseCase;
 
@@ -28,7 +27,6 @@ namespace MiNegocioCR.Api.API.Controllers
             IMarkConversationReadHandler markConversationReadHandler,
             ICreateConversationHandler createConversationHandler,
             IUpdateConversationStatusHandler updateConversationStatusHandler,
-            ILinkConversationRepairOrderHandler linkConversationRepairOrderHandler,
             ISendTemplateHandler sendTemplateHandler,
             IConversationTag conversationTag,
             IContact contact,
@@ -40,7 +38,6 @@ namespace MiNegocioCR.Api.API.Controllers
             _markConversationReadHandler = markConversationReadHandler;
             _createConversationHandler = createConversationHandler;
             _updateConversationStatusHandler = updateConversationStatusHandler;
-            _linkConversationRepairOrderHandler = linkConversationRepairOrderHandler;
             _sendTemplateHandler = sendTemplateHandler;
             _conversationTag = conversationTag;
             _contact = contact;
@@ -54,10 +51,12 @@ namespace MiNegocioCR.Api.API.Controllers
             if (request == null)
                 return BadRequest("Request body is required.");
 
-            await _whatsappAppService.SendAsync(
+            await _whatsappAppService.SendByConversationIdAsync(
                 request.BusinessId,
-                request.Phone,
-                request.Message);
+                request.ConversationId,
+                request.Message ?? "",
+                request.AttachmentUrl,
+                request.AttachmentType);
 
             return Ok();
         }
@@ -80,26 +79,30 @@ namespace MiNegocioCR.Api.API.Controllers
         [HttpGet("conversations/{businessId}")]
         public async Task<IActionResult> GetConversations(Guid businessId
             , [FromQuery] string? search
-            ,[FromQuery] string? phone
-            ,[FromQuery] string? name)
+            , [FromQuery] string? phone
+            , [FromQuery] string? name
+            , [FromQuery] string? tag)
         {
             var conversations = await _whatsAppRepository
-                .GetConversationsAsync(businessId, search, phone, name);
+                .GetConversationsAsync(businessId, search, phone, name, tag);
 
             return Ok(conversations);
         }
 
-        [HttpGet("messages/{businessId}/{phone}")]
-        public async Task<IActionResult> GetMessages(Guid businessId, string phone, [FromQuery] int limit = 50)
+        [HttpGet("messages/{businessId}/{conversationId:guid}")]
+        public async Task<IActionResult> GetMessages(Guid businessId, Guid conversationId, [FromQuery] int limit = 50)
         {
-            var messages = await _whatsAppRepository.GetMessagesAsync(businessId, phone, limit);
+            var messages = await _whatsAppRepository.GetMessagesAsync(businessId, conversationId, limit);
 
             return Ok(messages);
         }
 
-        [HttpPatch("conversation/read")]
-        public async Task<IActionResult> MarkRead([FromBody] MarkConversationReadCommandDto command)
+        [HttpPatch("conversations/{conversationId:guid}/read")]
+        public async Task<IActionResult> MarkRead(Guid conversationId, [FromBody] MarkConversationReadCommandDto command)
         {
+            if (command == null)
+                return BadRequest("Request body is required.");
+            command.ConversationId = conversationId;
             await _markConversationReadHandler.Handle(command);
             return Ok();
         }
@@ -120,14 +123,6 @@ namespace MiNegocioCR.Api.API.Controllers
             return Ok();
         }
 
-        [HttpPatch("conversation/link-repair")]
-        public async Task<IActionResult> LinkRepair([FromBody] LinkConversationRepairOrderCommandDto command)
-        {
-            await _linkConversationRepairOrderHandler.Handle(command);
-
-            return Ok();
-        }
-
         [HttpPost("send-template")]
         public async Task<IActionResult> SendTemplate([FromBody] SendTemplateCommandDto command)
         {
@@ -136,28 +131,39 @@ namespace MiNegocioCR.Api.API.Controllers
             return Ok();
         }
 
-        [HttpPost("conversations/{conversationId}/tags")]
-        public async Task<IActionResult> AddTag(Guid conversationId,
-            [FromBody] string tag)
+        /// <summary>Lista de etiquetas usadas en el negocio (filtros / UI).</summary>
+        [HttpGet("business/{businessId:guid}/conversation-tags")]
+        public async Task<IActionResult> GetDistinctConversationTags(Guid businessId)
         {
-            await _conversationTag.AddTagAsync(conversationId, tag);
+            var tags = await _conversationTag.GetDistinctTagsForBusinessAsync(businessId);
+            return Ok(tags);
+        }
 
+        [HttpPost("conversations/{conversationId:guid}/tags")]
+        public async Task<IActionResult> AddTag(
+            Guid conversationId,
+            [FromBody] SetConversationTagRequestDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Tag))
+                return BadRequest("Body with BusinessId and Tag is required.");
+            await _conversationTag.AddTagAsync(request.BusinessId, conversationId, request.Tag);
             return Ok();
         }
 
-        [HttpDelete("conversations/{conversationId}/tags/{tag}")]
-        public async Task<IActionResult> RemoveTag(Guid conversationId, string tag)
+        [HttpDelete("conversations/{conversationId:guid}/tags/{tag}")]
+        public async Task<IActionResult> RemoveTag(
+            Guid conversationId,
+            string tag,
+            [FromQuery] Guid businessId)
         {
-            await _conversationTag.RemoveTagAsync(conversationId, tag);
-
+            await _conversationTag.RemoveTagAsync(businessId, conversationId, tag);
             return Ok();
         }
 
-        [HttpGet("conversations/{conversationId}/tags")]
-        public async Task<IActionResult> GetTags(Guid conversationId)
+        [HttpGet("conversations/{conversationId:guid}/tags")]
+        public async Task<IActionResult> GetTags(Guid conversationId, [FromQuery] Guid businessId)
         {
-            var tags = await _conversationTag.GetTagsAsync(conversationId);
-
+            var tags = await _conversationTag.GetTagsAsync(businessId, conversationId);
             return Ok(tags);
         }
 
@@ -170,7 +176,7 @@ namespace MiNegocioCR.Api.API.Controllers
                 request.Contacts);
 
             return Ok();
-        }        
+        }
 
         [HttpGet("contacts/{businessId}")]
         public async Task<IActionResult> GetContacts(Guid businessId)
@@ -188,7 +194,7 @@ namespace MiNegocioCR.Api.API.Controllers
             return Ok(total);
         }
 
-        [HttpPatch("conversations/{conversationId}")]
+        [HttpPatch("conversations/{conversationId:guid}/archive")]
         public async Task<IActionResult> ArchiveConversation(
             Guid conversationId,
             [FromBody] ArchiveConversationDto request)
@@ -199,6 +205,5 @@ namespace MiNegocioCR.Api.API.Controllers
 
             return Ok();
         }
-
     }
 }

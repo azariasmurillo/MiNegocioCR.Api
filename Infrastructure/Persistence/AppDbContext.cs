@@ -27,6 +27,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<CatalogImage> CatalogImages => Set<CatalogImage>();
         public DbSet<CatalogOption> CatalogOptions => Set<CatalogOption>();
         public DbSet<CatalogOptionValue> CatalogOptionValues => Set<CatalogOptionValue>();
+        public DbSet<CatalogVariantOptionValue> CatalogVariantOptionValues => Set<CatalogVariantOptionValue>();
         public DbSet<PurchaseItem> PurchaseItems => Set<PurchaseItem>();
         public DbSet<Sale> Sales => Set<Sale>();
         public DbSet<SaleItem> SaleItems => Set<SaleItem>();
@@ -51,17 +52,23 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .IsUnique();
 
             modelBuilder.Entity<WhatsAppMessage>()
-                .HasIndex(x => new { x.BusinessId, x.PhoneNumber, x.Timestamp });            
+                .HasIndex(x => new { x.ConversationId, x.Timestamp });
 
             modelBuilder.Entity<WhatsAppConversation>()
                 .HasIndex(x => new { x.BusinessId, x.PhoneNumber })
                 .IsUnique();
 
             modelBuilder.Entity<WhatsAppConversation>()
-                .HasOne(x => x.RepairOrder)
-                .WithMany()
-                .HasForeignKey(x => x.RepairOrderId)
-                .IsRequired(false);
+                .HasOne(x => x.Business)
+                .WithMany(x => x.WhatsAppConversations)
+                .HasForeignKey(x => x.BusinessId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<WhatsAppMessage>()
+                .HasOne(x => x.Conversation)
+                .WithMany(x => x.Messages)
+                .HasForeignKey(x => x.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<WhatsAppConversation>()
                 .HasIndex(x => x.LastMessageAt);
@@ -99,10 +106,30 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .HasForeignKey(x => x.CatalogOptionId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Variante ↔ valores de opción (combinación; tabla de unión explícita con Id).
+            modelBuilder.Entity<CatalogVariantOptionValue>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.HasOne(x => x.CatalogVariant)
+                    .WithMany(v => v.VariantOptionValues)
+                    .HasForeignKey(x => x.CatalogVariantId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.CatalogOptionValue)
+                    .WithMany(v => v.VariantOptionValues)
+                    .HasForeignKey(x => x.CatalogOptionValueId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.CatalogVariantId, x.CatalogOptionValueId })
+                    .IsUnique();
+            });
+
             modelBuilder.Entity<Purchase>()
                 .HasOne(x => x.Supplier)
                 .WithMany()
                 .HasForeignKey(x => x.SupplierId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<PurchaseItem>()
@@ -124,8 +151,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ConversationTag>()
-                .HasOne<WhatsAppConversation>()
-                .WithMany()
+                .HasOne(x => x.Conversation)
+                .WithMany(x => x.Tags)
                 .HasForeignKey(x => x.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
 

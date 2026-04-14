@@ -34,10 +34,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             if (variant == null)
                 throw new NotFoundException("CatalogVariant", "Variant not found");
 
-            if (quantity <= 0)
-                throw new ArgumentException("Quantity must be greater than zero");
-
-            variant.StockQuantity += quantity;
+            variant.IncreaseStock(quantity);
 
             await _variantRepository.UpdateVariantAsync(variant);
 
@@ -64,13 +61,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             if (variant == null)
                 throw new NotFoundException("CatalogVariant", "Variant not found");
 
-            if (variant.StockQuantity < quantity)
-                throw new ArgumentException("Not enough stock");
-
-            if (quantity <= 0)
-                throw new ArgumentException("Quantity must be greater than zero");
-
-            variant.StockQuantity -= quantity;
+            variant.DecreaseStock(quantity);
 
             await _variantRepository.UpdateVariantAsync(variant);
 
@@ -101,10 +92,13 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             if (variant == null)
                 throw new NotFoundException("CatalogVariant", "Variant not found");
 
-            if (quantity <= 0)
-                throw new ArgumentException("Quantity must be greater than zero");
+            if (quantity == 0)
+                throw new ArgumentException("Quantity must be a non-zero value.", nameof(quantity));
 
-            variant.StockQuantity += quantity;
+            if (quantity > 0)
+                variant.IncreaseStock(quantity);
+            else
+                variant.DecreaseStock(Math.Abs(quantity));
 
             await _variantRepository.UpdateVariantAsync(variant);
 

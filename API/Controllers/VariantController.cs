@@ -20,12 +20,7 @@ namespace MiNegocioCR.Api.API.Controllers
         {
             if (request == null) return BadRequest("CreateVariant - Request body is required.");
 
-            var id = await _createVariant.ExecuteAsync(
-                request.CatalogItemId,
-                request.SKU,
-                request.Price,
-                request.InitialStock
-            );
+            var id = await _createVariant.ExecuteAsync(request);
 
             return Ok(id);
         }

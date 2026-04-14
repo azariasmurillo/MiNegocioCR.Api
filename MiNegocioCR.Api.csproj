@@ -1,15 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- La carpeta de tests vive dentro del mismo directorio que el .csproj del SDK Web.
+         Sin esto, el SDK incluye también appsettings/json bajo MiNegocioCR.Tests\bin\...
+         y MSBuild puede copiar salida sobre salida → rutas recursivas y error de longitud máxima. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);MiNegocioCR.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
-
-  <!-- Excluir el proyecto de tests para que la API no compile sus archivos (evita CS0579 y CS0400) -->
-  <ItemGroup>
-    <Compile Remove="MiNegocioCR.Tests\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FirebaseAdmin" Version="3.4.0" />

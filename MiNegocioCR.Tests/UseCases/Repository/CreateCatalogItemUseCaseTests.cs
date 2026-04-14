@@ -19,7 +19,7 @@ public class CreateCatalogItemUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithEmptyName_CreatesItemAndReturnsId()
+    public async Task ExecuteAsync_WithValidName_CreatesItemAndReturnsId()
     {
         var businessId = Guid.NewGuid();
         _catalogRepositoryMock
@@ -28,7 +28,7 @@ public class CreateCatalogItemUseCaseTests
 
         var result = await _sut.ExecuteAsync(
             businessId,
-            name: "",
+            name: "Producto",
             basePrice: 9.99m,
             trackStock: true,
             type: CatalogItemType.Product);
@@ -37,6 +37,7 @@ public class CreateCatalogItemUseCaseTests
         _catalogRepositoryMock.Verify(
             x => x.AddItemAsync(It.Is<MiNegocioCR.Api.Domain.Entities.CatalogItem>(i =>
                 i.BusinessId == businessId &&
+                i.Name == "Producto" &&
                 i.BasePrice == 9.99m &&
                 i.TrackStock &&
                 i.Type == CatalogItemType.Product)),
@@ -44,34 +45,33 @@ public class CreateCatalogItemUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithNullName_CreatesItemAndReturnsId()
-    {
-        var businessId = Guid.NewGuid();
-        _catalogRepositoryMock
-            .Setup(x => x.AddItemAsync(It.IsAny<MiNegocioCR.Api.Domain.Entities.CatalogItem>()))
-            .Returns(Task.CompletedTask);
-
-        var result = await _sut.ExecuteAsync(
-            businessId,
-            name: null!,
-            basePrice: 5m,
-            trackStock: false,
-            type: CatalogItemType.Service);
-
-        result.Should().NotBeEmpty();
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WhenNameIsNotEmpty_ThrowsArgumentException()
+    public async Task ExecuteAsync_WithEmptyName_ThrowsArgumentException()
     {
         var businessId = Guid.NewGuid();
 
         var act = () => _sut.ExecuteAsync(
             businessId,
-            name: "Producto válido",
-            basePrice: 10m,
+            name: "",
+            basePrice: 9.99m,
             trackStock: true,
             type: CatalogItemType.Product);
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Name cannot be null or empty*")
+            .WithParameterName("name");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithNullName_ThrowsArgumentException()
+    {
+        var businessId = Guid.NewGuid();
+
+        var act = () => _sut.ExecuteAsync(
+            businessId,
+            name: null!,
+            basePrice: 5m,
+            trackStock: false,
+            type: CatalogItemType.Service);
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Name cannot be null or empty*")

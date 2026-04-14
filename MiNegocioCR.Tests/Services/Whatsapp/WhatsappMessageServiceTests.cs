@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Threading;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,14 +31,20 @@ public class WhatsappMessageServiceTests
         _messageRepositoryMock = new Mock<IWhatsappMessageRepository>();
         _businessRepositoryMock = new Mock<IBusinessRepository>();
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(databaseName: "WhatsappMessageServiceTests")
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _context = new AppDbContext(options);
         _aiServiceMock = new Mock<IAIService>();
         _whatsappAppServiceMock = new Mock<IWhatsappApplicationService>();
         _aiServiceMock.Setup(x => x.AskAsync(It.IsAny<AIRequest>())).ReturnsAsync("OK");
-        _whatsappAppServiceMock.Setup(x => x.SendAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
-        _messageRepositoryMock.Setup(x => x.UpdateConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<MessageDirection>())).Returns(Task.CompletedTask);
+        _whatsappAppServiceMock
+            .Setup(x => x.SendAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), null, null))
+            .Returns(Task.CompletedTask);
+        _messageRepositoryMock.Setup(x => x.MessageExistsByMetaIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
+        _messageRepositoryMock.Setup(x => x.UpdateConversationAfterMessageAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<MessageDirection>()))
+            .Returns(Task.CompletedTask);
         _sut = new WhatsappMessageService(
             _messageRepositoryMock.Object,
             _businessRepositoryMock.Object,
@@ -61,9 +68,27 @@ public class WhatsappMessageServiceTests
     public async Task ProcessWebhookAsync_WithValidIncomingMessage_SavesMessage()
     {
         var business = new Business { Id = Guid.NewGuid() };
+        _context.Businesses.Add(business);
+        _context.BusinessSettings.Add(new BusinessSettings
+        {
+            BusinessId = business.Id,
+            EnableAIChat = false,
+            NextOrderNumber = 1
+        });
+        await _context.SaveChangesAsync(CancellationToken.None);
+
+        var convId = Guid.NewGuid();
+        var conv = new WhatsAppConversation
+        {
+            Id = convId,
+            BusinessId = business.Id,
+            PhoneNumber = "1234567890"
+        };
         _businessRepositoryMock
             .Setup(x => x.GetByWhatsappPhoneNumberIdAsync("phone-id"))
             .ReturnsAsync(business);
+        _messageRepositoryMock.Setup(x => x.GetOrCreateConversationAsync(business.Id, "1234567890", null))
+            .ReturnsAsync(conv);
         _messageRepositoryMock.Setup(x => x.SaveAsync(It.IsAny<WhatsAppMessage>())).Returns(Task.CompletedTask);
 
         var json = """
@@ -91,6 +116,7 @@ public class WhatsappMessageServiceTests
                 m.MessageId == "msg-1" &&
                 m.From == "1234567890" &&
                 m.Body == "Hello" &&
+                m.ConversationId == convId &&
                 m.Direction == MessageDirection.Inbound &&
                 m.Status == MessageStatus.Received)),
             Times.Once);

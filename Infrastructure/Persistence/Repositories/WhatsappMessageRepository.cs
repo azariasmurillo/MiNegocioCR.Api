@@ -3,7 +3,7 @@ using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
-using System.Numerics;
+using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 {
@@ -38,41 +38,65 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<MessageDto>> GetMessagesAsync(Guid businessId, string phoneNumber, int limit = 50)
+        public async Task<List<MessageDto>> GetMessagesAsync(Guid businessId, Guid conversationId, int limit = 50)
         {
+            var baseQuery = _context.WhatsAppMessages
+                .Where(x =>
+                    x.ConversationId == conversationId &&
+                    x.Conversation.BusinessId == businessId);
 
-            var query = _context.WhatsAppMessages
-                .Where(x => x.BusinessId == businessId && x.PhoneNumber == phoneNumber)
-                .OrderBy(x => x.Timestamp);
+            if (limit <= 0)
+            {
+                return await baseQuery
+                    .OrderBy(x => x.Timestamp)
+                    .Select(x => new MessageDto
+                    {
+                        Id = x.Id,
+                        ConversationId = x.ConversationId,
+                        PhoneNumber = x.PhoneNumber,
+                        Body = x.Body,
+                        Timestamp = x.Timestamp,
+                        Direction = x.Direction,
+                        Status = x.Status,
+                        AttachmentUrl = x.AttachmentUrl,
+                        AttachmentType = x.AttachmentType
+                    })
+                    .ToListAsync();
+            }
 
-            if (limit > 0)
-                query = (IOrderedQueryable<WhatsAppMessage>)query.Take(limit);
-
-            return await query
+            var last = await baseQuery
+                .OrderByDescending(x => x.Timestamp)
+                .Take(limit)
                 .Select(x => new MessageDto
-               {
-                   PhoneNumber = x.PhoneNumber,
-                   Body = x.Body,
-                   Timestamp = x.Timestamp,
-                   Direction = x.Direction,
-                   Status = x.Status,
-                   AttachmentUrl = x.AttachmentUrl,
-                   AttachmentType = x.AttachmentType
-               })
-               .ToListAsync();
+                {
+                    Id = x.Id,
+                    ConversationId = x.ConversationId,
+                    PhoneNumber = x.PhoneNumber,
+                    Body = x.Body,
+                    Timestamp = x.Timestamp,
+                    Direction = x.Direction,
+                    Status = x.Status,
+                    AttachmentUrl = x.AttachmentUrl,
+                    AttachmentType = x.AttachmentType
+                })
+                .ToListAsync();
+
+            return last.OrderBy(x => x.Timestamp).ToList();
         }
 
         public async Task<List<ConversationDto>> GetConversationsAsync(Guid businessId
-            ,string? search
-            ,string? phone
-            ,string? name)
+            , string? search
+            , string? phone
+            , string? name
+            , string? tag = null)
         {
             var query = _context.WhatsAppConversations
+                .AsNoTracking()
                 .Where(x => x.BusinessId == businessId && !x.IsArchived)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(phone))
-                query = query.Where(x => x.PhoneNumber.Contains(phone));
+                query = query.Where(x => x.PhoneNumber != null && x.PhoneNumber.Contains(phone));
 
             if (!string.IsNullOrWhiteSpace(name))
                 query = query.Where(x => x.CustomerName != null &&
@@ -80,54 +104,50 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(x =>
-                    x.PhoneNumber.Contains(search) ||
+                    (x.PhoneNumber != null && x.PhoneNumber.Contains(search)) ||
                     (x.CustomerName != null && x.CustomerName.Contains(search)));
 
-            return await query
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+                var t = tag.Trim();
+                query = query.Where(c => c.Tags.Any(x => x.Tag == t));
+            }
+
+            var rows = await query
                 .OrderByDescending(x => x.LastMessageAt)
-                .Select(x => new ConversationDto
-                {
-                    PhoneNumber = x.PhoneNumber,
-                    CustomerName = x.CustomerName,
-                    LastMessage = x.LastMessage,
-                    LastMessageAt = x.LastMessageAt,
-                    UnreadCount = x.UnreadCount,
-                    Status = x.Status,
-                    RepairOrderId = x.RepairOrderId
-                })
+                .Include(x => x.Tags)
+                .AsSplitQuery()
                 .ToListAsync();
+
+            return rows.ConvertAll(x => new ConversationDto
+            {
+                Id = x.Id,
+                PhoneNumber = x.PhoneNumber ?? "",
+                CustomerName = x.CustomerName,
+                LastMessage = x.LastMessage,
+                LastMessageAt = x.LastMessageAt,
+                UnreadCount = x.UnreadCount,
+                Status = x.Status,
+                Tags = x.Tags.Select(t => t.Tag).OrderBy(s => s).ToList()
+            });
         }
 
-        public async Task UpdateConversationAsync(Guid businessId,string phone,string messageBody, MessageDirection direction)
+        public async Task UpdateConversationAfterMessageAsync(Guid conversationId, string messageBody,
+            MessageDirection direction)
         {
             var conversation = await _context.WhatsAppConversations
                 .AsTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.BusinessId == businessId &&
-                    x.PhoneNumber == phone);
+                .FirstOrDefaultAsync(x => x.Id == conversationId);
 
             if (conversation == null)
-            {
-                conversation = new WhatsAppConversation
-                {
-                    Id = Guid.NewGuid(),
-                    BusinessId = businessId,
-                    PhoneNumber = phone,
-                    LastMessage = messageBody,
-                    LastMessageAt = DateTime.UtcNow,
-                    UnreadCount = direction == MessageDirection.Inbound ? 1 : 0
-                };
-                _context.WhatsAppConversations.Add(conversation);
-            }
+                throw new NotFoundException("WhatsAppConversation", "Conversation not found");
+
+            conversation.LastMessage = messageBody;
+            conversation.LastMessageAt = DateTime.UtcNow;
+            if (direction == MessageDirection.Inbound)
+                conversation.UnreadCount += 1;
             else
-            {
-                conversation.LastMessage = messageBody;
-                conversation.LastMessageAt = DateTime.UtcNow;
-                if (direction == MessageDirection.Inbound)
-                    conversation.UnreadCount += 1;
-                else
-                    conversation.UnreadCount = 0;
-            }
+                conversation.UnreadCount = 0;
 
             await _context.SaveChangesAsync();
         }
@@ -145,11 +165,51 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(x => x.Id == conversationId);
 
             if (conversation == null)
-                throw new Exception("Conversation not found");
+                throw new NotFoundException("WhatsAppConversation", "Conversation not found");
 
             conversation.IsArchived = isArchived;
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<WhatsAppConversation?> GetConversationByIdAsync(Guid conversationId, Guid businessId)
+        {
+            return await _context.WhatsAppConversations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == conversationId && x.BusinessId == businessId);
+        }
+
+        public async Task<WhatsAppConversation> GetOrCreateConversationAsync(Guid businessId, string phoneNumber,
+            string? customerName = null)
+        {
+            var existing = await _context.WhatsAppConversations
+                .FirstOrDefaultAsync(x =>
+                    x.BusinessId == businessId &&
+                    x.PhoneNumber == phoneNumber);
+
+            if (existing != null)
+                return existing;
+
+            var conversation = new WhatsAppConversation
+            {
+                Id = Guid.NewGuid(),
+                BusinessId = businessId,
+                PhoneNumber = phoneNumber,
+                CustomerName = customerName,
+                Status = ConversationStatus.Open,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.WhatsAppConversations.Add(conversation);
+            await _context.SaveChangesAsync();
+
+            return conversation;
+        }
+
+        public async Task<bool> MessageExistsByMetaIdAsync(string messageId)
+        {
+            return await _context.WhatsAppMessages
+                .AnyAsync(x => x.MessageId == messageId);
         }
     }
 }

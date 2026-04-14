@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
@@ -16,25 +16,24 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             _context = context;
         }
 
-        public async Task MarkConversationReadAsync(Guid businessId, string phoneNumber)
+        public async Task MarkConversationReadAsync(Guid businessId, Guid conversationId)
         {
             var conversation = await _context.WhatsAppConversations
                 .FirstOrDefaultAsync(x =>
                     x.BusinessId == businessId &&
-                    x.PhoneNumber == phoneNumber);
+                    x.Id == conversationId);
 
             if (conversation == null)
                 return;
 
             conversation.UnreadCount = 0;
-            CancellationToken cancellationToken = default;
-            await _context.SaveChangesAsync(cancellationToken);
+            await _context.SaveChangesAsync(default);
         }
 
         public async Task CreateConversationAsync(
-        Guid businessId,
-        string phoneNumber,
-        string? customerName)
+            Guid businessId,
+            string phoneNumber,
+            string? customerName)
         {
             var existing = await _context.WhatsAppConversations
                 .FirstOrDefaultAsync(x =>
@@ -55,8 +54,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             };
 
             _context.WhatsAppConversations.Add(conversation);
-            CancellationToken cancellationToken = default;
-            await _context.SaveChangesAsync(cancellationToken);
+            await _context.SaveChangesAsync(default);
         }
 
         public async Task UpdateStatusAsync(
@@ -70,40 +68,10 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                     x.PhoneNumber == phoneNumber);
 
             if (conversation == null)
-                throw new NotFoundException("Conversation not found");
+                throw new NotFoundException("WhatsAppConversation", "Conversation not found");
 
             conversation.Status = status;
-            CancellationToken cancellationToken = default;
-            await _context.SaveChangesAsync(cancellationToken);
+            await _context.SaveChangesAsync(default);
         }
-
-        public async Task LinkRepairOrderAsync(
-            Guid businessId,
-            string phoneNumber,
-            Guid? repairOrderId)
-        {
-            var conversation = await _context.WhatsAppConversations
-                .FirstOrDefaultAsync(x =>
-                    x.BusinessId == businessId &&
-                    x.PhoneNumber == phoneNumber);
-
-            if (conversation == null)
-                throw new NotFoundException("Conversation not found");
-
-            if (repairOrderId != null)
-            {
-                var repair = await _context.RepairOrders
-                    .FirstOrDefaultAsync(x =>
-                        x.Id == repairOrderId &&
-                        x.BusinessId == businessId);
-
-                if (repair == null)
-                    throw new NotFoundException("Repair order not found");
-            }
-
-            conversation.RepairOrderId = repairOrderId;
-            CancellationToken cancellationToken = default;
-            await _context.SaveChangesAsync(cancellationToken);
-        }        
     }
 }

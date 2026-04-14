@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities;
+namespace MiNegocioCR.Api.Domain.Entities;
 
 public class Business
 {
@@ -16,6 +16,7 @@ public class Business
     public string? WhatsappDisplayPhoneNumber { get; set; }
     public string? WhatsappAccessToken { get; set; }
     public string? WhatsappBusinessAccountId { get; set; }
+    /// <summary>UTC expiry for user long-lived tokens (from Meta <c>expires_in</c>). Null for System User tokens.</summary>
     public DateTime? WhatsappTokenExpiresAt { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -24,4 +25,5 @@ public class Business
     public BusinessSettings? Settings { get; set; }
     public ICollection<User> Users { get; set; } = new List<User>();
     public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
+    public ICollection<WhatsAppConversation> WhatsAppConversations { get; set; } = new List<WhatsAppConversation>();
 }

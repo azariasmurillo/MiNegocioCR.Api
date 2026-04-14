@@ -20,9 +20,9 @@ namespace MiNegocioCR.Api.API.Controllers
         {
             if (request == null) return BadRequest("CreateSale - Request body is required.");
 
-            var businessIdClaim = User.FindFirst("businessId")?.Value;
-            if (string.IsNullOrEmpty(businessIdClaim) || !Guid.TryParse(businessIdClaim, out var businessId))
-                return BadRequest("Invalid or missing businessId claim.");
+            var businessId = request.BusinessId;
+            if (businessId == Guid.Empty)
+                return BadRequest("BusinessId is required.");
 
             if (request.Items == null || !request.Items.Any())
                 return BadRequest("At least one item is required.");
@@ -31,7 +31,8 @@ namespace MiNegocioCR.Api.API.Controllers
                 businessId,
                 request.Items
                     .Select(x => (x.VariantId, x.Quantity, x.Price))
-                    .ToList());
+                    .ToList(),
+                request.CustomerPhone);
 
             return Ok(id);
         }

@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities
+namespace MiNegocioCR.Api.Domain.Entities
 {
     public class CatalogOptionValue
     {
@@ -9,5 +9,8 @@
         public string Value { get; set; } = string.Empty;
 
         public CatalogOption CatalogOption { get; set; } = null!;
+
+        public ICollection<CatalogVariantOptionValue> VariantOptionValues { get; set; } = new List<CatalogVariantOptionValue>();
     }
 }
+
