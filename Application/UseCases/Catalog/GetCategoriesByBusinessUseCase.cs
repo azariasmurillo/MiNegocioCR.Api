@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.DTOs;
+﻿using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
 namespace MiNegocioCR.Api.Application.UseCases.Catalog
@@ -12,12 +12,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<IReadOnlyList<CatalogCategoryDto>> ExecuteAsync(Guid businessId)
+        public async Task<IReadOnlyList<CatalogCategoryDto>> ExecuteAsync(Guid businessId, bool includeInactive = false)
         {
             if (businessId == Guid.Empty)
                 throw new ArgumentException("BusinessId is required.", nameof(businessId));
 
-            var entities = await _categoryRepository.GetByBusinessIdAsync(businessId);
+            var entities = await _categoryRepository.GetByBusinessIdAsync(businessId, includeInactive);
 
             return entities
                 .Select(x => new CatalogCategoryDto

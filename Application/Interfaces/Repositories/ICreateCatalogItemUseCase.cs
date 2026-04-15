@@ -1,14 +1,9 @@
-using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Application.DTOs;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
     public interface ICreateCatalogItemUseCase
     {
-        Task<Guid> ExecuteAsync(
-            Guid businessId,
-            string name,
-            decimal basePrice,
-            bool trackStock,
-            CatalogItemType type);
+        Task<Guid> ExecuteAsync(CreateCatalogItemRequestDto request);
     }
 }

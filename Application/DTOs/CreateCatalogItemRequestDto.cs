@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Domain.Enums;
+using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Application.DTOs
 {
@@ -13,5 +13,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         public bool TrackStock { get; set; }
 
         public CatalogItemType Type { get; set; }
+
+        public Guid? CategoryId { get; set; }
     }
 }

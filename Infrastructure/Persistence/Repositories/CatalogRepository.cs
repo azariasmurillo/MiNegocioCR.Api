@@ -17,12 +17,14 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         {
             return await _context.CatalogItems
                 .AsNoTracking()
+                .Include(x => x.Category)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task<CatalogItem?> GetItemAsync(Guid id, Guid businessId)
         {
             return await _context.CatalogItems
+                .Include(x => x.Category)
                 .Include(x => x.Variants)
                 .FirstOrDefaultAsync(x =>
                     x.Id == id &&
@@ -32,6 +34,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         public async Task<List<CatalogItem>> GetItemsAsync(Guid businessId)
         {
             return await _context.CatalogItems
+                .AsNoTracking()
+                .Include(x => x.Category)
                 .Where(x => x.BusinessId == businessId)
                 .ToListAsync();
         }

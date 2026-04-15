@@ -1,4 +1,4 @@
-using FirebaseAdmin;
+﻿using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -167,6 +167,9 @@ builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.Use
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
 builder.Services.AddScoped<ICreateCategoryUseCase, CreateCategoryUseCase>();
 builder.Services.AddScoped<IGetCategoriesByBusinessUseCase, GetCategoriesByBusinessUseCase>();
+builder.Services.AddScoped<IUpdateCategoryUseCase, UpdateCategoryUseCase>();
+builder.Services.AddScoped<IToggleCategoryStatusUseCase, ToggleCategoryStatusUseCase>();
+builder.Services.AddScoped<IDeleteCategoryUseCase, DeleteCategoryUseCase>();
 builder.Services.AddScoped<ICreateOptionUseCase, CreateOptionUseCase>();
 builder.Services.AddScoped<IGetOptionsByItemUseCase, GetOptionsByItemUseCase>();
 builder.Services.AddScoped<ICreateOptionValueUseCase, CreateOptionValueUseCase>();
@@ -223,7 +226,7 @@ app.MapGet("/", () => Results.Ok(new
 
 app.MapGet("/privacy", () => Results.Content(PrivacyPageContent.Html, "text/html"));
 
-// --- Admin (página protegida) ---
+// --- Admin (pÃ¡gina protegida) ---
 app.MapGet("/admin", (HttpContext ctx) =>
 {
     var auth = ctx.RequestServices.GetRequiredService<IAdminAuthService>();
@@ -254,3 +257,4 @@ app.MapHub<ChatHub>("/api/chatHub");
 app.MapControllers();
 
 app.Run();
+
