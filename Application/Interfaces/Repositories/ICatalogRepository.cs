@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Domain.Entities;
+﻿using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
@@ -8,10 +8,12 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 
         Task<CatalogItem?> GetItemAsync(Guid id, Guid businessId);
 
-        Task<List<CatalogItem>> GetItemsAsync(Guid businessId);
+        Task<List<CatalogItem>> GetItemsAsync(Guid businessId, bool includeInactive = false);
 
         Task AddItemAsync(CatalogItem item);
 
-        Task UpdateItemAsync(CatalogItem item);
+        Task UpdateAsync(CatalogItem item);
+
+        Task<bool> ExistsWithVariantsAsync(Guid itemId);
     }
 }

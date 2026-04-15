@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.Interfaces.Repositories;
+﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,29 +31,42 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                     x.BusinessId == businessId);
         }
 
-        public async Task<List<CatalogItem>> GetItemsAsync(Guid businessId)
+        public async Task<List<CatalogItem>> GetItemsAsync(Guid businessId, bool includeInactive = false)
         {
-            return await _context.CatalogItems
+            var query = _context.CatalogItems
                 .AsNoTracking()
                 .Include(x => x.Category)
-                .Where(x => x.BusinessId == businessId)
-                .ToListAsync();
+                .Where(x => x.BusinessId == businessId);
+
+            if (!includeInactive)
+                query = query.Where(x => x.IsActive);
+
+            return await query.ToListAsync();
         }
 
         public async Task AddItemAsync(CatalogItem item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
+
             await _context.CatalogItems.AddAsync(item);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateItemAsync(CatalogItem item)
+        public async Task UpdateAsync(CatalogItem item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
+
             _context.CatalogItems.Update(item);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> ExistsWithVariantsAsync(Guid itemId)
+        {
+            return await _context.CatalogVariants
+                .AsNoTracking()
+                .AnyAsync(v => v.CatalogItemId == itemId);
         }
     }
 }

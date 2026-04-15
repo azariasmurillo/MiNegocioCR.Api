@@ -165,6 +165,10 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.UseCases.Sales.RegisterSaleUseCase>();
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
+builder.Services.AddScoped<IUpdateCatalogItemUseCase, UpdateCatalogItemUseCase>();
+builder.Services.AddScoped<IToggleCatalogItemStatusUseCase, ToggleCatalogItemStatusUseCase>();
+builder.Services.AddScoped<IDeleteCatalogItemUseCase, DeleteCatalogItemUseCase>();
+builder.Services.AddScoped<IGetCatalogItemsByBusinessUseCase, GetCatalogItemsByBusinessUseCase>();
 builder.Services.AddScoped<ICreateCategoryUseCase, CreateCategoryUseCase>();
 builder.Services.AddScoped<IGetCategoriesByBusinessUseCase, GetCategoriesByBusinessUseCase>();
 builder.Services.AddScoped<IUpdateCategoryUseCase, UpdateCategoryUseCase>();
@@ -257,4 +261,5 @@ app.MapHub<ChatHub>("/api/chatHub");
 app.MapControllers();
 
 app.Run();
+
 
