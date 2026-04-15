@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.DTOs;
+﻿using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
 
@@ -17,7 +17,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             _catalogRepository = catalogRepository;
         }
 
-        public async Task<IReadOnlyList<CatalogOptionDto>> ExecuteAsync(Guid catalogItemId)
+        public async Task<IReadOnlyList<CatalogOptionDto>> ExecuteAsync(Guid catalogItemId, bool includeInactive = false)
         {
             if (catalogItemId == Guid.Empty)
                 throw new ArgumentException("CatalogItemId is required.", nameof(catalogItemId));
@@ -26,14 +26,15 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             if (item == null)
                 throw new NotFoundException("CatalogItem", "Catalog item not found.");
 
-            var entities = await _optionRepository.GetByCatalogItemIdAsync(catalogItemId);
+            var entities = await _optionRepository.GetByCatalogItemIdAsync(catalogItemId, includeInactive);
 
             return entities
                 .Select(x => new CatalogOptionDto
                 {
                     Id = x.Id,
                     CatalogItemId = x.CatalogItemId,
-                    Name = x.Name
+                    Name = x.Name,
+                    IsActive = x.IsActive
                 })
                 .ToList();
         }

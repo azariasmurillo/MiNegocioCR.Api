@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.Interfaces.Repositories;
+﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,17 +25,37 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         public async Task<CatalogOption?> GetByIdAsync(Guid id)
         {
             return await _context.CatalogOptions
-                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public async Task<List<CatalogOption>> GetByCatalogItemIdAsync(Guid catalogItemId)
+        public async Task<List<CatalogOption>> GetByCatalogItemIdAsync(Guid catalogItemId, bool includeInactive = false)
         {
-            return await _context.CatalogOptions
+            var query = _context.CatalogOptions
                 .AsNoTracking()
-                .Where(x => x.CatalogItemId == catalogItemId)
+                .Where(x => x.CatalogItemId == catalogItemId);
+
+            if (!includeInactive)
+                query = query.Where(x => x.IsActive);
+
+            return await query
                 .OrderBy(x => x.Name)
                 .ToListAsync();
+        }
+
+        public async Task UpdateAsync(CatalogOption option)
+        {
+            if (option == null)
+                throw new ArgumentNullException(nameof(option));
+
+            _context.CatalogOptions.Update(option);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> ExistsWithValuesAsync(Guid optionId)
+        {
+            return await _context.CatalogOptionValues
+                .AsNoTracking()
+                .AnyAsync(x => x.CatalogOptionId == optionId);
         }
     }
 }

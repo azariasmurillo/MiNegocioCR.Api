@@ -176,8 +176,14 @@ builder.Services.AddScoped<IToggleCategoryStatusUseCase, ToggleCategoryStatusUse
 builder.Services.AddScoped<IDeleteCategoryUseCase, DeleteCategoryUseCase>();
 builder.Services.AddScoped<ICreateOptionUseCase, CreateOptionUseCase>();
 builder.Services.AddScoped<IGetOptionsByItemUseCase, GetOptionsByItemUseCase>();
+builder.Services.AddScoped<IUpdateOptionUseCase, UpdateOptionUseCase>();
+builder.Services.AddScoped<IToggleOptionStatusUseCase, ToggleOptionStatusUseCase>();
+builder.Services.AddScoped<IDeleteOptionUseCase, DeleteOptionUseCase>();
 builder.Services.AddScoped<ICreateOptionValueUseCase, CreateOptionValueUseCase>();
 builder.Services.AddScoped<IGetValuesByOptionUseCase, GetValuesByOptionUseCase>();
+builder.Services.AddScoped<IUpdateOptionValueUseCase, UpdateOptionValueUseCase>();
+builder.Services.AddScoped<IToggleOptionValueStatusUseCase, ToggleOptionValueStatusUseCase>();
+builder.Services.AddScoped<IDeleteOptionValueUseCase, DeleteOptionValueUseCase>();
 builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
 builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
 builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();
@@ -261,5 +267,7 @@ app.MapHub<ChatHub>("/api/chatHub");
 app.MapControllers();
 
 app.Run();
+
+
 
 

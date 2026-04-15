@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.DTOs;
+﻿using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Exceptions;
@@ -37,7 +37,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = request.CatalogItemId,
-                Name = request.Name.Trim()
+                Name = request.Name.Trim(),
+                IsActive = true
             };
 
             await _optionRepository.AddAsync(option);

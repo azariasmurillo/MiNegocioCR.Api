@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.DTOs;
+﻿using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Exceptions;
@@ -37,7 +37,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             {
                 Id = Guid.NewGuid(),
                 CatalogOptionId = request.OptionId,
-                Value = request.Value.Trim()
+                Value = request.Value.Trim(),
+                IsActive = true
             };
 
             await _valueRepository.AddAsync(entity);

@@ -1,9 +1,9 @@
-using MiNegocioCR.Api.Application.DTOs;
+﻿using MiNegocioCR.Api.Application.DTOs;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
     public interface IGetValuesByOptionUseCase
     {
-        Task<IReadOnlyList<CatalogOptionValueDto>> ExecuteAsync(Guid optionId);
+        Task<IReadOnlyList<CatalogOptionValueDto>> ExecuteAsync(Guid optionId, bool includeInactive = false);
     }
 }

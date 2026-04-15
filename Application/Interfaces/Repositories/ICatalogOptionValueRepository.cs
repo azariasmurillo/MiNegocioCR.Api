@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Domain.Entities;
+﻿using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
@@ -6,9 +6,14 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
     {
         Task AddAsync(CatalogOptionValue optionValue);
 
-        Task<List<CatalogOptionValue>> GetByCatalogOptionIdAsync(Guid catalogOptionId);
+        Task<CatalogOptionValue?> GetByIdAsync(Guid id);
 
-        /// <summary>Carga valores por Id incluyendo la opción de catálogo asociada.</summary>
+        Task<List<CatalogOptionValue>> GetByCatalogOptionIdAsync(Guid catalogOptionId, bool includeInactive = false);
+
         Task<List<CatalogOptionValue>> GetByIdsWithCatalogOptionAsync(IReadOnlyList<Guid> ids);
+
+        Task UpdateAsync(CatalogOptionValue optionValue);
+
+        Task<bool> ExistsInVariantsAsync(Guid optionValueId);
     }
 }

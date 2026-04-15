@@ -1,4 +1,4 @@
-using MiNegocioCR.Api.Application.Interfaces.Repositories;
+﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,11 +22,22 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<CatalogOptionValue>> GetByCatalogOptionIdAsync(Guid catalogOptionId)
+        public async Task<CatalogOptionValue?> GetByIdAsync(Guid id)
         {
             return await _context.CatalogOptionValues
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        public async Task<List<CatalogOptionValue>> GetByCatalogOptionIdAsync(Guid catalogOptionId, bool includeInactive = false)
+        {
+            var query = _context.CatalogOptionValues
                 .AsNoTracking()
-                .Where(x => x.CatalogOptionId == catalogOptionId)
+                .Where(x => x.CatalogOptionId == catalogOptionId);
+
+            if (!includeInactive)
+                query = query.Where(x => x.IsActive);
+
+            return await query
                 .OrderBy(x => x.Value)
                 .ToListAsync();
         }
@@ -41,6 +52,22 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .Include(v => v.CatalogOption)
                 .Where(v => ids.Contains(v.Id))
                 .ToListAsync();
+        }
+
+        public async Task UpdateAsync(CatalogOptionValue optionValue)
+        {
+            if (optionValue == null)
+                throw new ArgumentNullException(nameof(optionValue));
+
+            _context.CatalogOptionValues.Update(optionValue);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> ExistsInVariantsAsync(Guid optionValueId)
+        {
+            return await _context.CatalogVariantOptionValues
+                .AsNoTracking()
+                .AnyAsync(x => x.CatalogOptionValueId == optionValueId);
         }
     }
 }

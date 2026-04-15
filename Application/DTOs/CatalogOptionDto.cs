@@ -1,4 +1,4 @@
-namespace MiNegocioCR.Api.Application.DTOs
+﻿namespace MiNegocioCR.Api.Application.DTOs
 {
     public class CatalogOptionDto
     {
@@ -7,5 +7,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         public Guid CatalogItemId { get; set; }
 
         public string Name { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
     }
 }
