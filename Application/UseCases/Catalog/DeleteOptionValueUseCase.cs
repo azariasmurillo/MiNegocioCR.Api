@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Catalog
@@ -25,8 +25,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             if (inVariants)
                 throw new InvalidOperationException("OptionValue is used in variants");
 
-            optionValue.IsActive = false;
-            await _valueRepository.UpdateAsync(optionValue);
+            await _valueRepository.DeleteAsync(optionValue);
         }
     }
 }

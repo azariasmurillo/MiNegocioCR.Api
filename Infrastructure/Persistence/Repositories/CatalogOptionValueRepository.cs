@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -68,6 +68,15 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             return await _context.CatalogVariantOptionValues
                 .AsNoTracking()
                 .AnyAsync(x => x.CatalogOptionValueId == optionValueId);
+        }
+
+        public async Task DeleteAsync(CatalogOptionValue optionValue)
+        {
+            if (optionValue == null)
+                throw new ArgumentNullException(nameof(optionValue));
+
+            _context.CatalogOptionValues.Remove(optionValue);
+            await _context.SaveChangesAsync();
         }
     }
 }

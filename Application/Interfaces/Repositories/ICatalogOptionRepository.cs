@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
@@ -13,5 +13,7 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
         Task UpdateAsync(CatalogOption option);
 
         Task<bool> ExistsWithValuesAsync(Guid optionId);
+
+        Task DeleteAsync(CatalogOption option);
     }
 }

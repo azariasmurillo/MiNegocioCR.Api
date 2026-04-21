@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Catalog
@@ -25,8 +25,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             if (hasValues)
                 throw new InvalidOperationException("Option has values and cannot be deleted");
 
-            option.IsActive = false;
-            await _optionRepository.UpdateAsync(option);
+            await _optionRepository.DeleteAsync(option);
         }
     }
 }
