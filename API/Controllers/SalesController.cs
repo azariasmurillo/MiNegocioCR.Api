@@ -32,7 +32,9 @@ namespace MiNegocioCR.Api.API.Controllers
                 request.Items
                     .Select(x => (x.VariantId, x.Quantity, x.Price))
                     .ToList(),
-                request.CustomerPhone);
+                request.CustomerPhone,
+                request.CustomerName,
+                request.CustomerEmail);
 
             return Ok(id);
         }

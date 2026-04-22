@@ -150,6 +150,15 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .HasForeignKey(x => x.SaleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Sale>()
+                .HasOne(s => s.Contact)
+                .WithMany(c => c.Sales)
+                .HasForeignKey(s => s.ContactId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Sale>()
+                .HasIndex(x => x.ContactId);
+
             modelBuilder.Entity<ConversationTag>()
                 .HasOne(x => x.Conversation)
                 .WithMany(x => x.Tags)

@@ -1,3 +1,4 @@
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
@@ -25,23 +26,36 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
         public async Task<Guid> ExecuteAsync(
             Guid businessId,
             List<(Guid variantId, int quantity, decimal price)> items,
-            string? customerPhone = null)
+            string? customerPhone = null,
+            string? customerName = null,
+            string? customerEmail = null)
         {
             if (items == null || !items.Any()) throw new ArgumentException("At least one item is required.", nameof(items));
-
-            var phone = customerPhone?.Trim() ?? string.Empty;
 
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                var contact = await SaleContactResolution.TryResolveOrCreateAsync(
+                    _context,
+                    businessId,
+                    customerPhone,
+                    customerName,
+                    customerEmail);
+
+                var phoneForSale = contact != null
+                    ? contact.Phone
+                    : (customerPhone?.Trim() ?? string.Empty);
+
                 var sale = new Sale
                 {
                     Id = Guid.NewGuid(),
                     BusinessId = businessId,
                     SaleDate = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
-                    CustomerPhone = phone,
+                    CustomerPhone = phoneForSale,
+                    ContactId = contact?.Id,
+                    Contact = contact
                 };
 
                 foreach (var item in items)

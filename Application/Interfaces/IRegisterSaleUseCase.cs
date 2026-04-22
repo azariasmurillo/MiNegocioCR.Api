@@ -7,7 +7,9 @@ namespace MiNegocioCR.Api.Application.Interfaces
             Task<Guid> ExecuteAsync(
                 Guid businessId,
                 List<(Guid variantId, int quantity, decimal price)> items,
-                string? customerPhone = null);
+                string? customerPhone = null,
+                string? customerName = null,
+                string? customerEmail = null);
         }
     }
 }

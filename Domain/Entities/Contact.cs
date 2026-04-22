@@ -10,5 +10,6 @@ namespace MiNegocioCR.Api.Domain.Entities
         public DateTime CreatedAt { get; set; }
 
         public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
+        public ICollection<Sale> Sales { get; set; } = new List<Sale>();
     }
 }
