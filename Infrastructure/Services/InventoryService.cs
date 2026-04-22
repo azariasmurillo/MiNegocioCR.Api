@@ -36,7 +36,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
             variant.IncreaseStock(quantity);
 
-            await _variantRepository.UpdateVariantAsync(variant);
+            await _variantRepository.UpdateAsync(variant);
 
             await _inventoryRepository.AddMovementAsync(new InventoryMovement
             {
@@ -63,7 +63,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
             variant.DecreaseStock(quantity);
 
-            await _variantRepository.UpdateVariantAsync(variant);
+            await _variantRepository.UpdateAsync(variant);
 
             await _inventoryRepository.AddMovementAsync(new InventoryMovement
             {
@@ -100,7 +100,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
             else
                 variant.DecreaseStock(Math.Abs(quantity));
 
-            await _variantRepository.UpdateVariantAsync(variant);
+            await _variantRepository.UpdateAsync(variant);
 
             await _inventoryRepository.AddMovementAsync(new InventoryMovement
             {

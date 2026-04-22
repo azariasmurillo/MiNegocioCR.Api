@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities
+namespace MiNegocioCR.Api.Domain.Entities
 {
     public class Contact
     {
@@ -8,5 +8,7 @@
         public string Phone { get; set; } = default!;
         public string? Email { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
     }
 }

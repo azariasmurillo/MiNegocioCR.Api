@@ -22,9 +22,14 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 {
                     x.Id,
                     x.OrderNumber,
-                    x.CustomerName,
-                    x.CustomerPhone,
-                    x.CustomerEmail,
+                    x.ContactId,
+                    Contact = new
+                    {
+                        x.Contact.Id,
+                        Name = x.Contact.Name,
+                        Phone = x.Contact.Phone,
+                        Email = x.Contact.Email
+                    },
                     x.DeviceDescription,
                     x.ProblemDescription,
                     Status = ((RepairOrderStatus)x.Status).ToString(),

@@ -163,6 +163,15 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
             modelBuilder.Entity<Contact>()
                 .HasIndex(x => x.BusinessId);
 
+            modelBuilder.Entity<RepairOrder>()
+                .HasOne(o => o.Contact)
+                .WithMany(c => c.RepairOrders)
+                .HasForeignKey(o => o.ContactId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RepairOrder>()
+                .HasIndex(x => x.ContactId);
+
             modelBuilder.Entity<ConversationTag>()
                 .HasIndex(x => new { x.ConversationId, x.Tag });
 

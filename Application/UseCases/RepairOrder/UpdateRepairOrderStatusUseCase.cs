@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
-
 
 public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
 {
@@ -21,7 +21,9 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
 
     public async Task<object> Execute(Guid id, UpdateStatusRequestDto request)
     {
-        var order = await _context.RepairOrders.FindAsync(id);
+        var order = await _context.RepairOrders
+            .Include(o => o.Contact)
+            .FirstOrDefaultAsync(o => o.Id == id);
 
         if (order == null)
         {

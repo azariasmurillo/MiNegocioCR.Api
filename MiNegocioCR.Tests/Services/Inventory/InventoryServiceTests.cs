@@ -39,7 +39,7 @@ public class InventoryServiceTests
         await _sut.IncreaseStockAsync(businessId, variantId, 5, "Purchase");
 
         variant.StockQuantity.Should().Be(15);
-        _variantRepositoryMock.Verify(x => x.UpdateVariantAsync(It.Is<CatalogVariant>(v => v.StockQuantity == 15)), Times.Once);
+        _variantRepositoryMock.Verify(x => x.UpdateAsync(It.Is<CatalogVariant>(v => v.StockQuantity == 15)), Times.Once);
         _inventoryRepositoryMock.Verify(
             x => x.AddMovementAsync(It.Is<InventoryMovement>(m =>
                 m.Quantity == 5 && m.Type == MiNegocioCR.Api.Domain.Enums.InventoryMovementType.Purchase)),
@@ -82,7 +82,7 @@ public class InventoryServiceTests
         await _sut.DecreaseStockAsync(businessId, variantId, 3, "Sale");
 
         variant.StockQuantity.Should().Be(7);
-        _variantRepositoryMock.Verify(x => x.UpdateVariantAsync(It.Is<CatalogVariant>(v => v.StockQuantity == 7)), Times.Once);
+        _variantRepositoryMock.Verify(x => x.UpdateAsync(It.Is<CatalogVariant>(v => v.StockQuantity == 7)), Times.Once);
         _inventoryRepositoryMock.Verify(
             x => x.AddMovementAsync(It.Is<InventoryMovement>(m =>
                 m.Quantity == -3 && m.Type == MiNegocioCR.Api.Domain.Enums.InventoryMovementType.Sale)),

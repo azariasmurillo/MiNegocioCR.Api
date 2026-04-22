@@ -1,6 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Application.AI.Models;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using System.Text.Json;
 
@@ -19,10 +20,17 @@ namespace MiNegocioCR.Api.Application.AI.Tools
 
         public async Task<ToolResult> ExecuteAsync(Guid businessId, string phoneNumber)
         {
+            var normalizedPhone = PhoneSanitizer.Sanitize(phoneNumber);
+            if (string.IsNullOrWhiteSpace(normalizedPhone))
+            {
+                return new ToolResult { Message = "No encontré reparaciones registradas con este número." };
+            }
+
             var orders = await _context.RepairOrders
+                .Include(r => r.Contact)
                 .Where(r =>
                     r.BusinessId == businessId &&
-                    r.CustomerPhone == phoneNumber)
+                    r.Contact.Phone == normalizedPhone)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
 

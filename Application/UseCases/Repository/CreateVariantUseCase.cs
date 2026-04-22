@@ -1,5 +1,6 @@
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Domain;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
@@ -32,6 +33,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         {
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
+
+            if (request.CatalogItemId == Guid.Empty)
+                throw new ArgumentException("CatalogItemId is required.", nameof(request));
 
             var catalogItem = await _catalogRepository.GetItemByIdAsync(request.CatalogItemId);
             if (catalogItem == null)
@@ -76,7 +80,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 SKU = request.SKU,
                 Price = request.Price,
                 StockQuantity = request.InitialStock,
-                IsActive = true
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
             };
 
             await _variantRepository.AddVariantAsync(variant);
@@ -102,7 +107,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     CatalogVariantId = variant.Id,
                     Quantity = request.InitialStock,
                     Type = InventoryMovementType.Purchase,
-                    Notes = "Initial stock",
+                    Notes = InventoryMovementNotes.InitialStock,
                     CreatedAt = DateTime.UtcNow
                 };
 

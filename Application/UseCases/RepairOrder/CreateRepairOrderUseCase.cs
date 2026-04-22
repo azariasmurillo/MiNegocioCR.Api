@@ -39,13 +39,28 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
         var orderNumber = settings.NextOrderNumber;
         settings.NextOrderNumber++;
 
+        if (!request.ContactId.HasValue)
+        {
+            if (string.IsNullOrWhiteSpace(request.CustomerName))
+                throw new ArgumentException("Se requiere el nombre del cliente o un ContactId.", nameof(request.CustomerName));
+            if (string.IsNullOrWhiteSpace(PhoneSanitizer.Sanitize(request.CustomerPhone)))
+                throw new ArgumentException("Se requiere el teléfono del cliente o un ContactId.", nameof(request.CustomerPhone));
+        }
+
+        var contact = await RepairOrderContactHelper.ResolveContactForCreateAsync(
+            _context,
+            businessId,
+            request.ContactId,
+            request.CustomerName,
+            request.CustomerPhone,
+            request.CustomerEmail);
+
         var order = new RepairOrder
         {
             BusinessId = businessId,
             OrderNumber = orderNumber,
-            CustomerName = request.CustomerName,
-            CustomerPhone = PhoneSanitizer.Sanitize(request.CustomerPhone),
-            CustomerEmail = request.CustomerEmail,
+            ContactId = contact.Id,
+            Contact = contact,
             DeviceDescription = request.DeviceDescription,
             ProblemDescription = request.ProblemDescription,
             Status = (int)RepairOrderStatus.Pending
@@ -65,7 +80,15 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
         {
             order.Id,
             order.OrderNumber,
-            Status = "Pending"
+            Status = "Pending",
+            order.ContactId,
+            Contact = new
+            {
+                order.Contact.Id,
+                Name = order.Contact.Name,
+                Phone = order.Contact.Phone,
+                Email = order.Contact.Email
+            }
         };
     }
 }

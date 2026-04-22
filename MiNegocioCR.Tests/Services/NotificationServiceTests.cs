@@ -27,11 +27,22 @@ public class NotificationServiceTests
             Name = "Test",
             EnableEmailNotifications = true
         };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "Cliente",
+            Phone = "50688888888",
+            Email = "client@test.com",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
             OrderNumber = 42,
-            CustomerEmail = "client@test.com",
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
             Business = business
         };
         _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -52,11 +63,22 @@ public class NotificationServiceTests
     public async Task OrderCreatedAsync_WhenEmailNotificationsDisabled_DoesNotCallEmailService()
     {
         var business = new Business { EnableEmailNotifications = false };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "a@b.com",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
             OrderNumber = 1,
-            CustomerEmail = "a@b.com",
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
             Business = business
         };
 
@@ -71,11 +93,22 @@ public class NotificationServiceTests
     public async Task OrderCreatedAsync_WhenCustomerEmailIsEmpty_DoesNotCallEmailService()
     {
         var business = new Business { EnableEmailNotifications = true };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
             OrderNumber = 1,
-            CustomerEmail = "",
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
             Business = business
         };
 
@@ -90,10 +123,21 @@ public class NotificationServiceTests
     public async Task OrderProcessedAsync_WhenEmailEnabled_SendsEmail()
     {
         var business = new Business { EnableEmailNotifications = true };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "a@b.com",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
-            CustomerEmail = "a@b.com",
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
             Business = business
         };
         _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -110,7 +154,23 @@ public class NotificationServiceTests
     public async Task OrderProcessedAsync_WhenEmailDisabled_DoesNotCallEmailService()
     {
         var business = new Business { EnableEmailNotifications = false };
-        var order = new RepairOrder { Id = Guid.NewGuid(), CustomerEmail = "a@b.com", Business = business };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "a@b.com",
+            CreatedAt = DateTime.UtcNow
+        };
+        var order = new RepairOrder
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
+            Business = business
+        };
 
         await _sut.OrderProcessedAsync(business, order);
 
@@ -123,10 +183,21 @@ public class NotificationServiceTests
     public async Task OrderDeliveredAsync_WhenEmailEnabled_SendsEmail()
     {
         var business = new Business { EnableEmailNotifications = true };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "a@b.com",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
-            CustomerEmail = "a@b.com",
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
             Business = business
         };
         _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -143,10 +214,21 @@ public class NotificationServiceTests
     public async Task OrderCancelledAsync_WhenEmailEnabled_SendsEmail()
     {
         var business = new Business { EnableEmailNotifications = true };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "a@b.com",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
-            CustomerEmail = "a@b.com",
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
             Business = business
         };
         _emailServiceMock.Setup(x => x.SendAsync(It.IsAny<Business>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -163,7 +245,23 @@ public class NotificationServiceTests
     public async Task OrderCancelledAsync_WhenEmailDisabled_DoesNotCallEmailService()
     {
         var business = new Business { EnableEmailNotifications = false };
-        var order = new RepairOrder { Id = Guid.NewGuid(), CustomerEmail = "a@b.com", Business = business };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            Name = "A",
+            Phone = "1",
+            Email = "a@b.com",
+            CreatedAt = DateTime.UtcNow
+        };
+        var order = new RepairOrder
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = business.Id,
+            ContactId = contact.Id,
+            Contact = contact,
+            Business = business
+        };
 
         await _sut.OrderCancelledAsync(business, order);
 

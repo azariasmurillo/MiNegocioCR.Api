@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 using RepairOrderEntity = MiNegocioCR.Api.Domain.Entities.RepairOrder;
 using MiNegocioCR.Api.Domain.Exceptions;
@@ -25,15 +26,24 @@ public class UpdateRepairOrderUseCaseTests
     public async Task Execute_WithValidRequest_UpdatesOrderFields()
     {
         await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "Old",
+            Phone = "111",
+            Email = "old@test.com",
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Contacts.Add(contact);
         var order = new RepairOrderEntity
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(),
+            BusinessId = businessId,
             OrderNumber = 1,
             Status = (int)RepairOrderStatus.Pending,
-            CustomerName = "Old",
-            CustomerPhone = "111",
-            CustomerEmail = "old@test.com"
+            ContactId = contact.Id
         };
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
@@ -41,21 +51,24 @@ public class UpdateRepairOrderUseCaseTests
         var sut = new UpdateRepairOrderUseCase(context);
         var request = new UpdateRepairOrderRequestDto
         {
-            CustomerName = "New Name",
-            CustomerPhone = "999",
-            CustomerEmail = "new@test.com",
+            Name = "New Name",
+            Phone = "999",
+            Email = "new@test.com",
             DeviceDescription = "Device",
             ProblemDescription = "Problem"
         };
 
         await sut.Execute(order.Id, request);
 
-        await context.Entry(order).ReloadAsync();
-        order.CustomerName.Should().Be("New Name");
-        order.CustomerPhone.Should().Be("999");
-        order.CustomerEmail.Should().Be("new@test.com");
-        order.DeviceDescription.Should().Be("Device");
-        order.ProblemDescription.Should().Be("Problem");
+        var updated = await context.RepairOrders
+            .AsNoTracking()
+            .Include(o => o.Contact)
+            .FirstAsync(o => o.Id == order.Id);
+        updated.Contact.Name.Should().Be("New Name");
+        updated.Contact.Phone.Should().Be("999");
+        updated.Contact.Email.Should().Be("new@test.com");
+        updated.DeviceDescription.Should().Be("Device");
+        updated.ProblemDescription.Should().Be("Problem");
     }
 
     [Fact]
@@ -75,7 +88,7 @@ public class UpdateRepairOrderUseCaseTests
     {
         await using var context = CreateInMemoryContext();
         var sut = new UpdateRepairOrderUseCase(context);
-        var request = new UpdateRepairOrderRequestDto { CustomerName = "X" };
+        var request = new UpdateRepairOrderRequestDto();
 
         var act = () => sut.Execute(Guid.NewGuid(), request);
 
@@ -87,18 +100,29 @@ public class UpdateRepairOrderUseCaseTests
     public async Task Execute_WhenOrderIsDelivered_ThrowsArgumentException()
     {
         await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "X",
+            Phone = "1",
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Contacts.Add(contact);
         var order = new RepairOrderEntity
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(),
+            BusinessId = businessId,
             OrderNumber = 1,
-            Status = (int)RepairOrderStatus.Delivered
+            Status = (int)RepairOrderStatus.Delivered,
+            ContactId = contact.Id
         };
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
         var sut = new UpdateRepairOrderUseCase(context);
-        var request = new UpdateRepairOrderRequestDto { CustomerName = "X" };
+        var request = new UpdateRepairOrderRequestDto { Name = "X" };
 
         var act = () => sut.Execute(order.Id, request);
 

@@ -16,6 +16,8 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public bool IsActive { get; set; }
 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public CatalogItem CatalogItem { get; set; }
 
         public ICollection<CatalogVariantOptionValue> VariantOptionValues { get; set; } = new List<CatalogVariantOptionValue>();

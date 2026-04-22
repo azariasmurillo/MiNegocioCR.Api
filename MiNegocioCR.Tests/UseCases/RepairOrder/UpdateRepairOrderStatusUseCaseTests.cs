@@ -5,6 +5,7 @@ using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Domain.Enums;
 using BusinessEntity = MiNegocioCR.Api.Domain.Entities.Business;
+using MiNegocioCR.Api.Domain.Entities;
 using RepairOrderEntity = MiNegocioCR.Api.Domain.Entities.RepairOrder;
 using MiNegocioCR.Api.Domain.Exceptions;
 using MiNegocioCR.Api.Infrastructure.Persistence;
@@ -27,15 +28,26 @@ public class UpdateRepairOrderStatusUseCaseTests
     public async Task Execute_WithValidTransition_PendingToInProcess_UpdatesStatusAndSaves()
     {
         await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50611111111",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrderEntity
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(),
+            BusinessId = businessId,
             OrderNumber = 1,
-            Status = (int)RepairOrderStatus.Pending
+            Status = (int)RepairOrderStatus.Pending,
+            ContactId = contact.Id
         };
-        var business = new BusinessEntity { Id = order.BusinessId, Name = "Test" };
         context.Businesses.Add(business);
+        context.Contacts.Add(contact);
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
@@ -54,15 +66,26 @@ public class UpdateRepairOrderStatusUseCaseTests
     public async Task Execute_WhenTransitionToProcessed_InvokesOrderProcessedAsync()
     {
         await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50622222222",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrderEntity
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(),
+            BusinessId = businessId,
             OrderNumber = 1,
-            Status = (int)RepairOrderStatus.InProcess
+            Status = (int)RepairOrderStatus.InProcess,
+            ContactId = contact.Id
         };
-        var business = new BusinessEntity { Id = order.BusinessId, Name = "Test" };
         context.Businesses.Add(business);
+        context.Contacts.Add(contact);
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
@@ -95,13 +118,26 @@ public class UpdateRepairOrderStatusUseCaseTests
     public async Task Execute_WhenInvalidTransition_ThrowsInvalidStatusTransitionException()
     {
         await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50633333333",
+            CreatedAt = DateTime.UtcNow
+        };
         var order = new RepairOrderEntity
         {
             Id = Guid.NewGuid(),
-            BusinessId = Guid.NewGuid(),
+            BusinessId = businessId,
             OrderNumber = 1,
-            Status = (int)RepairOrderStatus.Pending
+            Status = (int)RepairOrderStatus.Pending,
+            ContactId = contact.Id
         };
+        context.Businesses.Add(business);
+        context.Contacts.Add(contact);
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 

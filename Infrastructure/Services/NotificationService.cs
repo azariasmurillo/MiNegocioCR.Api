@@ -14,7 +14,8 @@ namespace MiNegocioCR.Api.Infrastructure.Services
 
         public async Task OrderCreatedAsync(Business business, RepairOrder order)
         {
-            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(order.CustomerEmail))
+            var email = order.Contact?.Email;
+            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(email))
                 return;
 
             var subject = $"Orden #{order.Id} creada";
@@ -25,12 +26,13 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 <p><b>Número:</b> {order.Id}</p>
             ";
 
-            await _emailService.SendAsync(business, order.CustomerEmail, subject, body);
+            await _emailService.SendAsync(business, email, subject, body);
         }
 
         public async Task OrderProcessedAsync(Business business, RepairOrder order)
         {
-            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(order.CustomerEmail))
+            var email = order.Contact?.Email;
+            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(email))
                 return;
 
             var subject = $"Orden #{order.Id} en proceso";
@@ -41,12 +43,13 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 <p><b>Número:</b> {order.Id}</p>
             ";
 
-            await _emailService.SendAsync(business, order.CustomerEmail, subject, body);
+            await _emailService.SendAsync(business, email, subject, body);
         }
 
         public async Task OrderDeliveredAsync(Business business, RepairOrder order)
         {
-            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(order.CustomerEmail))
+            var email = order.Contact?.Email;
+            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(email))
                 return;
 
             var subject = $"Orden #{order.Id} lista para entrega";
@@ -57,12 +60,13 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 <p><b>Número:</b> {order.Id}</p>
             ";
 
-            await _emailService.SendAsync(business, order.CustomerEmail, subject, body);
+            await _emailService.SendAsync(business, email, subject, body);
         }
 
         public async Task OrderCancelledAsync(Business business, RepairOrder order)
         {
-            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(order.CustomerEmail))
+            var email = order.Contact?.Email;
+            if (!business.EnableEmailNotifications || string.IsNullOrEmpty(email))
                 return;
 
             var subject = $"Orden #{order.Id} cancelada";
@@ -73,7 +77,7 @@ namespace MiNegocioCR.Api.Infrastructure.Services
                 <p><b>Número:</b> {order.Id}</p>
             ";
 
-            await _emailService.SendAsync(business, order.CustomerEmail, subject, body);
+            await _emailService.SendAsync(business, email, subject, body);
         }
     }
 }

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
-using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
@@ -24,9 +23,14 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 {
                     x.Id,
                     x.OrderNumber,
-                    x.CustomerName,
-                    x.CustomerPhone,
-                    x.CustomerEmail,
+                    x.ContactId,
+                    Contact = new
+                    {
+                        x.Contact.Id,
+                        Name = x.Contact.Name,
+                        Phone = x.Contact.Phone,
+                        Email = x.Contact.Email
+                    },
                     x.DeviceDescription,
                     x.ProblemDescription,
                     Status = ((RepairOrderStatus)x.Status).ToString(),

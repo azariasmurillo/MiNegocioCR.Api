@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities;
+namespace MiNegocioCR.Api.Domain.Entities;
 
 public class RepairOrder
 {
@@ -6,9 +6,9 @@ public class RepairOrder
     public Guid BusinessId { get; set; }
     public int OrderNumber { get; set; }
 
-    public string CustomerName { get; set; } = string.Empty;
-    public string? CustomerPhone { get; set; }
-    public string? CustomerEmail { get; set; }
+    public Guid ContactId { get; set; }
+    public Contact Contact { get; set; } = null!;
+
     public string? DeviceDescription { get; set; }
     public string? ProblemDescription { get; set; }
 

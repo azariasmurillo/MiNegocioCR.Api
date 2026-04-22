@@ -1,4 +1,4 @@
-﻿using FirebaseAdmin;
+using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -185,6 +185,10 @@ builder.Services.AddScoped<IUpdateOptionValueUseCase, UpdateOptionValueUseCase>(
 builder.Services.AddScoped<IToggleOptionValueStatusUseCase, ToggleOptionValueStatusUseCase>();
 builder.Services.AddScoped<IDeleteOptionValueUseCase, DeleteOptionValueUseCase>();
 builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
+builder.Services.AddScoped<IGetVariantsByCatalogItemUseCase, GetVariantsByCatalogItemUseCase>();
+builder.Services.AddScoped<IGetVariantsByBusinessUseCase, GetVariantsByBusinessUseCase>();
+builder.Services.AddScoped<IUpdateVariantUseCase, UpdateVariantUseCase>();
+builder.Services.AddScoped<IDeleteVariantUseCase, DeleteVariantUseCase>();
 builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
 builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();
 

@@ -94,6 +94,20 @@ public class DomainExceptionFilter : IExceptionFilter
             return;
         }
 
+        if (context.Exception is InvalidOperationException invalidOp)
+        {
+            context.Result = new ObjectResult(new
+            {
+                error = invalidOp.Message,
+                code = "INVALID_OPERATION"
+            })
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest
+            };
+            context.ExceptionHandled = true;
+            return;
+        }
+
         if (context.Exception is UnauthorizedAccessException unauthorized &&
             unauthorized.Message == WhatsappReconnectRequired.Code)
         {
