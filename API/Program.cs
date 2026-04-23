@@ -159,6 +159,7 @@ builder.Services.AddScoped<IGetRepairOrdersByBusinessUseCase, GetRepairOrdersByB
 builder.Services.AddScoped<IGetRepairOrderByIdUseCase, GetRepairOrderByIdUseCase>();
 builder.Services.AddScoped<IUpdateRepairOrderUseCase, UpdateRepairOrderUseCase>();
 builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepairOrderByBusinessIdAndStatusUseCase>();
+builder.Services.AddScoped<ISearchRepairOrdersUseCase, SearchRepairOrdersUseCase>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();

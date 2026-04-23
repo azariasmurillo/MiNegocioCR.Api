@@ -11,11 +11,13 @@ namespace MiNegocioCR.Api.Application.Interfaces
     {
         DbSet<BusinessEntity> Businesses { get; }
         DbSet<RepairOrder> RepairOrders { get; }
+        DbSet<RepairOrderItem> RepairOrderItems { get; }
         DbSet<User> Users { get; }
         DbSet<BusinessSettings> BusinessSettings { get; }
         DbSet<WhatsAppMessage> WhatsAppMessages { get; }
         DbSet<WhatsAppConversation> WhatsAppConversations { get; }
         DbSet<CatalogItem> CatalogItems { get; }
+        DbSet<CatalogVariant> CatalogVariants { get; }
         DbSet<InventoryMovement> InventoryMovements { get; }
         DatabaseFacade Database { get; }
         DbSet<UpsellRule> UpsellRules { get; }

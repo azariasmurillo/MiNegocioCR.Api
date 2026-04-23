@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
@@ -33,13 +34,25 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
         var currentStatus = (RepairOrderStatus)order.Status;
         var newStatus = request.NewStatus;
 
-        if (!IsValidTransition(currentStatus, newStatus))
+        if (currentStatus == newStatus)
+        {
+            return new
+            {
+                order.Id,
+                order.OrderNumber,
+                Status = newStatus.ToString()
+            };
+        }
+
+        if (!RepairOrderStatusRules.IsValidTransition(currentStatus, newStatus))
         {
             throw new InvalidStatusTransitionException(currentStatus.ToString(), newStatus.ToString());
         }
 
         order.Status = (int)newStatus;
         order.UpdatedAt = DateTime.UtcNow;
+        if (newStatus == RepairOrderStatus.Cancelled)
+            order.IsActive = false;
 
         await _context.SaveChangesAsync(CancellationToken.None);
         var business = await _context.Businesses.FindAsync(order.BusinessId);
@@ -60,20 +73,6 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
             order.Id,
             order.OrderNumber,
             Status = newStatus.ToString()
-        };
-    }
-
-    private bool IsValidTransition(RepairOrderStatus current, RepairOrderStatus next)
-    {
-        return (current, next) switch
-        {
-            (RepairOrderStatus.Pending, RepairOrderStatus.InProcess) => true,
-            (RepairOrderStatus.Pending, RepairOrderStatus.Cancelled) => true,
-            (RepairOrderStatus.InProcess, RepairOrderStatus.Processed) => true,
-            (RepairOrderStatus.InProcess, RepairOrderStatus.Cancelled) => true,
-            (RepairOrderStatus.Processed, RepairOrderStatus.Delivered) => true,
-            (RepairOrderStatus.Processed, RepairOrderStatus.Cancelled) => true,
-            _ => false
         };
     }
 }

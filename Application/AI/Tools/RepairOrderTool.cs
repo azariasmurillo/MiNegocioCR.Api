@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Application.AI.Models;
 using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using System.Text.Json;
 
@@ -43,7 +44,9 @@ namespace MiNegocioCR.Api.Application.AI.Tools
             }
 
             var activeOrders = orders
-                .Where(o => o.Status != 3)
+                .Where(o => o.IsActive
+                    && o.Status != (int)RepairOrderStatus.Delivered
+                    && o.Status != (int)RepairOrderStatus.Cancelled)
                 .ToList();
 
             if (activeOrders.Any())
@@ -72,12 +75,13 @@ namespace MiNegocioCR.Api.Application.AI.Tools
         }
         private static string GetStatus(int status)
         {
-            return status switch
+            return (RepairOrderStatus)status switch
             {
-                0 => "Pendiente",
-                1 => "En proceso",
-                2 => "Finalizada",
-                3 => "Entregada",
+                RepairOrderStatus.Pending => "Pendiente",
+                RepairOrderStatus.InProcess => "En proceso",
+                RepairOrderStatus.Processed => "Finalizada",
+                RepairOrderStatus.Delivered => "Entregada",
+                RepairOrderStatus.Cancelled => "Cancelada",
                 _ => "Desconocido"
             };
         }

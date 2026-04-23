@@ -11,16 +11,21 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
     public class UpdateRepairOrderUseCase : IUpdateRepairOrderUseCase
     {
         private readonly IAppDbContext _context;
+        private readonly IGetRepairOrderByIdUseCase _getById;
 
-        public UpdateRepairOrderUseCase(IAppDbContext context)
+        public UpdateRepairOrderUseCase(
+            IAppDbContext context,
+            IGetRepairOrderByIdUseCase getById)
         {
             _context = context;
+            _getById = getById;
         }
 
-        public async Task Execute(Guid id, UpdateRepairOrderRequestDto request)
+        public async Task<object> Execute(Guid id, UpdateRepairOrderRequestDto request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var order = await _context.RepairOrders
+                .Include(o => o.Items)
                 .Include(o => o.Contact)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
@@ -28,7 +33,30 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 throw new NotFoundException("RepairOrder", "Order not found");
 
             if ((RepairOrderStatus)order.Status == RepairOrderStatus.Delivered)
-                throw new ArgumentException("Delivered orders cannot be modified.");
+                throw new ArgumentException("Delivered orders cannot be modified (including line items).");
+
+            if ((RepairOrderStatus)order.Status == RepairOrderStatus.Cancelled)
+                throw new ArgumentException("Cancelled orders cannot be modified (including line items).");
+
+            if (request.Items != null)
+            {
+                foreach (var it in request.Items)
+                    RepairOrderItemsRequestHelper.ValidateLine(it);
+                await RepairOrderItemsRequestHelper.ValidateVariantIdsForBusinessAsync(
+                    _context,
+                    order.BusinessId,
+                    request.Items,
+                    CancellationToken.None);
+
+                _context.RepairOrderItems.RemoveRange(order.Items);
+                order.Items.Clear();
+                if (request.Items.Count > 0)
+                {
+                    var newItems = RepairOrderItemsRequestHelper.MapToNewEntities(order, request.Items);
+                    foreach (var n in newItems)
+                        order.Items.Add(n);
+                }
+            }
 
             if (request.ContactId.HasValue)
             {
@@ -96,6 +124,11 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);
+
+            var result = await _getById.Execute(id);
+            if (result == null)
+                throw new InvalidOperationException("La orden no pudo leerse luego de actualizarse.");
+            return result;
         }
     }
 }

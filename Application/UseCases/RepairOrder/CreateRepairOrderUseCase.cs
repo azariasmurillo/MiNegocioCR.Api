@@ -3,29 +3,42 @@ using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
-using MiNegocioCR.Api.Domain.Entities;
+using RepairOrderEntity = MiNegocioCR.Api.Domain.Entities.RepairOrder;
 using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
+
+namespace MiNegocioCR.Api.Application.UseCases.RepairOrder;
 
 public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
 {
     private readonly IAppDbContext _context;
     private readonly INotificationService _notificationService;
+    private readonly IGetRepairOrderByIdUseCase _getRepairOrderById;
 
     public CreateRepairOrderUseCase(
         IAppDbContext context,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IGetRepairOrderByIdUseCase getRepairOrderById)
     {
         _context = context;
         _notificationService = notificationService;
+        _getRepairOrderById = getRepairOrderById;
     }
 
     public async Task<object> Execute(Guid businessId, CreateRepairOrderRequestDto request)
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
 
-        using var transaction = await (_context as DbContext)!
-            .Database.BeginTransactionAsync();
+        var lineDtos = request.Items ?? new List<RepairOrderItemDto>();
+        foreach (var it in lineDtos)
+            RepairOrderItemsRequestHelper.ValidateLine(it);
+        await RepairOrderItemsRequestHelper.ValidateVariantIdsForBusinessAsync(
+            _context,
+            businessId,
+            lineDtos,
+            CancellationToken.None);
+
+        using var transaction = await ((DbContext)_context).Database.BeginTransactionAsync();
 
         var settings = await _context.BusinessSettings
             .FromSqlRaw(
@@ -36,8 +49,11 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
         if (settings == null)
             throw new NotFoundException("BusinessSettings", "Business settings not found.");
 
-        var orderNumber = settings.NextOrderNumber;
-        settings.NextOrderNumber++;
+        var orderNumber = await RepairOrderDailyNumberGenerator.GetNextForBusinessAndUtcDateAsync(
+            _context.RepairOrders,
+            businessId,
+            DateTime.UtcNow,
+            CancellationToken.None);
 
         if (!request.ContactId.HasValue)
         {
@@ -55,40 +71,40 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             request.CustomerPhone,
             request.CustomerEmail);
 
-        var order = new RepairOrder
+        var order = new RepairOrderEntity
         {
+            Id = Guid.NewGuid(),
             BusinessId = businessId,
             OrderNumber = orderNumber,
             ContactId = contact.Id,
             Contact = contact,
             DeviceDescription = request.DeviceDescription,
             ProblemDescription = request.ProblemDescription,
-            Status = (int)RepairOrderStatus.Pending
+            Status = (int)RepairOrderStatus.Pending,
+            IsActive = true
         };
 
         _context.RepairOrders.Add(order);
 
+        if (lineDtos.Count > 0)
+        {
+            var itemEntities = RepairOrderItemsRequestHelper.MapToNewEntities(order, lineDtos);
+            _context.RepairOrderItems.AddRange(itemEntities);
+        }
+
         await _context.SaveChangesAsync(CancellationToken.None);
         await transaction.CommitAsync();
+
         var business = await _context.Businesses.FindAsync(businessId);
-        if(business == null) 
+        if (business == null)
             throw new NotFoundException("Business", "Business not found.");
-        
+
         await _notificationService.OrderCreatedAsync(business, order);
 
-        return new
-        {
-            order.Id,
-            order.OrderNumber,
-            Status = "Pending",
-            order.ContactId,
-            Contact = new
-            {
-                order.Contact.Id,
-                Name = order.Contact.Name,
-                Phone = order.Contact.Phone,
-                Email = order.Contact.Email
-            }
-        };
+        var result = await _getRepairOrderById.Execute(order.Id);
+        if (result == null)
+            throw new InvalidOperationException("La orden creada no pudo leerse.");
+
+        return result;
     }
 }

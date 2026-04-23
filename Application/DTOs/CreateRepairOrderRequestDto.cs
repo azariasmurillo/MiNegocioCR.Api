@@ -12,5 +12,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? CustomerEmail { get; set; }
         public string? DeviceDescription { get; set; }
         public string? ProblemDescription { get; set; }
+
+        public List<RepairOrderItemDto> Items { get; set; } = new();
     }
 }

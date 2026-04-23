@@ -16,6 +16,7 @@ public class RepairOrdersController : ControllerBase
     private readonly IGetRepairOrderByIdUseCase _getByIdUseCase;
     private readonly IUpdateRepairOrderUseCase _updateRepairOrderUseCase;
     private readonly IGetRepairOrderByBusinessIdAndStatusUseCase _getByIdAndStatusUseCase;
+    private readonly ISearchRepairOrdersUseCase _searchRepairOrdersUseCase;
 
     public RepairOrdersController(
     ICreateRepairOrderUseCase createRepairOrderUseCase,
@@ -23,7 +24,8 @@ public class RepairOrdersController : ControllerBase
     IGetRepairOrdersByBusinessUseCase getByBusinessUseCase,
     IGetRepairOrderByIdUseCase getByIdUseCase,
     IUpdateRepairOrderUseCase updateRepairOrderUseCase,
-    IGetRepairOrderByBusinessIdAndStatusUseCase getByIdAndStatusUseCase )
+    IGetRepairOrderByBusinessIdAndStatusUseCase getByIdAndStatusUseCase,
+    ISearchRepairOrdersUseCase searchRepairOrdersUseCase )
     {
         _createRepairOrderUseCase = createRepairOrderUseCase;
         _updateStatusUseCase = updateStatusUseCase;
@@ -31,6 +33,7 @@ public class RepairOrdersController : ControllerBase
         _getByIdUseCase = getByIdUseCase;
         _updateRepairOrderUseCase = updateRepairOrderUseCase;
         _getByIdAndStatusUseCase = getByIdAndStatusUseCase;
+        _searchRepairOrdersUseCase = searchRepairOrdersUseCase;
     }
 
     [HttpPost("{businessId}")]
@@ -51,6 +54,17 @@ public class RepairOrdersController : ControllerBase
     {
         if (request == null) return BadRequest("RepairOrdersUpdateStatus - Request body is required.");
         var result = await _updateStatusUseCase.Execute(id, request);
+        return Ok(result);
+    }
+
+    [HttpGet("{businessId:guid}/search")]
+    public async Task<IActionResult> Search(
+        Guid businessId,
+        [FromQuery] string? query = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null)
+    {
+        var result = await _searchRepairOrdersUseCase.Execute(businessId, query, from, to);
         return Ok(result);
     }
 
@@ -78,8 +92,8 @@ public class RepairOrdersController : ControllerBase
     [FromBody] UpdateRepairOrderRequestDto request)
     {
         if (request == null) return BadRequest("RepairOrdersUpdate - Request body is required.");
-        await _updateRepairOrderUseCase.Execute(id, request);
-        return Ok();
+        var result = await _updateRepairOrderUseCase.Execute(id, request);
+        return Ok(result);
     }
 
     [HttpGet("{businessId}/by-status")]  // o "{businessId}/status"

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260423180000_SaleContactId")]
-    partial class SaleContactId
+    [Migration("20260425120000_RepairOrderIsActiveAndStatusIndex")]
+    partial class RepairOrderIsActiveAndStatusIndex
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -545,14 +545,19 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<string>("DeviceDescription")
                         .HasColumnType("text");
 
-                    b.Property<int>("OrderNumber")
-                        .HasColumnType("integer");
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("text");
 
                     b.Property<string>("ProblemDescription")
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -563,7 +568,47 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("ContactId");
 
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("BusinessId", "CreatedAt");
+
+                    b.HasIndex("BusinessId", "OrderNumber")
+                        .IsUnique();
+
+                    b.HasIndex("BusinessId", "Status");
+
                     b.ToTable("RepairOrders");
+                });
+
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CatalogVariantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RepairOrderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CatalogVariantId");
+
+                    b.HasIndex("RepairOrderId");
+
+                    b.ToTable("RepairOrderItems");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Sale", b =>
@@ -1004,6 +1049,30 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("Contact");
                 });
 
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrderItem", b =>
+                {
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogVariant", "CatalogVariant")
+                        .WithMany("RepairOrderItems")
+                        .HasForeignKey("CatalogVariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired(false);
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.RepairOrder", "RepairOrder")
+                        .WithMany("Items")
+                        .HasForeignKey("RepairOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CatalogVariant");
+
+                    b.Navigation("RepairOrder");
+                });
+
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrder", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.SaleItem", b =>
                 {
                     b.HasOne("MiNegocioCR.Api.Domain.Entities.Sale", "Sale")
@@ -1083,6 +1152,8 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogVariant", b =>
                 {
+                    b.Navigation("RepairOrderItems");
+
                     b.Navigation("VariantOptionValues");
                 });
 

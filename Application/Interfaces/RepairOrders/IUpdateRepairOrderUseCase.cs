@@ -4,6 +4,6 @@ namespace MiNegocioCR.Api.Application.Interfaces.RepairOrders
 {
     public interface IUpdateRepairOrderUseCase
     {
-        Task Execute(Guid id, UpdateRepairOrderRequestDto request);
+        Task<object> Execute(Guid id, UpdateRepairOrderRequestDto request);
     }
 }

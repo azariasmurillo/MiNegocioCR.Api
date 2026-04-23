@@ -17,8 +17,9 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
         public async Task<List<object>> Execute(Guid businessId, RepairOrderStatus status)
         {
             var list = await _context.RepairOrders
+                .AsNoTracking()
                 .Where(x => x.BusinessId == businessId && (RepairOrderStatus)x.Status == status)
-                .OrderByDescending(x => x.OrderNumber)
+                .OrderByDescending(x => x.CreatedAt)
                 .Select(x => new
                 {
                     x.Id,
@@ -35,7 +36,17 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                     x.ProblemDescription,
                     Status = ((RepairOrderStatus)x.Status).ToString(),
                     x.CreatedAt,
-                    x.UpdatedAt
+                    x.UpdatedAt,
+                    Items = x.Items
+                        .OrderBy(i => i.Id)
+                        .Select(i => new
+                        {
+                            i.Id,
+                            i.CatalogVariantId,
+                            i.Description,
+                            i.Quantity,
+                            i.Price
+                        })
                 })
                 .ToListAsync();
 

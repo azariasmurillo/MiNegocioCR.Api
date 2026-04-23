@@ -39,7 +39,7 @@ public class NotificationServiceTests
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
-            OrderNumber = 42,
+            OrderNumber = "000042",
             BusinessId = business.Id,
             ContactId = contact.Id,
             Contact = contact,
@@ -75,7 +75,7 @@ public class NotificationServiceTests
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
-            OrderNumber = 1,
+            OrderNumber = "000001",
             BusinessId = business.Id,
             ContactId = contact.Id,
             Contact = contact,
@@ -105,7 +105,7 @@ public class NotificationServiceTests
         var order = new RepairOrder
         {
             Id = Guid.NewGuid(),
-            OrderNumber = 1,
+            OrderNumber = "000001",
             BusinessId = business.Id,
             ContactId = contact.Id,
             Contact = contact,

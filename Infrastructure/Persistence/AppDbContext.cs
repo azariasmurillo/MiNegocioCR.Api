@@ -15,6 +15,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<User> Users => Set<User>();
         public DbSet<BusinessSettings> BusinessSettings => Set<BusinessSettings>();
         public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
+        public DbSet<RepairOrderItem> RepairOrderItems => Set<RepairOrderItem>();
         public DbSet<WhatsAppMessage> WhatsAppMessages => Set<WhatsAppMessage>();
         public DbSet<WhatsAppConversation> WhatsAppConversations => Set<WhatsAppConversation>();
         public DbSet<WhatsappWebhookLog> WhatsappWebhookLogs => Set<WhatsappWebhookLog>();
@@ -172,14 +173,49 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
             modelBuilder.Entity<Contact>()
                 .HasIndex(x => x.BusinessId);
 
-            modelBuilder.Entity<RepairOrder>()
-                .HasOne(o => o.Contact)
-                .WithMany(c => c.RepairOrders)
-                .HasForeignKey(o => o.ContactId)
-                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<RepairOrder>(entity =>
+            {
+                entity.HasOne(o => o.Contact)
+                    .WithMany(c => c.RepairOrders)
+                    .HasForeignKey(o => o.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<RepairOrder>()
-                .HasIndex(x => x.ContactId);
+                entity.Property(x => x.OrderNumber)
+                    .IsRequired()
+                    .HasMaxLength(32);
+
+                entity.HasIndex(x => x.CreatedAt);
+                entity.HasIndex(x => x.ContactId);
+                entity.HasIndex(x => new { x.BusinessId, x.CreatedAt });
+                entity.HasIndex(x => new { x.BusinessId, x.OrderNumber })
+                    .IsUnique();
+
+                entity.HasIndex(x => new { x.BusinessId, x.Status });
+            });
+
+            modelBuilder.Entity<RepairOrderItem>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.HasOne(x => x.RepairOrder)
+                    .WithMany(o => o.Items)
+                    .HasForeignKey(x => x.RepairOrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.CatalogVariant)
+                    .WithMany(v => v.RepairOrderItems)
+                    .HasForeignKey(x => x.CatalogVariantId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(x => x.Description).HasMaxLength(2000);
+                entity.Property(x => x.Price)
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.Quantity);
+
+                entity.HasIndex(x => x.RepairOrderId);
+                entity.HasIndex(x => x.CatalogVariantId);
+            });
 
             modelBuilder.Entity<ConversationTag>()
                 .HasIndex(x => new { x.ConversationId, x.Tag });

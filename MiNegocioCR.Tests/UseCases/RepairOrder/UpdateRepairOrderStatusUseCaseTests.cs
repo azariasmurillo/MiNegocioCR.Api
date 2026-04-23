@@ -42,7 +42,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         {
             Id = Guid.NewGuid(),
             BusinessId = businessId,
-            OrderNumber = 1,
+            OrderNumber = "000001",
             Status = (int)RepairOrderStatus.Pending,
             ContactId = contact.Id
         };
@@ -80,7 +80,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         {
             Id = Guid.NewGuid(),
             BusinessId = businessId,
-            OrderNumber = 1,
+            OrderNumber = "000001",
             Status = (int)RepairOrderStatus.InProcess,
             ContactId = contact.Id
         };
@@ -115,6 +115,84 @@ public class UpdateRepairOrderStatusUseCaseTests
     }
 
     [Fact]
+    public async Task Execute_WhenSameAsCurrent_ReturnsStatusStringWithoutReNotifications()
+    {
+        await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50644444444",
+            CreatedAt = DateTime.UtcNow
+        };
+        var order = new RepairOrderEntity
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            OrderNumber = "000001",
+            Status = (int)RepairOrderStatus.Pending,
+            ContactId = contact.Id,
+            UpdatedAt = new DateTime(2024, 6, 1, 12, 0, 0, DateTimeKind.Utc)
+        };
+        context.Businesses.Add(business);
+        context.Contacts.Add(contact);
+        context.RepairOrders.Add(order);
+        await context.SaveChangesAsync();
+        var updatedAtBefore = order.UpdatedAt;
+
+        var notificationMock = new Mock<INotificationService>();
+        var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
+        var result = await sut.Execute(
+            order.Id,
+            new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Pending });
+        var statusValue = result!.GetType().GetProperty("Status")?.GetValue(result) as string;
+        statusValue.Should().Be(RepairOrderStatus.Pending.ToString());
+        await context.Entry(order).ReloadAsync();
+        order.Status.Should().Be((int)RepairOrderStatus.Pending);
+        order.UpdatedAt.Should().BeCloseTo(updatedAtBefore, TimeSpan.FromSeconds(1));
+        notificationMock.Invocations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Execute_WhenProcessedToCancelled_ThrowsInvalidStatusTransitionException()
+    {
+        await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50655555555",
+            CreatedAt = DateTime.UtcNow
+        };
+        var order = new RepairOrderEntity
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            OrderNumber = "000001",
+            Status = (int)RepairOrderStatus.Processed,
+            ContactId = contact.Id
+        };
+        context.Businesses.Add(business);
+        context.Contacts.Add(contact);
+        context.RepairOrders.Add(order);
+        await context.SaveChangesAsync();
+
+        var notificationMock = new Mock<INotificationService>();
+        var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
+        var act = () => sut.Execute(
+            order.Id,
+            new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Cancelled });
+
+        await act.Should().ThrowAsync<InvalidStatusTransitionException>();
+    }
+
+    [Fact]
     public async Task Execute_WhenInvalidTransition_ThrowsInvalidStatusTransitionException()
     {
         await using var context = CreateInMemoryContext();
@@ -132,7 +210,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         {
             Id = Guid.NewGuid(),
             BusinessId = businessId,
-            OrderNumber = 1,
+            OrderNumber = "000001",
             Status = (int)RepairOrderStatus.Pending,
             ContactId = contact.Id
         };
@@ -148,5 +226,41 @@ public class UpdateRepairOrderStatusUseCaseTests
         var act = () => sut.Execute(order.Id, request);
 
         await act.Should().ThrowAsync<InvalidStatusTransitionException>();
+    }
+
+    [Fact]
+    public async Task Execute_Cancelled_SetsIsActiveFalse()
+    {
+        await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50633333333",
+            CreatedAt = DateTime.UtcNow
+        };
+        var order = new RepairOrderEntity
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            OrderNumber = "000001",
+            Status = (int)RepairOrderStatus.Pending,
+            IsActive = true,
+            ContactId = contact.Id
+        };
+        context.Businesses.Add(business);
+        context.Contacts.Add(contact);
+        context.RepairOrders.Add(order);
+        await context.SaveChangesAsync();
+
+        var notificationMock = new Mock<INotificationService>();
+        var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
+        await sut.Execute(order.Id, new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Cancelled });
+
+        order.IsActive.Should().BeFalse();
+        order.Status.Should().Be((int)RepairOrderStatus.Cancelled);
     }
 }

@@ -4,7 +4,9 @@ public class RepairOrder
 {
     public Guid Id { get; set; }
     public Guid BusinessId { get; set; }
-    public int OrderNumber { get; set; }
+
+    /// <summary>Número de orden formateado (p. ej. 6 dígitos) por negocio; único con <see cref="BusinessId"/>.</summary>
+    public string OrderNumber { get; set; } = string.Empty;
 
     public Guid ContactId { get; set; }
     public Contact Contact { get; set; } = null!;
@@ -14,8 +16,15 @@ public class RepairOrder
 
     public int Status { get; set; }
 
+    /// <summary>
+    /// Permite excluir órdenes canceladas o archivadas de listados sin borrar el registro.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public Business Business { get; set; } = null!;
+
+    public ICollection<RepairOrderItem> Items { get; set; } = new List<RepairOrderItem>();
 }

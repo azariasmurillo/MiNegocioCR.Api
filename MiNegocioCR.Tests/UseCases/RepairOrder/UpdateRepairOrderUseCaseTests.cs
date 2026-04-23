@@ -41,14 +41,15 @@ public class UpdateRepairOrderUseCaseTests
         {
             Id = Guid.NewGuid(),
             BusinessId = businessId,
-            OrderNumber = 1,
+            OrderNumber = "000001",
             Status = (int)RepairOrderStatus.Pending,
             ContactId = contact.Id
         };
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
-        var sut = new UpdateRepairOrderUseCase(context);
+        var getById = new GetRepairOrderByIdUseCase(context);
+        var sut = new UpdateRepairOrderUseCase(context, getById);
         var request = new UpdateRepairOrderRequestDto
         {
             Name = "New Name",
@@ -75,7 +76,7 @@ public class UpdateRepairOrderUseCaseTests
     public async Task Execute_WhenRequestIsNull_ThrowsArgumentNullException()
     {
         await using var context = CreateInMemoryContext();
-        var sut = new UpdateRepairOrderUseCase(context);
+        var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
 
         var act = () => sut.Execute(Guid.NewGuid(), null!);
 
@@ -87,7 +88,7 @@ public class UpdateRepairOrderUseCaseTests
     public async Task Execute_WhenOrderNotFound_ThrowsNotFoundException()
     {
         await using var context = CreateInMemoryContext();
-        var sut = new UpdateRepairOrderUseCase(context);
+        var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
         var request = new UpdateRepairOrderRequestDto();
 
         var act = () => sut.Execute(Guid.NewGuid(), request);
@@ -114,19 +115,54 @@ public class UpdateRepairOrderUseCaseTests
         {
             Id = Guid.NewGuid(),
             BusinessId = businessId,
-            OrderNumber = 1,
+            OrderNumber = "000001",
             Status = (int)RepairOrderStatus.Delivered,
             ContactId = contact.Id
         };
         context.RepairOrders.Add(order);
         await context.SaveChangesAsync();
 
-        var sut = new UpdateRepairOrderUseCase(context);
+        var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
         var request = new UpdateRepairOrderRequestDto { Name = "X" };
 
         var act = () => sut.Execute(order.Id, request);
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Delivered orders cannot be modified*");
+    }
+
+    [Fact]
+    public async Task Execute_WhenOrderIsCancelled_ThrowsArgumentException()
+    {
+        await using var context = CreateInMemoryContext();
+        var businessId = Guid.NewGuid();
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "X",
+            Phone = "1",
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Contacts.Add(contact);
+        var order = new RepairOrderEntity
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            OrderNumber = "000001",
+            Status = (int)RepairOrderStatus.Cancelled,
+            IsActive = false,
+            ContactId = contact.Id
+        };
+        context.RepairOrders.Add(order);
+        await context.SaveChangesAsync();
+
+        var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
+        var request = new UpdateRepairOrderRequestDto { Name = "Y" };
+
+        var act = () => sut.Execute(order.Id, request);
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Cancelled orders cannot be modified*");
     }
 }

@@ -22,6 +22,8 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public ICollection<CatalogVariantOptionValue> VariantOptionValues { get; set; } = new List<CatalogVariantOptionValue>();
 
+        public ICollection<RepairOrderItem> RepairOrderItems { get; set; } = new List<RepairOrderItem>();
+
         public void IncreaseStock(int quantity)
         {
             if (quantity <= 0)
