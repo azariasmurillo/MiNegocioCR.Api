@@ -16,6 +16,14 @@ namespace MiNegocioCR.Api.Application.DTOs
 
         public string? DeviceDescription { get; set; }
         public string? ProblemDescription { get; set; }
+        public string? DeviceType { get; set; }
+        public string? DeviceTypeOther { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
+        public string? SerialNumber { get; set; }
+        public string? AccessoriesIncluded { get; set; }
+        public string? OperatingSystem { get; set; }
+        public string? Password { get; set; }
 
         /// <summary>Null: no tocar ítems. No vacía: reemplaza todas las líneas. Lista vacía: quita los ítems.</summary>
         public List<RepairOrderItemDto>? Items { get; set; }

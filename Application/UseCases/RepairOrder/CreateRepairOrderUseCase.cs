@@ -80,6 +80,14 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             Contact = contact,
             DeviceDescription = request.DeviceDescription,
             ProblemDescription = request.ProblemDescription,
+            DeviceType = request.DeviceType,
+            DeviceTypeOther = request.DeviceTypeOther,
+            Brand = request.Brand,
+            Model = request.Model,
+            SerialNumber = request.SerialNumber,
+            AccessoriesIncluded = request.AccessoriesIncluded,
+            OperatingSystem = request.OperatingSystem,
+            Password = request.Password,
             Status = (int)RepairOrderStatus.Pending,
             IsActive = true
         };

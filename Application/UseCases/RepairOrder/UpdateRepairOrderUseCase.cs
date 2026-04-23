@@ -25,7 +25,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var order = await _context.RepairOrders
-                .Include(o => o.Items)
                 .Include(o => o.Contact)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
@@ -48,13 +47,16 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                     request.Items,
                     CancellationToken.None);
 
-                _context.RepairOrderItems.RemoveRange(order.Items);
-                order.Items.Clear();
+                // Reemplazo total de líneas en SQL directo para evitar conflictos
+                // de tracking/concurrencia al borrar y reinsertar en el mismo contexto.
+                await _context.RepairOrderItems
+                    .Where(i => i.RepairOrderId == order.Id)
+                    .ExecuteDeleteAsync();
+
                 if (request.Items.Count > 0)
                 {
                     var newItems = RepairOrderItemsRequestHelper.MapToNewEntities(order, request.Items);
-                    foreach (var n in newItems)
-                        order.Items.Add(n);
+                    _context.RepairOrderItems.AddRange(newItems);
                 }
             }
 
@@ -121,6 +123,14 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
 
             order.DeviceDescription = request.DeviceDescription;
             order.ProblemDescription = request.ProblemDescription;
+            order.DeviceType = request.DeviceType;
+            order.DeviceTypeOther = request.DeviceTypeOther;
+            order.Brand = request.Brand;
+            order.Model = request.Model;
+            order.SerialNumber = request.SerialNumber;
+            order.AccessoriesIncluded = request.AccessoriesIncluded;
+            order.OperatingSystem = request.OperatingSystem;
+            order.Password = request.Password;
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);

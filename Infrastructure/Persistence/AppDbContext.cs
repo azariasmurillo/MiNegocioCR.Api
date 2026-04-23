@@ -183,6 +183,14 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.OrderNumber)
                     .IsRequired()
                     .HasMaxLength(32);
+                entity.Property(x => x.DeviceType).HasMaxLength(50);
+                entity.Property(x => x.DeviceTypeOther).HasMaxLength(200);
+                entity.Property(x => x.Brand).HasMaxLength(100);
+                entity.Property(x => x.Model).HasMaxLength(150);
+                entity.Property(x => x.SerialNumber).HasMaxLength(150);
+                entity.Property(x => x.AccessoriesIncluded).HasMaxLength(500);
+                entity.Property(x => x.OperatingSystem).HasMaxLength(100);
+                entity.Property(x => x.Password).HasMaxLength(200);
 
                 entity.HasIndex(x => x.CreatedAt);
                 entity.HasIndex(x => x.ContactId);

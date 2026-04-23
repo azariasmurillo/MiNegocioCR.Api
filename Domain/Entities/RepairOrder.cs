@@ -13,6 +13,14 @@ public class RepairOrder
 
     public string? DeviceDescription { get; set; }
     public string? ProblemDescription { get; set; }
+    public string? DeviceType { get; set; }
+    public string? DeviceTypeOther { get; set; }
+    public string? Brand { get; set; }
+    public string? Model { get; set; }
+    public string? SerialNumber { get; set; }
+    public string? AccessoriesIncluded { get; set; }
+    public string? OperatingSystem { get; set; }
+    public string? Password { get; set; }
 
     public int Status { get; set; }
 

@@ -33,6 +33,10 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                         Phone = x.Contact.Phone,
                         Email = x.Contact.Email
                     },
+                    x.DeviceType,
+                    x.Brand,
+                    x.Model,
+                    x.SerialNumber,
                     Status = ((RepairOrderStatus)x.Status).ToString(),
                     x.CreatedAt,
                     Items = x.Items
