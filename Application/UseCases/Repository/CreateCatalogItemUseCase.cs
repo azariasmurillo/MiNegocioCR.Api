@@ -14,7 +14,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         public CreateCatalogItemUseCase(
             ICatalogRepository catalogRepository,
             ICatalogCategoryRepository categoryRepository)
-        {
+        {            
             _catalogRepository = catalogRepository;
             _categoryRepository = categoryRepository;
         }

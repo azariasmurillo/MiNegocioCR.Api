@@ -55,7 +55,6 @@ public class UpdateRepairOrderUseCaseTests
             Name = "New Name",
             Phone = "999",
             Email = "new@test.com",
-            DeviceDescription = "Device",
             ProblemDescription = "Problem"
         };
 
@@ -68,7 +67,6 @@ public class UpdateRepairOrderUseCaseTests
         updated.Contact.Name.Should().Be("New Name");
         updated.Contact.Phone.Should().Be("999");
         updated.Contact.Email.Should().Be("new@test.com");
-        updated.DeviceDescription.Should().Be("Device");
         updated.ProblemDescription.Should().Be("Problem");
     }
 

@@ -10,7 +10,6 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string CustomerName { get; set; } = string.Empty;
         public string CustomerPhone { get; set; } = string.Empty;
         public string? CustomerEmail { get; set; }
-        public string? DeviceDescription { get; set; }
         public string? ProblemDescription { get; set; }
         public string? DeviceType { get; set; }
         public string? DeviceTypeOther { get; set; }
@@ -20,6 +19,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? AccessoriesIncluded { get; set; }
         public string? OperatingSystem { get; set; }
         public string? Password { get; set; }
+        public bool IsDiagnosticPaid { get; set; } = false;
 
         public List<RepairOrderItemDto> Items { get; set; } = new();
     }

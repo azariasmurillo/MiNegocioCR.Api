@@ -121,7 +121,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 }
             }
 
-            order.DeviceDescription = request.DeviceDescription;
             order.ProblemDescription = request.ProblemDescription;
             order.DeviceType = request.DeviceType;
             order.DeviceTypeOther = request.DeviceTypeOther;
@@ -131,6 +130,8 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
             order.AccessoriesIncluded = request.AccessoriesIncluded;
             order.OperatingSystem = request.OperatingSystem;
             order.Password = request.Password;
+            if (request.IsDiagnosticPaid.HasValue)
+                order.IsDiagnosticPaid = request.IsDiagnosticPaid.Value;
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);

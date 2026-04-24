@@ -56,8 +56,9 @@ namespace MiNegocioCR.Api.Application.AI.Tools
                 foreach (var o in activeOrders.Take(3))
                 {
                     var status = GetStatus(o.Status);
+                    var equipo = BuildDeviceLabel(o);
 
-                    message += $"• {o.DeviceDescription} — {status}\n";
+                    message += $"• {equipo} — {status}\n";
                 }
 
                 return new ToolResult
@@ -70,9 +71,22 @@ namespace MiNegocioCR.Api.Application.AI.Tools
 
             return new ToolResult
             {
-                Message = $"Tu última reparación ({lastOrder.DeviceDescription}) ya fue entregada."
+                Message = $"Tu última reparación ({BuildDeviceLabel(lastOrder)}) ya fue entregada."
             };
         }
+
+        private static string BuildDeviceLabel(Domain.Entities.RepairOrder order)
+        {
+            var parts = new[]
+            {
+                order.DeviceType == "Other" ? order.DeviceTypeOther : order.DeviceType,
+                order.Brand,
+                order.Model
+            }.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+
+            return parts.Count > 0 ? string.Join(" ", parts) : "equipo sin detalle";
+        }
+
         private static string GetStatus(int status)
         {
             return (RepairOrderStatus)status switch

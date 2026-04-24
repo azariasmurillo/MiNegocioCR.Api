@@ -78,7 +78,6 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             OrderNumber = orderNumber,
             ContactId = contact.Id,
             Contact = contact,
-            DeviceDescription = request.DeviceDescription,
             ProblemDescription = request.ProblemDescription,
             DeviceType = request.DeviceType,
             DeviceTypeOther = request.DeviceTypeOther,
@@ -88,6 +87,7 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             AccessoriesIncluded = request.AccessoriesIncluded,
             OperatingSystem = request.OperatingSystem,
             Password = request.Password,
+            IsDiagnosticPaid = request.IsDiagnosticPaid,
             Status = (int)RepairOrderStatus.Pending,
             IsActive = true
         };

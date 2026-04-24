@@ -31,7 +31,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                         Phone = x.Contact.Phone,
                         Email = x.Contact.Email
                     },
-                    x.DeviceDescription,
                     x.ProblemDescription,
                     x.DeviceType,
                     x.DeviceTypeOther,
@@ -41,6 +40,7 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                     x.AccessoriesIncluded,
                     x.OperatingSystem,
                     x.Password,
+                    x.IsDiagnosticPaid,
                     Status = ((RepairOrderStatus)x.Status).ToString(),
                     x.CreatedAt,
                     x.UpdatedAt,

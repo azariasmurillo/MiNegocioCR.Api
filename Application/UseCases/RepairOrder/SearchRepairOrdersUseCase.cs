@@ -61,7 +61,6 @@ public class SearchRepairOrdersUseCase : ISearchRepairOrdersUseCase
                     Phone = r.Contact.Phone,
                     Email = r.Contact.Email
                 },
-                r.DeviceDescription,
                 r.ProblemDescription,
                 r.DeviceType,
                 r.DeviceTypeOther,
@@ -71,6 +70,7 @@ public class SearchRepairOrdersUseCase : ISearchRepairOrdersUseCase
                 r.AccessoriesIncluded,
                 r.OperatingSystem,
                 r.Password,
+                r.IsDiagnosticPaid,
                 Status = ((RepairOrderStatus)r.Status).ToString(),
                 r.IsActive,
                 r.CreatedAt,

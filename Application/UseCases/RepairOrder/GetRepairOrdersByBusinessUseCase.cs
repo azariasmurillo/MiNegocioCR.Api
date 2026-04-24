@@ -37,6 +37,7 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                     x.Brand,
                     x.Model,
                     x.SerialNumber,
+                    x.IsDiagnosticPaid,
                     Status = ((RepairOrderStatus)x.Status).ToString(),
                     x.CreatedAt,
                     Items = x.Items

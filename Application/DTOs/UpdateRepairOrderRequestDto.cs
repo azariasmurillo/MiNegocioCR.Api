@@ -14,7 +14,6 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? Phone { get; set; }
         public string? Email { get; set; }
 
-        public string? DeviceDescription { get; set; }
         public string? ProblemDescription { get; set; }
         public string? DeviceType { get; set; }
         public string? DeviceTypeOther { get; set; }
@@ -24,6 +23,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? AccessoriesIncluded { get; set; }
         public string? OperatingSystem { get; set; }
         public string? Password { get; set; }
+        public bool? IsDiagnosticPaid { get; set; }
 
         /// <summary>Null: no tocar ítems. No vacía: reemplaza todas las líneas. Lista vacía: quita los ítems.</summary>
         public List<RepairOrderItemDto>? Items { get; set; }

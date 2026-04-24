@@ -11,7 +11,6 @@ public class RepairOrder
     public Guid ContactId { get; set; }
     public Contact Contact { get; set; } = null!;
 
-    public string? DeviceDescription { get; set; }
     public string? ProblemDescription { get; set; }
     public string? DeviceType { get; set; }
     public string? DeviceTypeOther { get; set; }
@@ -21,6 +20,7 @@ public class RepairOrder
     public string? AccessoriesIncluded { get; set; }
     public string? OperatingSystem { get; set; }
     public string? Password { get; set; }
+    public bool IsDiagnosticPaid { get; set; } = false;
 
     public int Status { get; set; }
 
