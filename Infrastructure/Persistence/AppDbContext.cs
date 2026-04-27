@@ -44,6 +44,16 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
             modelBuilder.Entity<BusinessSettings>()
                 .HasKey(x => x.BusinessId);
 
+            modelBuilder.Entity<Business>(entity =>
+            {
+                entity.Property(x => x.LogoUrl).HasMaxLength(500);
+                entity.Property(x => x.BusinessType).HasMaxLength(120);
+                entity.Property(x => x.Description).HasMaxLength(500);
+                entity.Property(x => x.Phone).HasMaxLength(50);
+                entity.Property(x => x.Location).HasMaxLength(250);
+                entity.Property(x => x.PublicEmail).HasMaxLength(150);
+            });
+
             modelBuilder.Entity<User>()
                 .HasIndex(x => x.FirebaseUid)
                 .IsUnique();
@@ -151,11 +161,36 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .HasForeignKey(x => x.SaleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<SaleItem>()
+                .HasOne<CatalogVariant>()
+                .WithMany()
+                .HasForeignKey(x => x.CatalogVariantId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<Sale>()
                 .HasOne(s => s.Contact)
                 .WithMany(c => c.Sales)
                 .HasForeignKey(s => s.ContactId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Sale>(entity =>
+            {
+                entity.Property(x => x.InvoiceNumber)
+                    .IsRequired()
+                    .HasMaxLength(32);
+                entity.Property(x => x.HaciendaConsecutive)
+                    .HasMaxLength(50);
+                entity.HasIndex(x => new { x.BusinessId, x.InvoiceNumber })
+                    .IsUnique();
+            });
+
+            modelBuilder.Entity<SaleItem>(entity =>
+            {
+                entity.Property(x => x.ItemType)
+                    .IsRequired()
+                    .HasMaxLength(20);
+            });
 
             modelBuilder.Entity<Sale>()
                 .HasIndex(x => x.ContactId);

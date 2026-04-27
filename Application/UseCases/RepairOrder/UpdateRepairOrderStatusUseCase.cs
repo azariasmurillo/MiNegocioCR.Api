@@ -20,11 +20,11 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
         _notificationService = notificationService;
     }
 
-    public async Task<object> Execute(Guid id, UpdateStatusRequestDto request)
+    public async Task<object> Execute(Guid businessId, Guid id, UpdateStatusRequestDto request)
     {
         var order = await _context.RepairOrders
             .Include(o => o.Contact)
-            .FirstOrDefaultAsync(o => o.Id == id);
+            .FirstOrDefaultAsync(o => o.BusinessId == businessId && o.Id == id);
 
         if (order == null)
         {

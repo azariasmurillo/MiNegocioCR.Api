@@ -24,6 +24,8 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<QuickReplyTemplate> QuickReplyTemplates { get; }
         DbSet <ConversationtagEntity> ConversationTags { get; }
         DbSet<ContactEntity> Contacts { get; }
+        DbSet<Sale> Sales { get; }
+        DbSet<SaleItem> SaleItems { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

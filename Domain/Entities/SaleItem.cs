@@ -1,4 +1,4 @@
-﻿namespace MiNegocioCR.Api.Domain.Entities
+namespace MiNegocioCR.Api.Domain.Entities
 {
     public class SaleItem
     {
@@ -6,7 +6,9 @@
 
         public Guid SaleId { get; set; }
 
-        public Guid CatalogVariantId { get; set; }
+        public Guid? CatalogVariantId { get; set; }
+        public string? Description { get; set; }
+        public string ItemType { get; set; } = "Product";
 
         public int Quantity { get; set; }
 

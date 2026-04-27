@@ -1,6 +1,8 @@
-﻿using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
@@ -8,6 +10,17 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
     {
         private readonly ISaleRepository _saleRepository;
         private readonly IInventoryService _inventoryService;
+        private readonly IAppDbContext _context;
+
+        public RegisterSaleUseCase(
+            ISaleRepository saleRepository,
+            IInventoryService inventoryService,
+            IAppDbContext context)
+        {
+            _saleRepository = saleRepository;
+            _inventoryService = inventoryService;
+            _context = context;
+        }
 
         public RegisterSaleUseCase(
             ISaleRepository saleRepository,
@@ -15,6 +28,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         {
             _saleRepository = saleRepository;
             _inventoryService = inventoryService;
+            _context = null!;
         }
 
         public async Task<Guid> ExecuteAsync(
@@ -27,6 +41,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             {
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
+                InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
                 SaleDate = DateTime.UtcNow
             };
 
@@ -36,6 +51,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 {
                     Id = Guid.NewGuid(),
                     CatalogVariantId = item.variantId,
+                    ItemType = "Product",
                     Quantity = item.quantity,
                     Price = item.price
                 });
@@ -53,6 +69,35 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             await _saleRepository.AddSaleAsync(sale);
 
             return sale.Id;
+        }
+
+        private async Task<string> BuildInvoiceNumberAsync(Guid businessId)
+        {
+            if (_context == null)
+            {
+                return $"FACT-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1, 9999):D4}";
+            }
+
+            var today = DateTime.UtcNow.Date;
+            var prefix = $"FACT-{today:yyyyMMdd}-";
+            var numbers = await _context.Sales
+                .Where(s => s.BusinessId == businessId
+                    && s.InvoiceNumber != null
+                    && s.InvoiceNumber.StartsWith(prefix))
+                .Select(s => s.InvoiceNumber)
+                .ToListAsync();
+
+            var seq = 1;
+            if (numbers.Count > 0)
+            {
+                var max = numbers
+                    .Select(x => int.TryParse(x[^4..], out var n) ? n : 0)
+                    .DefaultIfEmpty(0)
+                    .Max();
+                seq = max + 1;
+            }
+
+            return $"{prefix}{seq:D4}";
         }
     }
 }

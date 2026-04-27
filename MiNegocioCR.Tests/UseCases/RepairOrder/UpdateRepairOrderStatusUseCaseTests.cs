@@ -55,7 +55,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
         var request = new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.InProcess };
 
-        var result = await sut.Execute(order.Id, request);
+        var result = await sut.Execute(businessId, order.Id, request);
 
         result.Should().NotBeNull();
         await context.Entry(order).ReloadAsync();
@@ -93,7 +93,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
         var request = new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Processed };
 
-        await sut.Execute(order.Id, request);
+        await sut.Execute(businessId, order.Id, request);
 
         notificationMock.Verify(
             x => x.OrderProcessedAsync(It.IsAny<BusinessEntity>(), It.Is<RepairOrderEntity>(o => o.Id == order.Id)),
@@ -108,7 +108,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
         var request = new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.InProcess };
 
-        var act = () => sut.Execute(Guid.NewGuid(), request);
+        var act = () => sut.Execute(Guid.NewGuid(), Guid.NewGuid(), request);
 
         await act.Should().ThrowAsync<NotFoundException>()
             .Where(ex => ex.Resource == "RepairOrder");
@@ -146,6 +146,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         var notificationMock = new Mock<INotificationService>();
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
         var result = await sut.Execute(
+            businessId,
             order.Id,
             new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Pending });
         var statusValue = result!.GetType().GetProperty("Status")?.GetValue(result) as string;
@@ -186,6 +187,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         var notificationMock = new Mock<INotificationService>();
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
         var act = () => sut.Execute(
+            businessId,
             order.Id,
             new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Cancelled });
 
@@ -223,7 +225,7 @@ public class UpdateRepairOrderStatusUseCaseTests
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
         var request = new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Delivered };
 
-        var act = () => sut.Execute(order.Id, request);
+        var act = () => sut.Execute(businessId, order.Id, request);
 
         await act.Should().ThrowAsync<InvalidStatusTransitionException>();
     }
@@ -258,7 +260,7 @@ public class UpdateRepairOrderStatusUseCaseTests
 
         var notificationMock = new Mock<INotificationService>();
         var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
-        await sut.Execute(order.Id, new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Cancelled });
+        await sut.Execute(businessId, order.Id, new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.Cancelled });
 
         order.IsActive.Should().BeFalse();
         order.Status.Should().Be((int)RepairOrderStatus.Cancelled);

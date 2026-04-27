@@ -4,6 +4,12 @@ public class Business
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
+    public string? BusinessType { get; set; }
+    public string? Description { get; set; }
+    public string? Phone { get; set; }
+    public string? Location { get; set; }
+    public string? PublicEmail { get; set; }
     public string? SmtpHost { get; set; }
     public int? SmtpPort { get; set; }
     public string? SmtpUsername { get; set; }

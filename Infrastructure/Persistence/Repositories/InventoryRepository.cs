@@ -29,10 +29,10 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<InventoryMovement>> GetMovementsByVariantAsync(Guid variantId)
+        public async Task<List<InventoryMovement>> GetMovementsByVariantAsync(Guid businessId, Guid variantId)
         {
             return await _context.InventoryMovements
-                .Where(x => x.CatalogVariantId == variantId)
+                .Where(x => x.BusinessId == businessId && x.CatalogVariantId == variantId)
                 .ToListAsync();
         }
     }

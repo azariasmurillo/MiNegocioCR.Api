@@ -109,7 +109,7 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
 
         await _notificationService.OrderCreatedAsync(business, order);
 
-        var result = await _getRepairOrderById.Execute(order.Id);
+        var result = await _getRepairOrderById.Execute(businessId, order.Id);
         if (result == null)
             throw new InvalidOperationException("La orden creada no pudo leerse.");
 

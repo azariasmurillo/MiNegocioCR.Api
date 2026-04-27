@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -8,6 +8,7 @@
          Sin esto, el SDK incluye también appsettings/json bajo MiNegocioCR.Tests\bin\...
          y MSBuild puede copiar salida sobre salida → rutas recursivas y error de longitud máxima. -->
     <DefaultItemExcludes>$(DefaultItemExcludes);MiNegocioCR.Tests\**</DefaultItemExcludes>
+    <UserSecretsId>bfa8fe58-d4e3-4d76-a571-96817341251e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

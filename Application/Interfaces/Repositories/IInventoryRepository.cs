@@ -1,4 +1,4 @@
-﻿using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Entities;
 
 namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 {
@@ -8,6 +8,6 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 
         Task<List<InventoryMovement>> GetMovementsAsync(Guid businessId);
 
-        Task<List<InventoryMovement>> GetMovementsByVariantAsync(Guid variantId);
+        Task<List<InventoryMovement>> GetMovementsByVariantAsync(Guid businessId, Guid variantId);
     }
 }

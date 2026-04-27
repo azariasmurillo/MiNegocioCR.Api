@@ -21,12 +21,12 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
             _getById = getById;
         }
 
-        public async Task<object> Execute(Guid id, UpdateRepairOrderRequestDto request)
+        public async Task<object> Execute(Guid businessId, Guid id, UpdateRepairOrderRequestDto request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var order = await _context.RepairOrders
                 .Include(o => o.Contact)
-                .FirstOrDefaultAsync(o => o.Id == id);
+                .FirstOrDefaultAsync(o => o.BusinessId == businessId && o.Id == id);
 
             if (order == null)
                 throw new NotFoundException("RepairOrder", "Order not found");
@@ -136,7 +136,7 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
 
             await _context.SaveChangesAsync(CancellationToken.None);
 
-            var result = await _getById.Execute(id);
+            var result = await _getById.Execute(businessId, id);
             if (result == null)
                 throw new InvalidOperationException("La orden no pudo leerse luego de actualizarse.");
             return result;

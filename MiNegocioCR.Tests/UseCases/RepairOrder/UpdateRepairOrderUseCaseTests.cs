@@ -58,7 +58,7 @@ public class UpdateRepairOrderUseCaseTests
             ProblemDescription = "Problem"
         };
 
-        await sut.Execute(order.Id, request);
+        await sut.Execute(businessId, order.Id, request);
 
         var updated = await context.RepairOrders
             .AsNoTracking()
@@ -76,7 +76,7 @@ public class UpdateRepairOrderUseCaseTests
         await using var context = CreateInMemoryContext();
         var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
 
-        var act = () => sut.Execute(Guid.NewGuid(), null!);
+        var act = () => sut.Execute(Guid.NewGuid(), Guid.NewGuid(), null!);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
             .WithParameterName("request");
@@ -89,7 +89,7 @@ public class UpdateRepairOrderUseCaseTests
         var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
         var request = new UpdateRepairOrderRequestDto();
 
-        var act = () => sut.Execute(Guid.NewGuid(), request);
+        var act = () => sut.Execute(Guid.NewGuid(), Guid.NewGuid(), request);
 
         await act.Should().ThrowAsync<NotFoundException>()
             .Where(ex => ex.Resource == "RepairOrder");
@@ -123,7 +123,7 @@ public class UpdateRepairOrderUseCaseTests
         var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
         var request = new UpdateRepairOrderRequestDto { Name = "X" };
 
-        var act = () => sut.Execute(order.Id, request);
+        var act = () => sut.Execute(businessId, order.Id, request);
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Delivered orders cannot be modified*");
@@ -158,7 +158,7 @@ public class UpdateRepairOrderUseCaseTests
         var sut = new UpdateRepairOrderUseCase(context, new GetRepairOrderByIdUseCase(context));
         var request = new UpdateRepairOrderRequestDto { Name = "Y" };
 
-        var act = () => sut.Execute(order.Id, request);
+        var act = () => sut.Execute(businessId, order.Id, request);
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*Cancelled orders cannot be modified*");

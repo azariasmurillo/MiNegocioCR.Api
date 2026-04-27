@@ -14,11 +14,11 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
             _context = context;
         }
 
-        public async Task<object?> Execute(Guid id)
+        public async Task<object?> Execute(Guid businessId, Guid id)
         {
             return await _context.RepairOrders
                 .AsNoTracking()
-                .Where(x => x.Id == id)
+                .Where(x => x.BusinessId == businessId && x.Id == id)
                 .Select(x => new
                 {
                     x.Id,

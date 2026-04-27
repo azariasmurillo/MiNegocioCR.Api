@@ -9,10 +9,14 @@ namespace MiNegocioCR.Api.API.Controllers
     public class SalesController : ControllerBase
     {
         private readonly IRegisterSaleUseCase _registerSale;
+        private readonly ICreateSaleFromRepairUseCase _createSaleFromRepair;
 
-        public SalesController(IRegisterSaleUseCase registerSale)
+        public SalesController(
+            IRegisterSaleUseCase registerSale,
+            ICreateSaleFromRepairUseCase createSaleFromRepair)
         {
             _registerSale = registerSale;
+            _createSaleFromRepair = createSaleFromRepair;
         }
 
         [HttpPost]
@@ -37,6 +41,18 @@ namespace MiNegocioCR.Api.API.Controllers
                 request.CustomerEmail);
 
             return Ok(id);
+        }
+
+        [HttpPost("from-repair/{businessId:guid}/{repairOrderId:guid}")]
+        public async Task<IActionResult> CreateFromRepair(
+            Guid businessId,
+            Guid repairOrderId,
+            [FromBody] CreateSaleFromRepairRequestDto request)
+        {
+            if (request == null) return BadRequest("CreateFromRepair - Request body is required.");
+
+            var result = await _createSaleFromRepair.ExecuteAsync(businessId, repairOrderId, request);
+            return Ok(result);
         }
     }
 }

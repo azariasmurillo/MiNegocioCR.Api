@@ -36,6 +36,7 @@ namespace MiNegocioCR.Api.Application.AI.Sales
             {
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
+                InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
                 CreatedAt = DateTime.UtcNow,
                 CustomerPhone = phoneNumber,
                 TotalAmount = totalAmount,
@@ -48,6 +49,7 @@ namespace MiNegocioCR.Api.Application.AI.Sales
                 Id = Guid.NewGuid(),
                 SaleId = sale.Id,
                 CatalogVariantId = variant.Id,
+                ItemType = "Product",
                 Quantity = quantity,
                 UnitPrice = unitPrice,
                 Total = totalAmount
@@ -72,6 +74,30 @@ namespace MiNegocioCR.Api.Application.AI.Sales
             await _context.SaveChangesAsync();
 
             return $"Perfecto. Registré la compra de {quantity} {variant.CatalogItem.Name}. Total: ₡{totalAmount:N0}.";
+        }
+
+        private async Task<string> BuildInvoiceNumberAsync(Guid businessId)
+        {
+            var today = DateTime.UtcNow.Date;
+            var prefix = $"FACT-{today:yyyyMMdd}-";
+            var numbers = await _context.Sales
+                .Where(s => s.BusinessId == businessId
+                    && s.InvoiceNumber != null
+                    && s.InvoiceNumber.StartsWith(prefix))
+                .Select(s => s.InvoiceNumber)
+                .ToListAsync();
+
+            var seq = 1;
+            if (numbers.Count > 0)
+            {
+                var max = numbers
+                    .Select(x => int.TryParse(x[^4..], out var n) ? n : 0)
+                    .DefaultIfEmpty(0)
+                    .Max();
+                seq = max + 1;
+            }
+
+            return $"{prefix}{seq:D4}";
         }
     }
 }

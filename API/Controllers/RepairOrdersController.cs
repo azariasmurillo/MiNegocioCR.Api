@@ -47,13 +47,14 @@ public class RepairOrdersController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPatch("{id}/status")]
+    [HttpPatch("{businessId:guid}/{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(
+    Guid businessId,
     Guid id,
     [FromBody] UpdateStatusRequestDto request)
     {
         if (request == null) return BadRequest("RepairOrdersUpdateStatus - Request body is required.");
-        var result = await _updateStatusUseCase.Execute(id, request);
+        var result = await _updateStatusUseCase.Execute(businessId, id, request);
         return Ok(result);
     }
 
@@ -75,10 +76,10 @@ public class RepairOrdersController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
+    [HttpGet("{businessId:guid}/{id:guid}")]
+    public async Task<IActionResult> GetById(Guid businessId, Guid id)
     {
-        var result = await _getByIdUseCase.Execute(id);
+        var result = await _getByIdUseCase.Execute(businessId, id);
 
         if (result == null)
             return NotFound();
@@ -86,13 +87,14 @@ public class RepairOrdersController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{businessId:guid}/{id:guid}")]
     public async Task<IActionResult> Update(
+    Guid businessId,
     Guid id,
     [FromBody] UpdateRepairOrderRequestDto request)
     {
         if (request == null) return BadRequest("RepairOrdersUpdate - Request body is required.");
-        var result = await _updateRepairOrderUseCase.Execute(id, request);
+        var result = await _updateRepairOrderUseCase.Execute(businessId, id, request);
         return Ok(result);
     }
 

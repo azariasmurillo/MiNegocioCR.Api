@@ -16,6 +16,9 @@ public class BusinessesController : ControllerBase
     private readonly IBusinessRepository _businessRepository;
     private readonly IEmailService _emailService;
     private readonly ISetEnableAIChatUseCase _setEnableAIChatUseCase;
+    private readonly IGetBusinessConfigUseCase _getBusinessConfigUseCase;
+    private readonly IUpdateBusinessConfigUseCase _updateBusinessConfigUseCase;
+    private readonly IUploadBusinessLogoUseCase _uploadBusinessLogoUseCase;
 
     public BusinessesController(
         ICreateBusinessUseCase createBusinessUseCase,
@@ -24,7 +27,10 @@ public class BusinessesController : ControllerBase
         IGetBusinessByIdUseCase getBusinessByIdUseCase,
         IBusinessRepository businessRepository,
         IEmailService emailService,
-        ISetEnableAIChatUseCase setEnableAIChatUseCase)
+        ISetEnableAIChatUseCase setEnableAIChatUseCase,
+        IGetBusinessConfigUseCase getBusinessConfigUseCase,
+        IUpdateBusinessConfigUseCase updateBusinessConfigUseCase,
+        IUploadBusinessLogoUseCase uploadBusinessLogoUseCase)
     {
         _createBusinessUseCase = createBusinessUseCase;
         _configureSmtpUseCase = configureSmtpUseCase;
@@ -33,6 +39,9 @@ public class BusinessesController : ControllerBase
         _businessRepository = businessRepository;
         _emailService = emailService;
         _setEnableAIChatUseCase = setEnableAIChatUseCase;
+        _getBusinessConfigUseCase = getBusinessConfigUseCase;
+        _updateBusinessConfigUseCase = updateBusinessConfigUseCase;
+        _uploadBusinessLogoUseCase = uploadBusinessLogoUseCase;
     }
 
     [HttpPost]
@@ -104,6 +113,58 @@ public class BusinessesController : ControllerBase
 
         await _setEnableAIChatUseCase.ExecuteAsync(businessId, dto.Enable);
         return Ok(new { enableAIChat = dto.Enable });
+    }
+
+    [HttpGet("/api/business/{businessId:guid}/config")]
+    public async Task<IActionResult> GetConfig(Guid businessId)
+    {
+        var result = await _getBusinessConfigUseCase.Execute(businessId);
+        if (result == null) return NotFound("Business not found");
+        return Ok(result);
+    }
+
+    [HttpPut("/api/business/{businessId:guid}/config")]
+    public async Task<IActionResult> UpdateConfig(Guid businessId, [FromBody] UpdateBusinessConfigRequestDto request)
+    {
+        if (request == null) return BadRequest("Request body is required.");
+        var result = await _updateBusinessConfigUseCase.Execute(businessId, request);
+        return Ok(result);
+    }
+
+    [HttpPost("/api/business/{businessId:guid}/logo")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    public async Task<IActionResult> UploadLogo(
+        Guid businessId,
+        [FromForm] UploadBusinessLogoRequest request)
+    {
+        if (request.File == null || request.File.Length == 0)
+            return BadRequest("Logo file is required.");
+        if (request.File.Length > 2 * 1024 * 1024)
+            return BadRequest("Logo file must be less than 2MB.");
+        if (!IsAllowedLogoContentType(request.File.ContentType))
+            return BadRequest("Only PNG/JPG files are allowed.");
+
+        await using var stream = request.File.OpenReadStream();
+        var logoUrl = await _uploadBusinessLogoUseCase.Execute(
+            businessId,
+            stream,
+            request.File.FileName);
+
+        return Ok(new { logoUrl });
+    }
+
+    public sealed class UploadBusinessLogoRequest
+    {
+        [FromForm(Name = "file")]
+        public IFormFile? File { get; set; }
+    }
+
+    private static bool IsAllowedLogoContentType(string? contentType)
+    {
+        return string.Equals(contentType, "image/png", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(contentType, "image/jpeg", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(contentType, "image/jpg", StringComparison.OrdinalIgnoreCase);
     }
 
 }

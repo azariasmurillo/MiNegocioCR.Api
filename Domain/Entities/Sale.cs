@@ -5,6 +5,9 @@ namespace MiNegocioCR.Api.Domain.Entities
         public Guid Id { get; set; }
 
         public Guid BusinessId { get; set; }
+        public string InvoiceNumber { get; set; } = string.Empty;
+        public string? HaciendaConsecutive { get; set; }
+        public Guid? RepairOrderId { get; set; }
 
         public Guid? ContactId { get; set; }
         public Contact? Contact { get; set; }

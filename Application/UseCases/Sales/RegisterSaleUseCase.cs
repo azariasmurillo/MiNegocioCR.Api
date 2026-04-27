@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
@@ -51,6 +52,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 {
                     Id = Guid.NewGuid(),
                     BusinessId = businessId,
+                    InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
                     SaleDate = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     CustomerPhone = phoneForSale,
@@ -64,6 +66,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     {
                         Id = Guid.NewGuid(),
                         CatalogVariantId = item.variantId,
+                        ItemType = "Product",
                         Quantity = item.quantity,
                         Price = item.price
                     });
@@ -89,6 +92,30 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        private async Task<string> BuildInvoiceNumberAsync(Guid businessId)
+        {
+            var today = DateTime.UtcNow.Date;
+            var prefix = $"FACT-{today:yyyyMMdd}-";
+            var next = await _context.Sales
+                .Where(s => s.BusinessId == businessId
+                    && s.InvoiceNumber != null
+                    && s.InvoiceNumber.StartsWith(prefix))
+                .Select(s => s.InvoiceNumber)
+                .ToListAsync();
+
+            var seq = 1;
+            if (next.Count > 0)
+            {
+                var max = next
+                    .Select(x => int.TryParse(x[^4..], out var n) ? n : 0)
+                    .DefaultIfEmpty(0)
+                    .Max();
+                seq = max + 1;
+            }
+
+            return $"{prefix}{seq:D4}";
         }
     }
 }

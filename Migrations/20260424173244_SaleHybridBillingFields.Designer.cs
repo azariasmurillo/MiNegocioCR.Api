@@ -3,6 +3,7 @@ using System;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiNegocioCR.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260424173244_SaleHybridBillingFields")]
+    partial class SaleHybridBillingFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,16 +51,8 @@ namespace MiNegocioCR.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("BusinessType")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("EnableEmailNotifications")
                         .HasColumnType("boolean");
@@ -68,25 +63,9 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Location")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
-                    b.Property<string>("LogoUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("PublicEmail")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
 
                     b.Property<string>("SmtpFromEmail")
                         .HasColumnType("text");
@@ -723,11 +702,8 @@ namespace MiNegocioCR.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CatalogVariantId")
+                    b.Property<Guid>("CatalogVariantId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
 
                     b.Property<string>("ItemType")
                         .IsRequired()
@@ -750,8 +726,6 @@ namespace MiNegocioCR.Api.Migrations
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CatalogVariantId");
 
                     b.HasIndex("SaleId");
 
@@ -1156,11 +1130,6 @@ namespace MiNegocioCR.Api.Migrations
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.SaleItem", b =>
                 {
-                    b.HasOne("MiNegocioCR.Api.Domain.Entities.CatalogVariant", null)
-                        .WithMany()
-                        .HasForeignKey("CatalogVariantId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("MiNegocioCR.Api.Domain.Entities.Sale", "Sale")
                         .WithMany("Items")
                         .HasForeignKey("SaleId")
