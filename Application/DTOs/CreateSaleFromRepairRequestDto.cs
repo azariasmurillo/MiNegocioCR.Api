@@ -2,6 +2,7 @@ namespace MiNegocioCR.Api.Application.DTOs;
 
 public class CreateSaleFromRepairRequestDto
 {
+    public Guid BusinessId { get; set; }
     public decimal TaxRatePercent { get; set; } = 13m;
     public bool PreventDuplicateInvoiceForRepair { get; set; } = true;
     public List<CreateSaleFromRepairItemDto> Items { get; set; } = new();

@@ -181,6 +181,17 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                     .HasMaxLength(32);
                 entity.Property(x => x.HaciendaConsecutive)
                     .HasMaxLength(50);
+                entity.Property(x => x.Source)
+                    .IsRequired()
+                    .HasMaxLength(20);
+                entity.Property(x => x.Subtotal)
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.Tax)
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.Discount)
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.Total)
+                    .HasColumnType("numeric(18,2)");
                 entity.HasIndex(x => new { x.BusinessId, x.InvoiceNumber })
                     .IsUnique();
             });

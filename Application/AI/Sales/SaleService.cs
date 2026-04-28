@@ -37,8 +37,13 @@ namespace MiNegocioCR.Api.Application.AI.Sales
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
                 InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
+                Source = "WhatsApp",
                 CreatedAt = DateTime.UtcNow,
                 CustomerPhone = phoneNumber,
+                Subtotal = totalAmount,
+                Tax = 0m,
+                Discount = 0m,
+                Total = totalAmount,
                 TotalAmount = totalAmount,
             };
 

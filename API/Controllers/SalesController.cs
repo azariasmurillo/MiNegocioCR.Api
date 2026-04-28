@@ -31,27 +31,32 @@ namespace MiNegocioCR.Api.API.Controllers
             if (request.Items == null || !request.Items.Any())
                 return BadRequest("At least one item is required.");
 
-            var id = await _registerSale.ExecuteAsync(
-                businessId,
-                request.Items
-                    .Select(x => (x.VariantId, x.Quantity, x.Price))
-                    .ToList(),
-                request.CustomerPhone,
-                request.CustomerName,
-                request.CustomerEmail);
-
-            return Ok(id);
+            request.Source = "Manual";
+            var result = await _registerSale.ExecuteAsync(request);
+            return Ok(result);
         }
 
-        [HttpPost("from-repair/{businessId:guid}/{repairOrderId:guid}")]
+        [HttpPost("from-repair/{repairOrderId:guid}")]
         public async Task<IActionResult> CreateFromRepair(
-            Guid businessId,
             Guid repairOrderId,
             [FromBody] CreateSaleFromRepairRequestDto request)
         {
             if (request == null) return BadRequest("CreateFromRepair - Request body is required.");
-
+            if (request.BusinessId == Guid.Empty) return BadRequest("BusinessId is required.");
+            var businessId = request.BusinessId;
             var result = await _createSaleFromRepair.ExecuteAsync(businessId, repairOrderId, request);
+            return Ok(result);
+        }
+
+        [HttpPost("from-whatsapp")]
+        public async Task<IActionResult> CreateFromWhatsapp(CreateSaleRequestDto request)
+        {
+            if (request == null) return BadRequest("CreateFromWhatsapp - Request body is required.");
+            if (request.BusinessId == Guid.Empty) return BadRequest("BusinessId is required.");
+            if (request.Items == null || !request.Items.Any()) return BadRequest("At least one item is required.");
+
+            request.Source = "WhatsApp";
+            var result = await _registerSale.ExecuteAsync(request);
             return Ok(result);
         }
     }

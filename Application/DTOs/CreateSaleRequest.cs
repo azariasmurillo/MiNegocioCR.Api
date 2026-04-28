@@ -3,10 +3,13 @@ namespace MiNegocioCR.Api.Application.DTOs
     public class CreateSaleRequestDto
     {
         public Guid BusinessId { get; set; }
-
+        public Guid? ContactId { get; set; }
         public string? CustomerPhone { get; set; }
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
+        public decimal Discount { get; set; } = 0m;
+        public decimal TaxRatePercent { get; set; } = 13m;
+        public string Source { get; set; } = "Manual"; // Manual | WhatsApp
 
         public List<SaleItemRequestDto> Items { get; set; } = new();
     }

@@ -42,6 +42,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
                 InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
+                Source = "Manual",
                 SaleDate = DateTime.UtcNow
             };
 
@@ -64,7 +65,10 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 );
             }
 
-            sale.Total = sale.Items.Sum(x => x.Price * x.Quantity);
+            sale.Subtotal = sale.Items.Sum(x => x.Price * x.Quantity);
+            sale.Tax = 0m;
+            sale.Discount = 0m;
+            sale.Total = sale.Subtotal + sale.Tax - sale.Discount;
 
             await _saleRepository.AddSaleAsync(sale);
 

@@ -58,6 +58,7 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
             Contact = repairOrder.Contact,
             RepairOrderId = repairOrder.Id,
             InvoiceNumber = invoiceNumber,
+            Source = "Repair",
             SaleDate = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             CustomerPhone = repairOrder.Contact.Phone
@@ -112,6 +113,9 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
         var tax = Math.Round(subtotal * (request.TaxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
         var total = subtotal + tax;
 
+        sale.Subtotal = subtotal;
+        sale.Tax = tax;
+        sale.Discount = 0m;
         sale.Total = total;
         sale.TotalAmount = total;
 
