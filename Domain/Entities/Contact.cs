@@ -8,6 +8,8 @@ namespace MiNegocioCR.Api.Domain.Entities
         public string Phone { get; set; } = default!;
         public string? Email { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; }
 
         public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
         public ICollection<Sale> Sales { get; set; } = new List<Sale>();

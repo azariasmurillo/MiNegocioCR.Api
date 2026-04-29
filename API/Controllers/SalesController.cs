@@ -10,13 +10,16 @@ namespace MiNegocioCR.Api.API.Controllers
     {
         private readonly IRegisterSaleUseCase _registerSale;
         private readonly ICreateSaleFromRepairUseCase _createSaleFromRepair;
+        private readonly ISendSaleEmailUseCase _sendSaleEmailUseCase;
 
         public SalesController(
             IRegisterSaleUseCase registerSale,
-            ICreateSaleFromRepairUseCase createSaleFromRepair)
+            ICreateSaleFromRepairUseCase createSaleFromRepair,
+            ISendSaleEmailUseCase sendSaleEmailUseCase)
         {
             _registerSale = registerSale;
             _createSaleFromRepair = createSaleFromRepair;
+            _sendSaleEmailUseCase = sendSaleEmailUseCase;
         }
 
         [HttpPost]
@@ -58,6 +61,15 @@ namespace MiNegocioCR.Api.API.Controllers
             request.Source = "WhatsApp";
             var result = await _registerSale.ExecuteAsync(request);
             return Ok(result);
+        }
+
+        [HttpPost("{id:guid}/send-email")]
+        public async Task<IActionResult> SendEmail(Guid id, [FromBody] SendEmailRequestDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.HtmlContent))
+                return BadRequest("htmlContent is required.");
+            await _sendSaleEmailUseCase.Execute(id, request.HtmlContent, request.Email);
+            return Ok(new { message = "Email enviado correctamente" });
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
@@ -49,7 +49,7 @@ namespace MiNegocioCR.Api.Application.Contact
         public async Task<List<ContactDto>> GetContactsAsync(Guid businessId)
         {
             return await _context.Contacts
-                .Where(x => x.BusinessId == businessId)
+                .Where(x => x.BusinessId == businessId && !x.IsDeleted)
                 .OrderBy(x => x.Name)
                 .Select(x => new ContactDto
                 {

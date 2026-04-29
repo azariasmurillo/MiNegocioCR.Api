@@ -12,6 +12,10 @@ namespace MiNegocioCR.Api.Domain.Entities
         public decimal Subtotal { get; set; }
         public decimal Tax { get; set; }
         public decimal Discount { get; set; }
+        public bool PayCash { get; set; } = false;
+        public bool PayTransfer { get; set; } = false;
+        public bool PaySinpe { get; set; } = false;
+        public bool PayCard { get; set; } = false;
 
         public Guid? ContactId { get; set; }
         public Contact? Contact { get; set; }

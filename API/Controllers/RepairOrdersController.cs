@@ -17,6 +17,7 @@ public class RepairOrdersController : ControllerBase
     private readonly IUpdateRepairOrderUseCase _updateRepairOrderUseCase;
     private readonly IGetRepairOrderByBusinessIdAndStatusUseCase _getByIdAndStatusUseCase;
     private readonly ISearchRepairOrdersUseCase _searchRepairOrdersUseCase;
+    private readonly ISendRepairOrderEmailUseCase _sendRepairOrderEmailUseCase;
 
     public RepairOrdersController(
     ICreateRepairOrderUseCase createRepairOrderUseCase,
@@ -25,7 +26,8 @@ public class RepairOrdersController : ControllerBase
     IGetRepairOrderByIdUseCase getByIdUseCase,
     IUpdateRepairOrderUseCase updateRepairOrderUseCase,
     IGetRepairOrderByBusinessIdAndStatusUseCase getByIdAndStatusUseCase,
-    ISearchRepairOrdersUseCase searchRepairOrdersUseCase )
+    ISearchRepairOrdersUseCase searchRepairOrdersUseCase,
+    ISendRepairOrderEmailUseCase sendRepairOrderEmailUseCase)
     {
         _createRepairOrderUseCase = createRepairOrderUseCase;
         _updateStatusUseCase = updateStatusUseCase;
@@ -34,6 +36,7 @@ public class RepairOrdersController : ControllerBase
         _updateRepairOrderUseCase = updateRepairOrderUseCase;
         _getByIdAndStatusUseCase = getByIdAndStatusUseCase;
         _searchRepairOrdersUseCase = searchRepairOrdersUseCase;
+        _sendRepairOrderEmailUseCase = sendRepairOrderEmailUseCase;
     }
 
     [HttpPost("{businessId}")]
@@ -105,6 +108,15 @@ public class RepairOrdersController : ControllerBase
     {
         var result = await _getByIdAndStatusUseCase.Execute(businessId, status);
         return Ok(result);  
+    }
+
+    [HttpPost("{id:guid}/send-email")]
+    public async Task<IActionResult> SendEmail(Guid id, [FromBody] SendEmailRequestDto request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.HtmlContent))
+            return BadRequest("htmlContent is required.");
+        await _sendRepairOrderEmailUseCase.Execute(id, request.HtmlContent, request.Email);
+        return Ok(new { message = "Email enviado correctamente" });
     }
 
 }

@@ -26,7 +26,15 @@ public class GetBusinessConfigUseCase : IGetBusinessConfigUseCase
                 Description = x.Description,
                 Phone = x.Phone,
                 Location = x.Location,
-                PublicEmail = x.PublicEmail
+                PublicEmail = x.PublicEmail,
+                SmtpFromEmail = x.SmtpFromEmail,
+                SmtpFromName = x.SmtpFromName,
+                SmtpHost = x.SmtpHost,
+                SmtpPort = x.SmtpPort,
+                SmtpUsername = x.SmtpUsername,
+                SmtpPassword = x.SmtpPassword,
+                EnableEmailNotifications = x.EnableEmailNotifications,
+                EnableSsl = x.EnableSsl
             })
             .FirstOrDefaultAsync();
     }

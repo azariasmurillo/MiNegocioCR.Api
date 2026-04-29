@@ -238,6 +238,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.OperatingSystem).HasMaxLength(100);
                 entity.Property(x => x.Password).HasMaxLength(200);
 
+                entity.Property(x => x.DiscountPercent)
+                    .HasColumnType("numeric(18,2)");
+
                 entity.HasIndex(x => x.CreatedAt);
                 entity.HasIndex(x => x.ContactId);
                 entity.HasIndex(x => new { x.BusinessId, x.CreatedAt });

@@ -16,6 +16,7 @@ public class Business
     public string? SmtpPassword { get; set; }
     public string? SmtpFromEmail { get; set; }
     public string? SmtpFromName { get; set; }
+    public bool EnableSsl { get; set; } = true;
     public bool EnableEmailNotifications { get; set; } = true;
     public bool EnableWhatsappNotifications { get; set; } = true;
     public string? WhatsappPhoneNumberId { get; set; }

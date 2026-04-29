@@ -30,8 +30,6 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
         if (request == null) throw new ArgumentNullException(nameof(request));
         if (request.Items == null || request.Items.Count == 0)
             throw new ArgumentException("At least one item is required.", nameof(request.Items));
-        if (request.TaxRatePercent < 0)
-            throw new ArgumentException("Tax rate cannot be negative.", nameof(request.TaxRatePercent));
 
         var repairOrder = await _context.RepairOrders
             .Include(r => r.Contact)
@@ -61,7 +59,11 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
             Source = "Repair",
             SaleDate = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
-            CustomerPhone = repairOrder.Contact.Phone
+            CustomerPhone = repairOrder.Contact.Phone,
+            PayCash = repairOrder.PayCash,
+            PayTransfer = repairOrder.PayTransfer,
+            PaySinpe = repairOrder.PaySinpe,
+            PayCard = repairOrder.PayCard
         };
 
         foreach (var item in request.Items)
@@ -110,12 +112,14 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
         }
 
         var subtotal = sale.Items.Sum(i => i.UnitPrice * i.Quantity);
-        var tax = Math.Round(subtotal * (request.TaxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
-        var total = subtotal + tax;
+        var discount = Math.Round(subtotal * (repairOrder.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
+        var taxableBase = subtotal - discount;
+        var tax = Math.Round(taxableBase * 0.13m, 2, MidpointRounding.AwayFromZero);
+        var total = taxableBase + tax;
 
         sale.Subtotal = subtotal;
         sale.Tax = tax;
-        sale.Discount = 0m;
+        sale.Discount = discount;
         sale.Total = total;
         sale.TotalAmount = total;
 
@@ -147,8 +151,16 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
             Totals = new
             {
                 Subtotal = subtotal,
+                Discount = discount,
                 Tax = tax,
                 Total = total
+            },
+            PaymentMethods = new
+            {
+                sale.PayCash,
+                sale.PayTransfer,
+                sale.PaySinpe,
+                sale.PayCard
             }
         };
     }

@@ -36,6 +36,7 @@ using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Application.UseCases.ArchiveConversationUseCase;
 using MiNegocioCR.Api.Application.UseCases.Business;
+using MiNegocioCR.Api.Application.UseCases.Contacts;
 using MiNegocioCR.Api.Application.UseCases.Conversations;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Catalog;
@@ -133,7 +134,7 @@ builder.Services.AddScoped<IGetBusinessConfigUseCase, GetBusinessConfigUseCase>(
 builder.Services.AddScoped<IUpdateBusinessConfigUseCase, UpdateBusinessConfigUseCase>();
 builder.Services.AddScoped<IUploadBusinessLogoUseCase, UploadBusinessLogoUseCase>();
 builder.Services.AddScoped<IBusinessLogoStorageService, SupabaseBusinessLogoStorageService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IWhatsappApplicationService, WhatsappApplicationService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
@@ -155,6 +156,11 @@ builder.Services.AddScoped<IConversationTag, MiNegocioCR.Api.Application.Convers
 
 // --- Contacts ---
 builder.Services.AddScoped<IContact, MiNegocioCR.Api.Application.Contact.Contacts>();
+builder.Services.AddScoped<IListContactsUseCase, ListContactsUseCase>();
+builder.Services.AddScoped<ISearchContactsUseCase, SearchContactsUseCase>();
+builder.Services.AddScoped<IUpdateContactUseCase, UpdateContactUseCase>();
+builder.Services.AddScoped<ISoftDeleteContactUseCase, SoftDeleteContactUseCase>();
+builder.Services.AddScoped<IHardDeleteContactUseCase, HardDeleteContactUseCase>();
 
 // --- Repair orders ---
 builder.Services.AddScoped<ICreateRepairOrderUseCase, CreateRepairOrderUseCase>();
@@ -164,12 +170,14 @@ builder.Services.AddScoped<IGetRepairOrderByIdUseCase, GetRepairOrderByIdUseCase
 builder.Services.AddScoped<IUpdateRepairOrderUseCase, UpdateRepairOrderUseCase>();
 builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepairOrderByBusinessIdAndStatusUseCase>();
 builder.Services.AddScoped<ISearchRepairOrdersUseCase, SearchRepairOrdersUseCase>();
+builder.Services.AddScoped<ISendRepairOrderEmailUseCase, SendRepairOrderEmailUseCase>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.UseCases.Sales.RegisterSaleUseCase>();
 builder.Services.AddScoped<ICreateSaleFromRepairUseCase, CreateSaleFromRepairUseCase>();
+builder.Services.AddScoped<ISendSaleEmailUseCase, SendSaleEmailUseCase>();
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
 builder.Services.AddScoped<IUpdateCatalogItemUseCase, UpdateCatalogItemUseCase>();
 builder.Services.AddScoped<IToggleCatalogItemStatusUseCase, ToggleCatalogItemStatusUseCase>();
