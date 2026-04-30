@@ -41,8 +41,8 @@ namespace MiNegocioCR.Api.Application.AI.Sales
                 CreatedAt = DateTime.UtcNow,
                 CustomerPhone = phoneNumber,
                 Subtotal = totalAmount,
-                Tax = 0m,
-                Discount = 0m,
+                TaxAmount = 0m,
+                DiscountAmount = 0m,
                 Total = totalAmount,
                 TotalAmount = totalAmount,
             };

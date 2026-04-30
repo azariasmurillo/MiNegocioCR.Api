@@ -18,6 +18,7 @@ public class RepairOrdersController : ControllerBase
     private readonly IGetRepairOrderByBusinessIdAndStatusUseCase _getByIdAndStatusUseCase;
     private readonly ISearchRepairOrdersUseCase _searchRepairOrdersUseCase;
     private readonly ISendRepairOrderEmailUseCase _sendRepairOrderEmailUseCase;
+    private readonly IChargeRepairOrderUseCase _chargeRepairOrderUseCase;
 
     public RepairOrdersController(
     ICreateRepairOrderUseCase createRepairOrderUseCase,
@@ -27,7 +28,8 @@ public class RepairOrdersController : ControllerBase
     IUpdateRepairOrderUseCase updateRepairOrderUseCase,
     IGetRepairOrderByBusinessIdAndStatusUseCase getByIdAndStatusUseCase,
     ISearchRepairOrdersUseCase searchRepairOrdersUseCase,
-    ISendRepairOrderEmailUseCase sendRepairOrderEmailUseCase)
+    ISendRepairOrderEmailUseCase sendRepairOrderEmailUseCase,
+    IChargeRepairOrderUseCase chargeRepairOrderUseCase)
     {
         _createRepairOrderUseCase = createRepairOrderUseCase;
         _updateStatusUseCase = updateStatusUseCase;
@@ -37,6 +39,7 @@ public class RepairOrdersController : ControllerBase
         _getByIdAndStatusUseCase = getByIdAndStatusUseCase;
         _searchRepairOrdersUseCase = searchRepairOrdersUseCase;
         _sendRepairOrderEmailUseCase = sendRepairOrderEmailUseCase;
+        _chargeRepairOrderUseCase = chargeRepairOrderUseCase;
     }
 
     [HttpPost("{businessId}")]
@@ -117,6 +120,14 @@ public class RepairOrdersController : ControllerBase
             return BadRequest("htmlContent is required.");
         await _sendRepairOrderEmailUseCase.Execute(id, request.HtmlContent, request.Email);
         return Ok(new { message = "Email enviado correctamente" });
+    }
+
+    [HttpPost("{id:guid}/charge")]
+    public async Task<IActionResult> Charge(Guid id, [FromQuery] Guid businessId)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _chargeRepairOrderUseCase.Execute(businessId, id);
+        return Ok(result);
     }
 
 }

@@ -37,24 +37,30 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         {
             if (items == null || !items.Any()) throw new ArgumentException("At least one item is required.", nameof(items));
 
+            var now = DateTime.UtcNow;
             var sale = new Sale
             {
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
                 InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
                 Source = "Manual",
-                SaleDate = DateTime.UtcNow
+                SaleDate = now,
+                CreatedAt = now,
+                CustomerPhone = string.Empty
             };
 
             foreach (var item in items)
             {
+                var lineTotal = item.price * item.quantity;
                 sale.Items.Add(new SaleItem
                 {
                     Id = Guid.NewGuid(),
                     CatalogVariantId = item.variantId,
                     ItemType = "Product",
                     Quantity = item.quantity,
-                    Price = item.price
+                    Price = item.price,
+                    UnitPrice = item.price,
+                    Total = lineTotal
                 });
 
                 await _inventoryService.DecreaseStockAsync(
@@ -65,10 +71,11 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 );
             }
 
-            sale.Subtotal = sale.Items.Sum(x => x.Price * x.Quantity);
-            sale.Tax = 0m;
-            sale.Discount = 0m;
-            sale.Total = sale.Subtotal + sale.Tax - sale.Discount;
+            sale.Subtotal = sale.Items.Sum(x => x.UnitPrice * x.Quantity);
+            sale.TaxAmount = 0m;
+            sale.DiscountAmount = 0m;
+            sale.Total = sale.Subtotal + sale.TaxAmount - sale.DiscountAmount;
+            sale.TotalAmount = sale.Total;
 
             await _saleRepository.AddSaleAsync(sale);
 

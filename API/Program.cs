@@ -30,6 +30,8 @@ using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
@@ -42,6 +44,7 @@ using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Catalog;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
+using MiNegocioCR.Api.Application.UseCases.Dashboard;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.AI;
@@ -123,6 +126,7 @@ builder.Services.AddScoped<IVariantRepository, VariantRepository>();
 builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
 builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // --- Business & WhatsApp ---
@@ -171,6 +175,7 @@ builder.Services.AddScoped<IUpdateRepairOrderUseCase, UpdateRepairOrderUseCase>(
 builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepairOrderByBusinessIdAndStatusUseCase>();
 builder.Services.AddScoped<ISearchRepairOrdersUseCase, SearchRepairOrdersUseCase>();
 builder.Services.AddScoped<ISendRepairOrderEmailUseCase, SendRepairOrderEmailUseCase>();
+builder.Services.AddScoped<IChargeRepairOrderUseCase, ChargeRepairOrderUseCase>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();
@@ -178,6 +183,11 @@ builder.Services.AddScoped<ILowStockAlertService, LowStockAlertService>();
 builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.UseCases.Sales.RegisterSaleUseCase>();
 builder.Services.AddScoped<ICreateSaleFromRepairUseCase, CreateSaleFromRepairUseCase>();
 builder.Services.AddScoped<ISendSaleEmailUseCase, SendSaleEmailUseCase>();
+builder.Services.AddScoped<IGetSalesByBusinessUseCase, GetSalesByBusinessUseCase>();
+builder.Services.AddScoped<IGetDashboardSummaryUseCase, GetDashboardSummaryUseCase>();
+builder.Services.AddScoped<IGetSalesTrendUseCase, GetSalesTrendUseCase>();
+builder.Services.AddScoped<IGetTicketAverageUseCase, GetTicketAverageUseCase>();
+builder.Services.AddScoped<IGetRecentActivityUseCase, GetRecentActivityUseCase>();
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
 builder.Services.AddScoped<IUpdateCatalogItemUseCase, UpdateCatalogItemUseCase>();
 builder.Services.AddScoped<IToggleCatalogItemStatusUseCase, ToggleCatalogItemStatusUseCase>();

@@ -29,6 +29,9 @@ public class RepairOrder
     public bool PayTransfer { get; set; } = false;
     public bool PaySinpe { get; set; } = false;
     public bool PayCard { get; set; } = false;
+    public bool IsInvoiced { get; set; } = false;
+    public DateTime? InvoicedAt { get; set; }
+    public Guid? SaleId { get; set; }
 
     public int Status { get; set; }
 

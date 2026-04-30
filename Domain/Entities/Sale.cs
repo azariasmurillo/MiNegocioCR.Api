@@ -10,8 +10,12 @@ namespace MiNegocioCR.Api.Domain.Entities
         public Guid? RepairOrderId { get; set; }
         public string Source { get; set; } = "Manual";
         public decimal Subtotal { get; set; }
-        public decimal Tax { get; set; }
-        public decimal Discount { get; set; }
+
+        /// <summary>Monto del descuento aplicado (colones), no porcentaje.</summary>
+        public decimal DiscountAmount { get; set; }
+
+        /// <summary>Monto del impuesto (IVA u otro) aplicado (colones).</summary>
+        public decimal TaxAmount { get; set; }
         public bool PayCash { get; set; } = false;
         public bool PayTransfer { get; set; } = false;
         public bool PaySinpe { get; set; } = false;

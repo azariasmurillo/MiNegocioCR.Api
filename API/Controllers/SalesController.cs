@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using MiNegocioCR.Api.API.Http;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
@@ -11,15 +13,18 @@ namespace MiNegocioCR.Api.API.Controllers
         private readonly IRegisterSaleUseCase _registerSale;
         private readonly ICreateSaleFromRepairUseCase _createSaleFromRepair;
         private readonly ISendSaleEmailUseCase _sendSaleEmailUseCase;
+        private readonly IGetSalesByBusinessUseCase _getSalesByBusinessUseCase;
 
         public SalesController(
             IRegisterSaleUseCase registerSale,
             ICreateSaleFromRepairUseCase createSaleFromRepair,
-            ISendSaleEmailUseCase sendSaleEmailUseCase)
+            ISendSaleEmailUseCase sendSaleEmailUseCase,
+            IGetSalesByBusinessUseCase getSalesByBusinessUseCase)
         {
             _registerSale = registerSale;
             _createSaleFromRepair = createSaleFromRepair;
             _sendSaleEmailUseCase = sendSaleEmailUseCase;
+            _getSalesByBusinessUseCase = getSalesByBusinessUseCase;
         }
 
         [HttpPost]
@@ -70,6 +75,34 @@ namespace MiNegocioCR.Api.API.Controllers
                 return BadRequest("htmlContent is required.");
             await _sendSaleEmailUseCase.Execute(id, request.HtmlContent, request.Email);
             return Ok(new { message = "Email enviado correctamente" });
+        }
+
+        [HttpGet("business/{businessId:guid}")]
+        public async Task<IActionResult> GetByBusiness(
+            Guid businessId,
+            [FromQuery] string? from,
+            [FromQuery] string? to,
+            [FromQuery] string? search,
+            [FromQuery] string? page = null,
+            [FromQuery] string? pageSize = null,
+            [FromQuery] string? sort = "createdAt desc",
+            [FromQuery] string? paymentMethod = null)
+        {
+            if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+
+            var query = new SalesListQueryDto
+            {
+                From = QueryParamParsing.ParseUtcDayStart(from),
+                To = QueryParamParsing.ParseUtcDayStart(to),
+                Search = search,
+                Page = QueryParamParsing.ParsePositiveInt(page, 1, 1_000_000),
+                PageSize = QueryParamParsing.ParsePositiveInt(pageSize, 20, 100),
+                Sort = sort,
+                PaymentMethod = paymentMethod
+            };
+
+            var result = await _getSalesByBusinessUseCase.Execute(businessId, query);
+            return Ok(result);
         }
     }
 }

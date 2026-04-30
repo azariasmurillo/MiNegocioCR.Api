@@ -186,9 +186,11 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                     .HasMaxLength(20);
                 entity.Property(x => x.Subtotal)
                     .HasColumnType("numeric(18,2)");
-                entity.Property(x => x.Tax)
+                entity.Property(x => x.TaxAmount)
+                    .HasColumnName("Tax")
                     .HasColumnType("numeric(18,2)");
-                entity.Property(x => x.Discount)
+                entity.Property(x => x.DiscountAmount)
+                    .HasColumnName("Discount")
                     .HasColumnType("numeric(18,2)");
                 entity.Property(x => x.Total)
                     .HasColumnType("numeric(18,2)");
@@ -237,6 +239,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.AccessoriesIncluded).HasMaxLength(500);
                 entity.Property(x => x.OperatingSystem).HasMaxLength(100);
                 entity.Property(x => x.Password).HasMaxLength(200);
+                entity.Property(x => x.InvoicedAt)
+                    .HasColumnType("timestamp with time zone");
 
                 entity.Property(x => x.DiscountPercent)
                     .HasColumnType("numeric(18,2)");
@@ -315,6 +319,10 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
             modelBuilder.Entity<Sale>()
                 .HasIndex(x => x.BusinessId);
+
+            modelBuilder.Entity<Sale>()
+                .HasIndex(x => new { x.BusinessId, x.RepairOrderId })
+                .IsUnique();
 
             modelBuilder.Entity<Sale>()
                 .HasIndex(x => x.SaleDate);

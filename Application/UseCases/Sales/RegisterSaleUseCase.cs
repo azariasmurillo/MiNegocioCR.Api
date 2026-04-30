@@ -74,7 +74,11 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     CreatedAt = DateTime.UtcNow,
                     CustomerPhone = phoneForSale,
                     ContactId = contact?.Id,
-                    Contact = contact
+                    Contact = contact,
+                    PayCash = request.PayCash,
+                    PayTransfer = request.PayTransfer,
+                    PaySinpe = request.PaySinpe,
+                    PayCard = request.PayCard
                 };
 
                 foreach (var item in items)
@@ -120,9 +124,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 }
 
                 sale.Subtotal = sale.Items.Sum(x => x.UnitPrice * x.Quantity);
-                sale.Tax = Math.Round(sale.Subtotal * (request.TaxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
-                sale.Discount = request.Discount;
-                sale.Total = sale.Subtotal + sale.Tax - sale.Discount;
+                sale.TaxAmount = Math.Round(sale.Subtotal * (request.TaxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
+                sale.DiscountAmount = request.Discount;
+                sale.Total = sale.Subtotal + sale.TaxAmount - sale.DiscountAmount;
                 sale.TotalAmount = sale.Total;
 
                 await _saleRepository.AddSaleAsync(sale);
@@ -154,8 +158,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     Totals = new
                     {
                         sale.Subtotal,
-                        sale.Tax,
-                        sale.Discount,
+                        Tax = sale.TaxAmount,
+                        Discount = sale.DiscountAmount,
                         sale.Total
                     }
                 };
