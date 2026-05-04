@@ -11,6 +11,9 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 
         Task<Sale?> GetSaleAsync(Guid id, Guid businessId);
 
+        /// <summary>Lectura por id (incluye ítems y contacto). Multi-tenant opcional vía capa superior.</summary>
+        Task<Sale?> GetSaleByIdAsync(Guid id);
+
         Task<PagedResultDto<SalesListItemDto>> GetPagedSalesAsync(Guid businessId, SalesListQueryDto query);
     }
     

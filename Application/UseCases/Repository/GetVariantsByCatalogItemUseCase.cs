@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
 
@@ -8,13 +10,16 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
     {
         private readonly ICatalogRepository _catalogRepository;
         private readonly IVariantRepository _variantRepository;
+        private readonly IAppDbContext _context;
 
         public GetVariantsByCatalogItemUseCase(
             ICatalogRepository catalogRepository,
-            IVariantRepository variantRepository)
+            IVariantRepository variantRepository,
+            IAppDbContext context)
         {
             _catalogRepository = catalogRepository;
             _variantRepository = variantRepository;
+            _context = context;
         }
 
         public async Task<List<CatalogVariantListItemDto>> ExecuteAsync(Guid catalogItemId, Guid businessId)
@@ -28,6 +33,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             var item = await _catalogRepository.GetItemByIdAsync(catalogItemId);
             if (item == null || item.BusinessId != businessId)
                 throw new NotFoundException("CatalogItem", "Catalog item not found.");
+
+            var businessDefault = await _context.Businesses
+                .AsNoTracking()
+                .Where(b => b.Id == item.BusinessId)
+                .Select(b => b.DefaultProfitMargin)
+                .FirstOrDefaultAsync();
 
             var variants = await _variantRepository.GetVariantsWithOptionDetailsByCatalogItemIdAsync(catalogItemId);
             var variantIds = variants.Select(v => v.Id).ToList();
@@ -58,6 +69,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     CatalogItemName = item.Name,
                     Sku = v.SKU,
                     Price = v.Price,
+                    CostPrice = v.CostPrice,
+                    ProfitMargin = v.ProfitMargin,
+                    EffectiveProfitMargin = v.ResolveProfitMargin(businessDefault),
                     InitialStock = initialStock,
                     CurrentStock = v.StockQuantity,
                     OptionValueIds = optionValueIds,

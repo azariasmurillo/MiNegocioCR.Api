@@ -27,7 +27,9 @@ public class Business
     public DateTime? WhatsappTokenExpiresAt { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
+    /// <summary>Porcentaje de ganancia por defecto (referencia para precios; típicamente 0–100). Si la variante no define margen, usar este valor.</summary>
+    public decimal DefaultProfitMargin { get; set; }
 
     public BusinessSettings? Settings { get; set; }
     public ICollection<User> Users { get; set; } = new List<User>();

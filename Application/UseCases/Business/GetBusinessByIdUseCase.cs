@@ -35,7 +35,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Business
                     SmtpFromEmail = x.SmtpFromEmail,
                     SmtpFromName = x.SmtpFromName,
                     CreatedAt = x.CreatedAt,
-                    WhatsappAccessToken = x.WhatsappAccessToken
+                    WhatsappAccessToken = x.WhatsappAccessToken,
+                    DefaultProfitMargin = x.DefaultProfitMargin
                 })
                 .FirstOrDefaultAsync();
         }

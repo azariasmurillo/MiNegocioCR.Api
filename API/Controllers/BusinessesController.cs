@@ -115,6 +115,7 @@ public class BusinessesController : ControllerBase
         return Ok(new { enableAIChat = dto.Enable });
     }
 
+    [HttpGet("{businessId:guid}/config")]
     [HttpGet("/api/business/{businessId:guid}/config")]
     public async Task<IActionResult> GetConfig(Guid businessId)
     {
@@ -123,7 +124,10 @@ public class BusinessesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("{businessId:guid}/config")]
+    [HttpPatch("{businessId:guid}/config")]
     [HttpPut("/api/business/{businessId:guid}/config")]
+    [HttpPatch("/api/business/{businessId:guid}/config")]
     public async Task<IActionResult> UpdateConfig(Guid businessId, [FromBody] UpdateBusinessConfigRequestDto request)
     {
         if (request == null) return BadRequest("Request body is required.");

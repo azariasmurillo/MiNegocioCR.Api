@@ -38,6 +38,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<QuickReplyTemplate> QuickReplyTemplates { get; set; }
         public DbSet<ConversationTag> ConversationTags { get; set; }
         public DbSet<Contact> Contacts { get; set; }
+        public DbSet<Payment> Payments => Set<Payment>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +53,15 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.Phone).HasMaxLength(50);
                 entity.Property(x => x.Location).HasMaxLength(250);
                 entity.Property(x => x.PublicEmail).HasMaxLength(150);
+                entity.Property(x => x.DefaultProfitMargin)
+                    .HasPrecision(5, 2)
+                    .HasDefaultValue(0m);
+            });
+
+            modelBuilder.Entity<CatalogVariant>(entity =>
+            {
+                entity.Property(x => x.ProfitMargin).HasPrecision(5, 2);
+                entity.Property(x => x.CostPrice).HasPrecision(18, 2);
             });
 
             modelBuilder.Entity<User>()
@@ -278,6 +288,32 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.HasIndex(x => x.CatalogVariantId);
             });
 
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.Property(x => x.Amount)
+                    .IsRequired()
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.Type)
+                    .IsRequired();
+                entity.Property(x => x.Method)
+                    .IsRequired();
+                entity.Property(x => x.Notes)
+                    .HasColumnType("text");
+                entity.Property(x => x.CreatedAt)
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("now()");
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.RepairOrder)
+                    .WithMany()
+                    .HasForeignKey(x => x.RepairOrderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<ConversationTag>()
                 .HasIndex(x => new { x.ConversationId, x.Tag });
 
@@ -329,6 +365,15 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
             modelBuilder.Entity<SaleItem>()
                 .HasIndex(x => x.SaleId);
+
+            modelBuilder.Entity<Payment>()
+                .HasIndex(x => x.BusinessId);
+
+            modelBuilder.Entity<Payment>()
+                .HasIndex(x => x.RepairOrderId);
+
+            modelBuilder.Entity<Payment>()
+                .HasIndex(x => new { x.BusinessId, x.RepairOrderId });
 
             modelBuilder.Entity<QuickReplyTemplate>()
                 .HasIndex(x => new { x.BusinessId, x.Name });

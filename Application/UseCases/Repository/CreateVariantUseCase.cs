@@ -1,3 +1,4 @@
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain;
@@ -47,6 +48,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
 
             var sortedValueIds = optionValueIds.Distinct().OrderBy(x => x).ToList();
 
+            if (request.ProfitMargin.HasValue && request.ProfitMargin.Value < 0)
+                throw new ArgumentException("ProfitMargin must be greater than or equal to zero.", nameof(request));
+
+            if (request.CostPrice < 0)
+                throw new ArgumentException("CostPrice cannot be negative.", nameof(request));
+
             if (sortedValueIds.Count > 0)
             {
                 var optionValues = await _optionValueRepository.GetByIdsWithCatalogOptionAsync(sortedValueIds);
@@ -73,12 +80,22 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 }
             }
 
+            var resolvedPrice = CatalogVariantPriceResolver.ResolvePersistedPrice(
+                request.SetPriceManually,
+                request.CostPrice,
+                request.ProfitMargin,
+                request.Price);
+            if (resolvedPrice < 0)
+                throw new ArgumentException("Resolved price cannot be negative.", nameof(request));
+
             var variant = new CatalogVariant
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = request.CatalogItemId,
                 SKU = request.SKU,
-                Price = request.Price,
+                Price = resolvedPrice,
+                CostPrice = request.CostPrice,
+                ProfitMargin = request.ProfitMargin,
                 StockQuantity = request.InitialStock,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow

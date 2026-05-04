@@ -10,6 +10,12 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public decimal Price { get; set; }
 
+        /// <summary>Costo unitario de referencia (no altera el precio de venta automáticamente).</summary>
+        public decimal CostPrice { get; set; }
+
+        /// <summary>Margen % sobre costo para precios; null = usar <see cref="Business.DefaultProfitMargin"/> del negocio.</summary>
+        public decimal? ProfitMargin { get; set; }
+
         public int StockQuantity { get; set; }
 
         public int LowStockThreshold { get; set; } = 2;
@@ -41,5 +47,9 @@ namespace MiNegocioCR.Api.Domain.Entities
 
             StockQuantity -= quantity;
         }
+
+        /// <summary>Margen % usado en cálculos de precio: el de la variante o el default del negocio.</summary>
+        public decimal ResolveProfitMargin(decimal businessDefaultProfitMargin)
+            => ProfitMargin ?? businessDefaultProfitMargin;
     }
 }

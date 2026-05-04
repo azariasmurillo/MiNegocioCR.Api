@@ -3,6 +3,7 @@ namespace MiNegocioCR.Api.Application.DTOs
     public class CreateSaleRequestDto
     {
         public Guid BusinessId { get; set; }
+        public Guid? RepairOrderId { get; set; }
         public Guid? ContactId { get; set; }
         public string? CustomerPhone { get; set; }
         public string? CustomerName { get; set; }

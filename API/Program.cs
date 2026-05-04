@@ -2,6 +2,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.API.Content;
@@ -31,6 +32,7 @@ using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
@@ -45,6 +47,7 @@ using MiNegocioCR.Api.Application.UseCases.Catalog;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Dashboard;
+using MiNegocioCR.Api.Application.UseCases.Payments;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.AI;
@@ -77,8 +80,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFilter>())
     .AddJsonOptions(options =>
     {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
         options.JsonSerializerOptions.Converters.Add(
-            new JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
     });
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
@@ -139,6 +144,7 @@ builder.Services.AddScoped<IUpdateBusinessConfigUseCase, UpdateBusinessConfigUse
 builder.Services.AddScoped<IUploadBusinessLogoUseCase, UploadBusinessLogoUseCase>();
 builder.Services.AddScoped<IBusinessLogoStorageService, SupabaseBusinessLogoStorageService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IWhatsappApplicationService, WhatsappApplicationService>();
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
@@ -176,6 +182,7 @@ builder.Services.AddScoped<IGetRepairOrderByBusinessIdAndStatusUseCase, GetRepai
 builder.Services.AddScoped<ISearchRepairOrdersUseCase, SearchRepairOrdersUseCase>();
 builder.Services.AddScoped<ISendRepairOrderEmailUseCase, SendRepairOrderEmailUseCase>();
 builder.Services.AddScoped<IChargeRepairOrderUseCase, ChargeRepairOrderUseCase>();
+builder.Services.AddScoped<IGetRepairOrderBalanceUseCase, GetRepairOrderBalanceUseCase>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();
@@ -184,10 +191,13 @@ builder.Services.AddScoped<IRegisterSaleUseCase, MiNegocioCR.Api.Application.Use
 builder.Services.AddScoped<ICreateSaleFromRepairUseCase, CreateSaleFromRepairUseCase>();
 builder.Services.AddScoped<ISendSaleEmailUseCase, SendSaleEmailUseCase>();
 builder.Services.AddScoped<IGetSalesByBusinessUseCase, GetSalesByBusinessUseCase>();
+builder.Services.AddScoped<IGetSaleByIdUseCase, GetSaleByIdUseCase>();
 builder.Services.AddScoped<IGetDashboardSummaryUseCase, GetDashboardSummaryUseCase>();
 builder.Services.AddScoped<IGetSalesTrendUseCase, GetSalesTrendUseCase>();
 builder.Services.AddScoped<IGetTicketAverageUseCase, GetTicketAverageUseCase>();
 builder.Services.AddScoped<IGetRecentActivityUseCase, GetRecentActivityUseCase>();
+builder.Services.AddScoped<ICreatePaymentUseCase, CreatePaymentUseCase>();
+builder.Services.AddScoped<IGetPaymentsByRepairOrderUseCase, GetPaymentsByRepairOrderUseCase>();
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
 builder.Services.AddScoped<IUpdateCatalogItemUseCase, UpdateCatalogItemUseCase>();
 builder.Services.AddScoped<IToggleCatalogItemStatusUseCase, ToggleCatalogItemStatusUseCase>();

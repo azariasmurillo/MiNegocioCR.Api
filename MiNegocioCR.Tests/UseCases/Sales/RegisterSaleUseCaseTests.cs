@@ -1,9 +1,11 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using Moq;
@@ -22,23 +24,79 @@ public class RegisterSaleUseCaseTests
         return new AppDbContext(options);
     }
 
+    private static void SeedProductVariant(AppDbContext ctx, Guid businessId, Guid variantId)
+    {
+        var itemId = Guid.NewGuid();
+        ctx.CatalogItems.Add(new CatalogItem
+        {
+            Id = itemId,
+            BusinessId = businessId,
+            Name = "Test item",
+            Type = CatalogItemType.Product,
+            HasVariants = true,
+            BasePrice = 0,
+            TrackStock = true
+        });
+        ctx.CatalogVariants.Add(new CatalogVariant
+        {
+            Id = variantId,
+            CatalogItemId = itemId,
+            SKU = "T",
+            Price = 10m,
+            StockQuantity = 99,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+    }
+
+    private static RegisterSaleUseCase CreateSut(AppDbContext ctx)
+    {
+        var inv = new Mock<IInventoryService>();
+        inv.Setup(x => x.DecreaseStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        var payments = new Mock<IPaymentService>();
+        payments.Setup(x => x.GetPaymentsByRepairOrderAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            .ReturnsAsync(new List<Payment>());
+        return new RegisterSaleUseCase(new SaleRepository(ctx), inv.Object, payments.Object, ctx);
+    }
+
+    private static Guid GetSaleId(object result)
+    {
+        var id = result.GetType().GetProperty("Id")?.GetValue(result);
+        return id is Guid g ? g : Guid.Empty;
+    }
+
     [Fact]
     public async Task ExecuteAsync_WithoutContactFields_CreatesSaleWithoutContact()
     {
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
-        var inv = new Mock<IInventoryService>();
-        inv.Setup(x => x.DecreaseStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-        var sut = new RegisterSaleUseCase(new SaleRepository(ctx), inv.Object, ctx);
+        SeedProductVariant(ctx, businessId, variantId);
+        await ctx.SaveChangesAsync();
 
-        var id = await sut.ExecuteAsync(
-            businessId,
-            new List<(Guid, int, decimal)> { (variantId, 1, 5m) });
+        var sut = CreateSut(ctx);
 
-        id.Should().NotBeEmpty();
-        var sale = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == id);
+        var request = new CreateSaleRequestDto
+        {
+            BusinessId = businessId,
+            Items =
+            {
+                new SaleItemRequestDto
+                {
+                    CatalogVariantId = variantId,
+                    Quantity = 1,
+                    UnitPrice = 5m,
+                    ItemType = "Product"
+                }
+            }
+        };
+
+        var result = await sut.ExecuteAsync(request);
+        var saleId = GetSaleId(result);
+
+        saleId.Should().NotBeEmpty();
+        var sale = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
         sale.ContactId.Should().BeNull();
         sale.CustomerPhone.Should().BeEmpty();
     }
@@ -49,19 +107,33 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
-        var inv = new Mock<IInventoryService>();
-        inv.Setup(x => x.DecreaseStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-        var sut = new RegisterSaleUseCase(new SaleRepository(ctx), inv.Object, ctx);
+        SeedProductVariant(ctx, businessId, variantId);
+        await ctx.SaveChangesAsync();
 
-        var id = await sut.ExecuteAsync(
-            businessId,
-            new List<(Guid, int, decimal)> { (variantId, 1, 10m) },
-            customerPhone: "50670001122",
-            customerName: "Ana",
-            customerEmail: "a@a.com");
+        var sut = CreateSut(ctx);
 
-        var sale = await ctx.Sales.AsNoTracking().Include(s => s.Contact).FirstAsync(s => s.Id == id);
+        var request = new CreateSaleRequestDto
+        {
+            BusinessId = businessId,
+            CustomerPhone = "50670001122",
+            CustomerName = "Ana",
+            CustomerEmail = "a@a.com",
+            Items =
+            {
+                new SaleItemRequestDto
+                {
+                    CatalogVariantId = variantId,
+                    Quantity = 1,
+                    UnitPrice = 10m,
+                    ItemType = "Product"
+                }
+            }
+        };
+
+        var result = await sut.ExecuteAsync(request);
+        var saleId = GetSaleId(result);
+
+        var sale = await ctx.Sales.AsNoTracking().Include(s => s.Contact).FirstAsync(s => s.Id == saleId);
         sale.ContactId.Should().NotBeNull();
         sale.CustomerPhone.Should().Be("50670001122");
         sale.Contact!.Name.Should().Be("Ana");
@@ -75,6 +147,7 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
+        SeedProductVariant(ctx, businessId, variantId);
         var existing = new Contact
         {
             Id = Guid.NewGuid(),
@@ -87,17 +160,27 @@ public class RegisterSaleUseCaseTests
         ctx.Contacts.Add(existing);
         await ctx.SaveChangesAsync();
 
-        var inv = new Mock<IInventoryService>();
-        inv.Setup(x => x.DecreaseStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-        var sut = new RegisterSaleUseCase(new SaleRepository(ctx), inv.Object, ctx);
+        var sut = CreateSut(ctx);
 
-        await sut.ExecuteAsync(
-            businessId,
-            new List<(Guid, int, decimal)> { (variantId, 1, 3m) },
-            customerPhone: "88889999",
-            customerName: "Nuevo",
-            customerEmail: "new@x.com");
+        var request = new CreateSaleRequestDto
+        {
+            BusinessId = businessId,
+            CustomerPhone = "88889999",
+            CustomerName = "Nuevo",
+            CustomerEmail = "new@x.com",
+            Items =
+            {
+                new SaleItemRequestDto
+                {
+                    CatalogVariantId = variantId,
+                    Quantity = 1,
+                    UnitPrice = 3m,
+                    ItemType = "Product"
+                }
+            }
+        };
+
+        await sut.ExecuteAsync(request);
 
         var c = await ctx.Contacts.AsNoTracking().FirstAsync(x => x.Id == existing.Id);
         c.Name.Should().Be("Nuevo");
@@ -110,18 +193,32 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
-        var inv = new Mock<IInventoryService>();
-        inv.Setup(x => x.DecreaseStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-        var sut = new RegisterSaleUseCase(new SaleRepository(ctx), inv.Object, ctx);
+        SeedProductVariant(ctx, businessId, variantId);
+        await ctx.SaveChangesAsync();
 
-        var id = await sut.ExecuteAsync(
-            businessId,
-            new List<(Guid, int, decimal)> { (variantId, 2, 1m) },
-            customerName: "Sólo nombre",
-            customerEmail: "m@e.com");
+        var sut = CreateSut(ctx);
 
-        var sale = await ctx.Sales.AsNoTracking().Include(s => s.Contact).FirstAsync(s => s.Id == id);
+        var request = new CreateSaleRequestDto
+        {
+            BusinessId = businessId,
+            CustomerName = "Sólo nombre",
+            CustomerEmail = "m@e.com",
+            Items =
+            {
+                new SaleItemRequestDto
+                {
+                    CatalogVariantId = variantId,
+                    Quantity = 2,
+                    UnitPrice = 1m,
+                    ItemType = "Product"
+                }
+            }
+        };
+
+        var result = await sut.ExecuteAsync(request);
+        var saleId = GetSaleId(result);
+
+        var sale = await ctx.Sales.AsNoTracking().Include(s => s.Contact).FirstAsync(s => s.Id == saleId);
         sale.ContactId.Should().NotBeNull();
         sale.Contact!.Phone.Should().StartWith("SALE-ANON-");
         sale.CustomerPhone.Should().StartWith("SALE-ANON-");

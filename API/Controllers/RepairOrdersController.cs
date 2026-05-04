@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Domain.Enums;
 
@@ -19,6 +20,8 @@ public class RepairOrdersController : ControllerBase
     private readonly ISearchRepairOrdersUseCase _searchRepairOrdersUseCase;
     private readonly ISendRepairOrderEmailUseCase _sendRepairOrderEmailUseCase;
     private readonly IChargeRepairOrderUseCase _chargeRepairOrderUseCase;
+    private readonly IGetRepairOrderBalanceUseCase _getRepairOrderBalanceUseCase;
+    private readonly IGetPaymentsByRepairOrderUseCase _getPaymentsByRepairOrderUseCase;
 
     public RepairOrdersController(
     ICreateRepairOrderUseCase createRepairOrderUseCase,
@@ -29,7 +32,9 @@ public class RepairOrdersController : ControllerBase
     IGetRepairOrderByBusinessIdAndStatusUseCase getByIdAndStatusUseCase,
     ISearchRepairOrdersUseCase searchRepairOrdersUseCase,
     ISendRepairOrderEmailUseCase sendRepairOrderEmailUseCase,
-    IChargeRepairOrderUseCase chargeRepairOrderUseCase)
+    IChargeRepairOrderUseCase chargeRepairOrderUseCase,
+    IGetRepairOrderBalanceUseCase getRepairOrderBalanceUseCase,
+    IGetPaymentsByRepairOrderUseCase getPaymentsByRepairOrderUseCase)
     {
         _createRepairOrderUseCase = createRepairOrderUseCase;
         _updateStatusUseCase = updateStatusUseCase;
@@ -40,6 +45,8 @@ public class RepairOrdersController : ControllerBase
         _searchRepairOrdersUseCase = searchRepairOrdersUseCase;
         _sendRepairOrderEmailUseCase = sendRepairOrderEmailUseCase;
         _chargeRepairOrderUseCase = chargeRepairOrderUseCase;
+        _getRepairOrderBalanceUseCase = getRepairOrderBalanceUseCase;
+        _getPaymentsByRepairOrderUseCase = getPaymentsByRepairOrderUseCase;
     }
 
     [HttpPost("{businessId}")]
@@ -79,6 +86,23 @@ public class RepairOrdersController : ControllerBase
     public async Task<IActionResult> GetByBusiness(Guid businessId)
     {
         var result = await _getByBusinessUseCase.Execute(businessId);
+        return Ok(result);
+    }
+
+    /// <summary>GET /api/RepairOrders/{businessId}/{id}/payments — listado de pagos parciales de la orden.</summary>
+    [HttpGet("{businessId:guid}/{id:guid}/payments")]
+    public async Task<IActionResult> GetPayments(Guid businessId, Guid id)
+    {
+        var result = await _getPaymentsByRepairOrderUseCase.Execute(businessId, id);
+        return Ok(result);
+    }
+
+    /// <summary>GET /api/RepairOrders/{businessId}/{id}/balance — mismo dato que …/{id}/balance?businessId=…</summary>
+    [HttpGet("{businessId:guid}/{id:guid}/balance")]
+    public async Task<IActionResult> GetBalanceForBusiness(Guid businessId, Guid id)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _getRepairOrderBalanceUseCase.Execute(businessId, id);
         return Ok(result);
     }
 
@@ -127,6 +151,14 @@ public class RepairOrdersController : ControllerBase
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
         var result = await _chargeRepairOrderUseCase.Execute(businessId, id);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/balance")]
+    public async Task<IActionResult> GetBalance(Guid id, [FromQuery] Guid businessId)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _getRepairOrderBalanceUseCase.Execute(businessId, id);
         return Ok(result);
     }
 

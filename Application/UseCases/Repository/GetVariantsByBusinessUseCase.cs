@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
@@ -6,10 +8,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
     public class GetVariantsByBusinessUseCase : IGetVariantsByBusinessUseCase
     {
         private readonly IVariantRepository _variantRepository;
+        private readonly IAppDbContext _context;
 
-        public GetVariantsByBusinessUseCase(IVariantRepository variantRepository)
+        public GetVariantsByBusinessUseCase(IVariantRepository variantRepository, IAppDbContext context)
         {
             _variantRepository = variantRepository;
+            _context = context;
         }
 
         public async Task<List<CatalogVariantListItemDto>> ExecuteAsync(
@@ -22,6 +26,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
 
             if (catalogItemId.HasValue && catalogItemId.Value == Guid.Empty)
                 throw new ArgumentException("CatalogItemId must be valid when provided.", nameof(catalogItemId));
+
+            var businessDefault = await _context.Businesses
+                .AsNoTracking()
+                .Where(b => b.Id == businessId)
+                .Select(b => b.DefaultProfitMargin)
+                .FirstOrDefaultAsync();
 
             var variants = await _variantRepository.GetVariantsWithOptionDetailsByBusinessAsync(
                 businessId,
@@ -57,6 +67,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     CatalogItemName = v.CatalogItem.Name,
                     Sku = v.SKU,
                     Price = v.Price,
+                    CostPrice = v.CostPrice,
+                    ProfitMargin = v.ProfitMargin,
+                    EffectiveProfitMargin = v.ResolveProfitMargin(businessDefault),
                     InitialStock = initialStock,
                     CurrentStock = v.StockQuantity,
                     OptionValueIds = optionValueIds,

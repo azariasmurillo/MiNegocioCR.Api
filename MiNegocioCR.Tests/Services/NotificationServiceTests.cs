@@ -54,8 +54,8 @@ public class NotificationServiceTests
             x => x.SendAsync(
                 business,
                 "client@test.com",
-                $"Orden #{order.Id} creada",
-                It.Is<string>(b => b.Contains("Orden creada") && b.Contains(order.Id.ToString()))),
+                $"Orden #{order.OrderNumber} creada",
+                It.Is<string>(b => b.Contains("Orden creada") && b.Contains(order.OrderNumber))),
             Times.Once);
     }
 

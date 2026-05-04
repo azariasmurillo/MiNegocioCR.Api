@@ -12,6 +12,15 @@ namespace MiNegocioCR.Api.Application.DTOs
 
         public decimal Price { get; set; }
 
+        /// <summary>Costo unitario de referencia.</summary>
+        public decimal CostPrice { get; set; }
+
+        /// <summary>Margen % guardado en la variante; null = no hay override.</summary>
+        public decimal? ProfitMargin { get; set; }
+
+        /// <summary>Margen % efectivo: <see cref="ProfitMargin"/> o el default del negocio.</summary>
+        public decimal EffectiveProfitMargin { get; set; }
+
         /// <summary>Cantidad del movimiento de stock inicial al crear la variante; 0 si no hubo movimiento.</summary>
         public int InitialStock { get; set; }
 

@@ -14,17 +14,20 @@ namespace MiNegocioCR.Api.API.Controllers
         private readonly ICreateSaleFromRepairUseCase _createSaleFromRepair;
         private readonly ISendSaleEmailUseCase _sendSaleEmailUseCase;
         private readonly IGetSalesByBusinessUseCase _getSalesByBusinessUseCase;
+        private readonly IGetSaleByIdUseCase _getSaleByIdUseCase;
 
         public SalesController(
             IRegisterSaleUseCase registerSale,
             ICreateSaleFromRepairUseCase createSaleFromRepair,
             ISendSaleEmailUseCase sendSaleEmailUseCase,
-            IGetSalesByBusinessUseCase getSalesByBusinessUseCase)
+            IGetSalesByBusinessUseCase getSalesByBusinessUseCase,
+            IGetSaleByIdUseCase getSaleByIdUseCase)
         {
             _registerSale = registerSale;
             _createSaleFromRepair = createSaleFromRepair;
             _sendSaleEmailUseCase = sendSaleEmailUseCase;
             _getSalesByBusinessUseCase = getSalesByBusinessUseCase;
+            _getSaleByIdUseCase = getSaleByIdUseCase;
         }
 
         [HttpPost]
@@ -75,6 +78,26 @@ namespace MiNegocioCR.Api.API.Controllers
                 return BadRequest("htmlContent is required.");
             await _sendSaleEmailUseCase.Execute(id, request.HtmlContent, request.Email);
             return Ok(new { message = "Email enviado correctamente" });
+        }
+
+        /// <summary>GET /api/sales/{id}?businessId=… — si viene businessId y no coincide con la venta, 404.</summary>
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetById(Guid id, [FromQuery] Guid? businessId = null)
+        {
+            var result = await _getSaleByIdUseCase.ExecuteAsync(id, businessId);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
+        }
+
+        /// <summary>GET /api/sales/business/{businessId}/{id}</summary>
+        [HttpGet("business/{businessId:guid}/{id:guid}")]
+        public async Task<IActionResult> GetByBusinessAndId(Guid businessId, Guid id)
+        {
+            var result = await _getSaleByIdUseCase.ExecuteAsync(id, businessId);
+            if (result == null)
+                return NotFound();
+            return Ok(result);
         }
 
         [HttpGet("business/{businessId:guid}")]

@@ -38,6 +38,15 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                     x.BusinessId == businessId);
         }
 
+        public async Task<Sale?> GetSaleByIdAsync(Guid id)
+        {
+            return await _context.Sales
+                .AsNoTracking()
+                .Include(x => x.Items)
+                .Include(x => x.Contact)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+
         public async Task<PagedResultDto<SalesListItemDto>> GetPagedSalesAsync(Guid businessId, SalesListQueryDto query)
         {
             var salesQuery = _context.Sales

@@ -34,7 +34,8 @@ public class GetBusinessConfigUseCase : IGetBusinessConfigUseCase
                 SmtpUsername = x.SmtpUsername,
                 SmtpPassword = x.SmtpPassword,
                 EnableEmailNotifications = x.EnableEmailNotifications,
-                EnableSsl = x.EnableSsl
+                EnableSsl = x.EnableSsl,
+                DefaultProfitMargin = x.DefaultProfitMargin
             })
             .FirstOrDefaultAsync();
     }

@@ -18,5 +18,8 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? SmtpFromName { get; set; }
         public DateTime? CreatedAt { get; set; }
         public string? WhatsappAccessToken { get; set; }
+
+        /// <summary>Margen % por defecto del negocio (referencia para variantes sin margen propio).</summary>
+        public decimal DefaultProfitMargin { get; set; }
     }
 }

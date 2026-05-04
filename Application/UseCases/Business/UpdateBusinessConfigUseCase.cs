@@ -39,6 +39,13 @@ public class UpdateBusinessConfigUseCase : IUpdateBusinessConfigUseCase
         business.EnableEmailNotifications = request.EnableEmailNotifications;
         business.EnableSsl = request.EnableSsl;
 
+        if (request.DefaultProfitMargin.HasValue)
+        {
+            if (request.DefaultProfitMargin.Value < 0)
+                throw new ArgumentException("DefaultProfitMargin must be greater than or equal to zero.", nameof(request));
+            business.DefaultProfitMargin = request.DefaultProfitMargin.Value;
+        }
+
         await _context.SaveChangesAsync(CancellationToken.None);
 
         return new BusinessConfigDto
@@ -56,7 +63,8 @@ public class UpdateBusinessConfigUseCase : IUpdateBusinessConfigUseCase
             SmtpUsername = business.SmtpUsername,
             SmtpPassword = business.SmtpPassword,
             EnableEmailNotifications = business.EnableEmailNotifications,
-            EnableSsl = business.EnableSsl
+            EnableSsl = business.EnableSsl,
+            DefaultProfitMargin = business.DefaultProfitMargin
         };
     }
 

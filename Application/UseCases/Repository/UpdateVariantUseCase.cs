@@ -1,3 +1,4 @@
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
@@ -24,15 +25,31 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             if (request.BusinessId == Guid.Empty)
                 throw new ArgumentException("BusinessId is required.", nameof(request));
 
-            if (request.Price < 0)
-                throw new ArgumentException("Price cannot be negative.", nameof(request));
+            if (request.CostPrice < 0)
+                throw new ArgumentException("CostPrice cannot be negative.", nameof(request));
 
             var variant = await _variantRepository.GetVariantAsync(variantId, request.BusinessId);
             if (variant == null)
                 throw new NotFoundException("CatalogVariant", "Variant not found.");
 
             variant.SKU = request.SKU;
-            variant.Price = request.Price;
+            variant.CostPrice = request.CostPrice;
+
+            if (request.SetProfitMargin)
+            {
+                if (request.ProfitMargin.HasValue && request.ProfitMargin.Value < 0)
+                    throw new ArgumentException("ProfitMargin must be greater than or equal to zero.", nameof(request));
+                variant.ProfitMargin = request.ProfitMargin;
+            }
+
+            variant.Price = CatalogVariantPriceResolver.ResolvePersistedPrice(
+                request.SetPriceManually,
+                variant.CostPrice,
+                variant.ProfitMargin,
+                request.Price);
+
+            if (variant.Price < 0)
+                throw new ArgumentException("Resolved price cannot be negative.", nameof(request));
 
             await _variantRepository.UpdateAsync(variant);
         }

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace MiNegocioCR.Api.Application.DTOs;
 
 public class BusinessConfigDto
@@ -16,6 +18,9 @@ public class BusinessConfigDto
     public string? SmtpPassword { get; set; }
     public bool EnableEmailNotifications { get; set; }
     public bool EnableSsl { get; set; }
+
+    /// <summary>Margen % por defecto del negocio (referencia para precios).</summary>
+    public decimal DefaultProfitMargin { get; set; }
 }
 
 public class UpdateBusinessConfigRequestDto
@@ -33,4 +38,8 @@ public class UpdateBusinessConfigRequestDto
     public string? SmtpPassword { get; set; }
     public bool EnableEmailNotifications { get; set; }
     public bool EnableSsl { get; set; }
+
+    /// <summary>Si se envía, actualiza el margen por defecto del negocio (debe ser &gt;= 0).</summary>
+    [JsonPropertyName("defaultProfitMargin")]
+    public decimal? DefaultProfitMargin { get; set; }
 }
