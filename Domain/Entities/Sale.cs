@@ -28,6 +28,12 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public decimal Total { get; set; }
 
+        /// <summary>Suma de costos de línea (CostPrice × cantidad) al momento de la venta.</summary>
+        public decimal TotalCost { get; set; }
+
+        /// <summary>Ganancia respecto al total cobrado: <see cref="Total"/> − <see cref="TotalCost"/>.</summary>
+        public decimal TotalProfit { get; set; }
+
         public ICollection<SaleItem> Items { get; set; } = new List<SaleItem>();
         public DateTime CreatedAt { get; internal set; }
         public string CustomerPhone { get; internal set; } = string.Empty;

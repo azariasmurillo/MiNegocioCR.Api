@@ -27,6 +27,8 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<Sale> Sales { get; }
         DbSet<SaleItem> SaleItems { get; }
         DbSet<Payment> Payments { get; }
+        DbSet<RepairOrderImage> RepairOrderImages { get; }
+        DbSet<CatalogVariantImage> CatalogVariantImages { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

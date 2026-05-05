@@ -1,5 +1,5 @@
 using MiNegocioCR.Api.Application.DTOs;
-using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 
 namespace MiNegocioCR.Api.Application.UseCases.RepairOrder;
@@ -17,7 +17,7 @@ public class ChargeRepairOrderUseCase : IChargeRepairOrderUseCase
         _registerSaleUseCase = registerSaleUseCase;
     }
 
-    public Task<object> Execute(Guid businessId, Guid repairOrderId, decimal? taxRatePercent = null)
+    public Task<object> Execute(Guid businessId, Guid repairOrderId)
     {
         if (businessId == Guid.Empty)
             throw new ArgumentException("BusinessId is required.", nameof(businessId));
@@ -26,7 +26,6 @@ public class ChargeRepairOrderUseCase : IChargeRepairOrderUseCase
         {
             BusinessId = businessId,
             RepairOrderId = repairOrderId,
-            TaxRatePercent = taxRatePercent ?? 13m,
             Source = "Repair"
         };
 

@@ -21,5 +21,8 @@ namespace MiNegocioCR.Api.Application.DTOs
 
         /// <summary>Margen % por defecto del negocio (referencia para variantes sin margen propio).</summary>
         public decimal DefaultProfitMargin { get; set; }
+
+        /// <summary>Tasa de impuesto (IVA u otro) en % aplicada en ventas; configurable por negocio.</summary>
+        public decimal TaxRatePercent { get; set; }
     }
 }

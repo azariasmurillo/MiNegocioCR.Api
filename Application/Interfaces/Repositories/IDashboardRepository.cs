@@ -8,4 +8,7 @@ public interface IDashboardRepository
     Task<List<SalesTrendPointDto>> GetSalesTrendAsync(Guid businessId, DateTime? from, DateTime? to, string groupBy);
     Task<TicketAverageDto> GetTicketAverageAsync(Guid businessId, DateTime? from, DateTime? to);
     Task<List<ActivityItemDto>> GetRecentActivityAsync(Guid businessId, int limit);
+    Task<List<TopProductRowDto>> GetTopProductsAsync(Guid businessId, int take);
+    Task<List<PendingOrderRowDto>> GetPendingOrdersWithBalanceAsync(Guid businessId);
+    Task<ProfitBySourceDto> GetProfitBySourceAsync(Guid businessId);
 }

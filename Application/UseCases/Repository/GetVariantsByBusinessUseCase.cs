@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Domain.Pricing;
 
 namespace MiNegocioCR.Api.Application.UseCases.Repository
 {
@@ -66,7 +67,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     CatalogItemId = v.CatalogItemId,
                     CatalogItemName = v.CatalogItem.Name,
                     Sku = v.SKU,
-                    Price = v.Price,
+                    Price = CrcSalePriceNormalizer.NormalizeSalePriceColones(v.Price),
                     CostPrice = v.CostPrice,
                     ProfitMargin = v.ProfitMargin,
                     EffectiveProfitMargin = v.ResolveProfitMargin(businessDefault),

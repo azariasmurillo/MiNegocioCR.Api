@@ -1,12 +1,10 @@
 namespace MiNegocioCR.Api.Application.DTOs;
 
+/// <summary>Resumen accionable del día (UTC) para el dashboard.</summary>
 public class DashboardSummaryDto
 {
-    public int SalesTodayCount { get; set; }
-    public decimal SalesTodayTotal { get; set; }
-    public int OrdersPendingCount { get; set; }
-    public int OrdersInProcessCount { get; set; }
-    public int OrdersProcessedCount { get; set; }
-    public int OrdersDeliveredCount { get; set; }
-    public int InvoicesTodayCount { get; set; }
+    public decimal IngresosHoy { get; set; }
+    public decimal GananciaHoy { get; set; }
+    public decimal TicketPromedio { get; set; }
+    public int OrdenesActivas { get; set; }
 }

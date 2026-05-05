@@ -14,7 +14,7 @@ public class CatalogVariantPriceResolverTests
             costPrice: 100m,
             profitMargin: 25m,
             requestedPrice: 999m);
-        p.Should().Be(999m);
+        p.Should().Be(1000m);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class CatalogVariantPriceResolverTests
             costPrice: 100m,
             profitMargin: null,
             requestedPrice: 55.5m);
-        p.Should().Be(55.5m);
+        p.Should().Be(60m);
     }
 
     [Fact]
@@ -58,6 +58,6 @@ public class CatalogVariantPriceResolverTests
             costPrice: 10m,
             profitMargin: 33.333m,
             requestedPrice: 0m);
-        p.Should().Be(13.33m);
+        p.Should().Be(15m);
     }
 }

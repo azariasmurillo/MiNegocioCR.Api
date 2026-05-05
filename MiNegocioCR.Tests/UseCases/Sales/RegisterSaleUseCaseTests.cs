@@ -10,6 +10,7 @@ using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using Moq;
 using Xunit;
+using BusinessEntity = MiNegocioCR.Api.Domain.Entities.Business;
 
 namespace MiNegocioCR.Tests.UseCases.Sales;
 
@@ -22,6 +23,17 @@ public class RegisterSaleUseCaseTests
             .ConfigureWarnings(x => x.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
         return new AppDbContext(options);
+    }
+
+    private static void SeedBusiness(AppDbContext ctx, Guid businessId, decimal taxRatePercent = 13m)
+    {
+        ctx.Businesses.Add(new BusinessEntity
+        {
+            Id = businessId,
+            Name = "Test business",
+            TaxRatePercent = taxRatePercent,
+            CreatedAt = DateTime.UtcNow
+        });
     }
 
     private static void SeedProductVariant(AppDbContext ctx, Guid businessId, Guid variantId)
@@ -72,6 +84,7 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
+        SeedBusiness(ctx, businessId);
         SeedProductVariant(ctx, businessId, variantId);
         await ctx.SaveChangesAsync();
 
@@ -107,6 +120,7 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
+        SeedBusiness(ctx, businessId);
         SeedProductVariant(ctx, businessId, variantId);
         await ctx.SaveChangesAsync();
 
@@ -147,6 +161,7 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
+        SeedBusiness(ctx, businessId);
         SeedProductVariant(ctx, businessId, variantId);
         var existing = new Contact
         {
@@ -193,6 +208,7 @@ public class RegisterSaleUseCaseTests
         await using var ctx = CreateContext();
         var businessId = Guid.NewGuid();
         var variantId = Guid.NewGuid();
+        SeedBusiness(ctx, businessId);
         SeedProductVariant(ctx, businessId, variantId);
         await ctx.SaveChangesAsync();
 

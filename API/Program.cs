@@ -30,11 +30,11 @@ using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
-using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
+using MiNegocioCR.Api.Application.Interfaces.Variants;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
@@ -44,6 +44,7 @@ using MiNegocioCR.Api.Application.UseCases.Contacts;
 using MiNegocioCR.Api.Application.UseCases.Conversations;
 using MiNegocioCR.Api.Application.UseCases.RepairOrder;
 using MiNegocioCR.Api.Application.UseCases.Catalog;
+using MiNegocioCR.Api.Application.UseCases.Variants;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Dashboard;
@@ -183,6 +184,10 @@ builder.Services.AddScoped<ISearchRepairOrdersUseCase, SearchRepairOrdersUseCase
 builder.Services.AddScoped<ISendRepairOrderEmailUseCase, SendRepairOrderEmailUseCase>();
 builder.Services.AddScoped<IChargeRepairOrderUseCase, ChargeRepairOrderUseCase>();
 builder.Services.AddScoped<IGetRepairOrderBalanceUseCase, GetRepairOrderBalanceUseCase>();
+builder.Services.AddScoped<IRepairOrderImageStorageService, SupabaseRepairOrderImageStorageService>();
+builder.Services.AddScoped<IUploadRepairOrderImagesUseCase, UploadRepairOrderImagesUseCase>();
+builder.Services.AddScoped<IGetRepairOrderImagesUseCase, GetRepairOrderImagesUseCase>();
+builder.Services.AddScoped<IDeleteRepairOrderImageUseCase, DeleteRepairOrderImageUseCase>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();
@@ -196,6 +201,9 @@ builder.Services.AddScoped<IGetDashboardSummaryUseCase, GetDashboardSummaryUseCa
 builder.Services.AddScoped<IGetSalesTrendUseCase, GetSalesTrendUseCase>();
 builder.Services.AddScoped<IGetTicketAverageUseCase, GetTicketAverageUseCase>();
 builder.Services.AddScoped<IGetRecentActivityUseCase, GetRecentActivityUseCase>();
+builder.Services.AddScoped<IGetTopProductsUseCase, GetTopProductsUseCase>();
+builder.Services.AddScoped<IGetPendingOrdersDashboardUseCase, GetPendingOrdersDashboardUseCase>();
+builder.Services.AddScoped<IGetProfitBySourceUseCase, GetProfitBySourceUseCase>();
 builder.Services.AddScoped<ICreatePaymentUseCase, CreatePaymentUseCase>();
 builder.Services.AddScoped<IGetPaymentsByRepairOrderUseCase, GetPaymentsByRepairOrderUseCase>();
 builder.Services.AddScoped<ICreateCatalogItemUseCase, CreateCatalogItemUseCase>();
@@ -203,6 +211,11 @@ builder.Services.AddScoped<IUpdateCatalogItemUseCase, UpdateCatalogItemUseCase>(
 builder.Services.AddScoped<IToggleCatalogItemStatusUseCase, ToggleCatalogItemStatusUseCase>();
 builder.Services.AddScoped<IDeleteCatalogItemUseCase, DeleteCatalogItemUseCase>();
 builder.Services.AddScoped<IGetCatalogItemsByBusinessUseCase, GetCatalogItemsByBusinessUseCase>();
+builder.Services.AddScoped<IVariantImageStorageService, SupabaseVariantImageStorageService>();
+builder.Services.AddScoped<IUploadCatalogVariantImagesUseCase, UploadCatalogVariantImagesUseCase>();
+builder.Services.AddScoped<IGetCatalogVariantImagesUseCase, GetCatalogVariantImagesUseCase>();
+builder.Services.AddScoped<IDeleteCatalogVariantImageUseCase, DeleteCatalogVariantImageUseCase>();
+builder.Services.AddScoped<ISetPrimaryCatalogVariantImageUseCase, SetPrimaryCatalogVariantImageUseCase>();
 builder.Services.AddScoped<ICreateCategoryUseCase, CreateCategoryUseCase>();
 builder.Services.AddScoped<IGetCategoriesByBusinessUseCase, GetCategoriesByBusinessUseCase>();
 builder.Services.AddScoped<IUpdateCategoryUseCase, UpdateCategoryUseCase>();
@@ -255,6 +268,14 @@ builder.Services.AddSingleton<IIntentClassifier, IntentClassifier>();
 
 // --- Build ---
 var app = builder.Build();
+
+// Aplica migraciones pendientes en la BD configurada (añade columnas como TotalCost/TotalProfit).
+// Si falla con Supabase pooler (puerto 6543), usá conexión sesión/directa (5432) o ejecutá Scripts/AddSaleCostAndProfitMetrics.sql en el SQL Editor.
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.UseForwardedHeaders();
 app.UseRouting();

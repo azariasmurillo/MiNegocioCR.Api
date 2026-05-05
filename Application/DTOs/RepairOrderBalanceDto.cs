@@ -2,7 +2,12 @@ namespace MiNegocioCR.Api.Application.DTOs;
 
 public class RepairOrderBalanceDto
 {
-    public decimal TotalOrden { get; set; }
+    public decimal Subtotal { get; set; }
+    /// <summary>Monto de descuento según el porcentaje de la orden.</summary>
+    public decimal Discount { get; set; }
+    public decimal Tax { get; set; }
+    /// <summary>Total de la orden (base gravable + impuesto), antes de considerar pagos.</summary>
+    public decimal Total { get; set; }
     public decimal TotalPagado { get; set; }
     public decimal SaldoPendiente { get; set; }
 }

@@ -77,6 +77,30 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             sale.Total = sale.Subtotal + sale.TaxAmount - sale.DiscountAmount;
             sale.TotalAmount = sale.Total;
 
+            if (_context != null)
+            {
+                var variantIds = sale.Items
+                    .Where(i => i.CatalogVariantId.HasValue)
+                    .Select(i => i.CatalogVariantId!.Value)
+                    .Distinct()
+                    .ToList();
+                if (variantIds.Count > 0)
+                {
+                    var costs = await _context.CatalogVariants.AsNoTracking()
+                        .Where(v => variantIds.Contains(v.Id))
+                        .ToDictionaryAsync(v => v.Id, v => v.CostPrice);
+                    foreach (var line in sale.Items)
+                    {
+                        if (line.CatalogVariantId.HasValue &&
+                            costs.TryGetValue(line.CatalogVariantId.Value, out var unitCost))
+                            line.CostPrice = unitCost;
+                    }
+                }
+            }
+
+            sale.TotalCost = sale.Items.Sum(i => i.CostPrice * i.Quantity);
+            sale.TotalProfit = sale.Total - sale.TotalCost;
+
             await _saleRepository.AddSaleAsync(sale);
 
             return sale.Id;

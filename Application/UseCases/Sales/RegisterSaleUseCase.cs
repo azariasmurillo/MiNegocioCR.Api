@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
-using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Domain.Entities;
@@ -38,13 +38,20 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             if (request == null) throw new ArgumentNullException(nameof(request));
             var businessId = request.BusinessId;
             var items = request.Items;
-            if (request.TaxRatePercent < 0) throw new ArgumentException("Tax rate cannot be negative.", nameof(request.TaxRatePercent));
             if (request.Discount < 0) throw new ArgumentException("Discount cannot be negative.", nameof(request.Discount));
 
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                var business = await _context.Businesses.AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.Id == businessId);
+                if (business == null)
+                    throw new ArgumentException("Business not found.", nameof(request.BusinessId));
+                var taxRate = business.TaxRatePercent;
+                if (taxRate < 0)
+                    throw new ArgumentException("Business tax rate cannot be negative.");
+
                 MiNegocioCR.Api.Domain.Entities.RepairOrder? repairOrder = null;
                 if (request.RepairOrderId.HasValue)
                 {
@@ -214,7 +221,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
 
                     var taxableBase = sale.Subtotal - discountPercentAmount;
                     sale.TaxAmount = Math.Round(
-                        taxableBase * (request.TaxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
+                        taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
 
                     // Payments: única fuente de prepagos; no usar montos del request.
                     var payments = await _paymentService.GetPaymentsByRepairOrderAsync(businessId, repairOrder.Id);
@@ -243,12 +250,16 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 }
                 else
                 {
+                    var appliedDiscount = Math.Min(request.Discount, sale.Subtotal);
+                    var taxableBaseManual = sale.Subtotal - appliedDiscount;
                     sale.TaxAmount = Math.Round(
-                        sale.Subtotal * (request.TaxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
-                    sale.DiscountAmount = request.Discount;
-                    sale.Total = sale.Subtotal + sale.TaxAmount - sale.DiscountAmount;
+                        taxableBaseManual * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
+                    sale.DiscountAmount = appliedDiscount;
+                    sale.Total = taxableBaseManual + sale.TaxAmount;
                 }
                 sale.TotalAmount = sale.Total;
+
+                await ApplyCostSnapshotAndTotalsAsync(sale);
 
                 await _saleRepository.AddSaleAsync(sale);
 
@@ -259,6 +270,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     sale.Id,
                     sale.InvoiceNumber,
                     sale.Source,
+                    taxRatePercent = taxRate,
                     Contact = contact == null ? null : new
                     {
                         contact.Id,
@@ -290,6 +302,33 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        /// <summary>Copia CostPrice desde catálogo y calcula TotalCost / TotalProfit (solo esta venta).</summary>
+        private async Task ApplyCostSnapshotAndTotalsAsync(Sale sale)
+        {
+            var variantIds = sale.Items
+                .Where(i => i.CatalogVariantId.HasValue)
+                .Select(i => i.CatalogVariantId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (variantIds.Count > 0)
+            {
+                var costs = await _context.CatalogVariants.AsNoTracking()
+                    .Where(v => variantIds.Contains(v.Id))
+                    .ToDictionaryAsync(v => v.Id, v => v.CostPrice);
+
+                foreach (var line in sale.Items)
+                {
+                    if (line.CatalogVariantId.HasValue &&
+                        costs.TryGetValue(line.CatalogVariantId.Value, out var unitCost))
+                        line.CostPrice = unitCost;
+                }
+            }
+
+            sale.TotalCost = sale.Items.Sum(i => i.CostPrice * i.Quantity);
+            sale.TotalProfit = sale.Total - sale.TotalCost;
         }
 
         private async Task<string> BuildInvoiceNumberAsync(Guid businessId)

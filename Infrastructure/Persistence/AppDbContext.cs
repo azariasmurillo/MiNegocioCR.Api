@@ -39,6 +39,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<ConversationTag> ConversationTags { get; set; }
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<RepairOrderImage> RepairOrderImages => Set<RepairOrderImage>();
+        public DbSet<CatalogVariantImage> CatalogVariantImages => Set<CatalogVariantImage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -56,6 +58,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.DefaultProfitMargin)
                     .HasPrecision(5, 2)
                     .HasDefaultValue(0m);
+                entity.Property(x => x.TaxRatePercent)
+                    .HasPrecision(5, 2)
+                    .HasDefaultValue(13m);
             });
 
             modelBuilder.Entity<CatalogVariant>(entity =>
@@ -114,6 +119,29 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .WithMany(i => i.Images)
                 .HasForeignKey(x => x.CatalogItemId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CatalogVariantImage>(entity =>
+            {
+                entity.ToTable("CatalogVariantImages");
+                entity.Property(x => x.ImageUrl).IsRequired();
+                entity.Property(x => x.CreatedAt)
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("now()");
+
+                entity.HasOne(x => x.CatalogVariant)
+                    .WithMany(v => v.VariantImages)
+                    .HasForeignKey(x => x.CatalogVariantId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.BusinessId);
+                entity.HasIndex(x => x.CatalogVariantId);
+                entity.HasIndex(x => new { x.BusinessId, x.CatalogVariantId });
+            });
 
             modelBuilder.Entity<CatalogOption>()
                 .HasOne(x => x.CatalogItem)
@@ -204,6 +232,10 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                     .HasColumnType("numeric(18,2)");
                 entity.Property(x => x.Total)
                     .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.TotalCost)
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.TotalProfit)
+                    .HasColumnType("numeric(18,2)");
                 entity.HasIndex(x => new { x.BusinessId, x.InvoiceNumber })
                     .IsUnique();
             });
@@ -213,6 +245,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.ItemType)
                     .IsRequired()
                     .HasMaxLength(20);
+                entity.Property(x => x.CostPrice)
+                    .HasColumnType("numeric(18,2)");
             });
 
             modelBuilder.Entity<Sale>()
@@ -286,6 +320,28 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
                 entity.HasIndex(x => x.RepairOrderId);
                 entity.HasIndex(x => x.CatalogVariantId);
+            });
+
+            modelBuilder.Entity<RepairOrderImage>(entity =>
+            {
+                entity.Property(x => x.ImageUrl).IsRequired();
+                entity.Property(x => x.CreatedAt)
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("now()");
+
+                entity.HasOne(x => x.RepairOrder)
+                    .WithMany(o => o.Images)
+                    .HasForeignKey(x => x.RepairOrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.BusinessId);
+                entity.HasIndex(x => x.RepairOrderId);
+                entity.HasIndex(x => new { x.BusinessId, x.RepairOrderId });
             });
 
             modelBuilder.Entity<Payment>(entity =>

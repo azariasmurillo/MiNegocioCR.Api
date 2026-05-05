@@ -68,6 +68,37 @@ public class CreateVariantUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_WithCostAndMargin_NormalizesPrice_ToNearestFiveColonesCeiling()
+    {
+        var businessId = Guid.NewGuid();
+        var catalogItemId = Guid.NewGuid();
+        _catalogRepositoryMock
+            .Setup(x => x.GetItemByIdAsync(catalogItemId))
+            .ReturnsAsync(new CatalogItem { Id = catalogItemId, BusinessId = businessId });
+        _variantRepositoryMock
+            .Setup(x => x.AddVariantAsync(It.IsAny<CatalogVariant>()))
+            .Returns(Task.CompletedTask);
+
+        var request = new CreateVariantRequestDto
+        {
+            CatalogItemId = catalogItemId,
+            SKU = "SKU-CRC",
+            CostPrice = 10071.68m,
+            ProfitMargin = 25m,
+            Price = 0m,
+            SetPriceManually = false,
+            InitialStock = 0
+        };
+
+        await _sut.ExecuteAsync(request);
+
+        _variantRepositoryMock.Verify(
+            x => x.AddVariantAsync(It.Is<CatalogVariant>(v =>
+                v.Price == 12590m)),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WithValidInput_AddsVariantAndReturnsId()
     {
         var businessId = Guid.NewGuid();
@@ -94,7 +125,7 @@ public class CreateVariantUseCaseTests
             x => x.AddVariantAsync(It.Is<CatalogVariant>(v =>
                 v.CatalogItemId == catalogItemId &&
                 v.SKU == "SKU-001" &&
-                v.Price == 19.99m &&
+                v.Price == 20m &&
                 v.StockQuantity == 50 &&
                 v.IsActive)),
             Times.Once);

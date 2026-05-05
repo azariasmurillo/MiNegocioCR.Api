@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
@@ -16,48 +17,43 @@ public class DashboardRepository : IDashboardRepository
 
     public async Task<DashboardSummaryDto> GetSummaryAsync(Guid businessId, DateTime? from, DateTime? to)
     {
+        _ = from;
+        _ = to;
+
         var startToday = DateTime.UtcNow.Date;
         var endToday = startToday.AddDays(1);
 
-        var salesTodayQuery = _context.Sales
+        var salesToday = _context.Sales
             .AsNoTracking()
             .Where(x => x.BusinessId == businessId && x.CreatedAt >= startToday && x.CreatedAt < endToday);
 
-        var salesTodayCount = await salesTodayQuery.CountAsync();
-        var salesTodayTotal = await salesTodayQuery
+        var salesTodayCount = await salesToday.CountAsync();
+        var ingresosHoy = await salesToday
             .Select(x => (decimal?)(x.Total > 0 ? x.Total : x.TotalAmount))
             .SumAsync() ?? 0m;
 
-        var ordersQuery = _context.RepairOrders
+        var gananciaHoy = await salesToday
+            .Select(x => (decimal?)x.TotalProfit)
+            .SumAsync() ?? 0m;
+
+        var ticketPromedio = salesTodayCount > 0
+            ? Math.Round(ingresosHoy / salesTodayCount, 2, MidpointRounding.AwayFromZero)
+            : 0m;
+
+        var ordenesActivas = await _context.RepairOrders
             .AsNoTracking()
-            .Where(x => x.BusinessId == businessId);
-
-        if (from.HasValue)
-        {
-            ordersQuery = ordersQuery.Where(x => x.CreatedAt >= from.Value.Date);
-        }
-
-        if (to.HasValue)
-        {
-            ordersQuery = ordersQuery.Where(x => x.CreatedAt < to.Value.Date.AddDays(1));
-        }
-
-        var groupedStatuses = await ordersQuery
-            .GroupBy(x => x.Status)
-            .Select(g => new { Status = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        var invoicesTodayCount = salesTodayCount;
+            .CountAsync(o => o.BusinessId == businessId
+                && o.IsActive
+                && (o.Status == (int)RepairOrderStatus.Pending
+                    || o.Status == (int)RepairOrderStatus.InProcess
+                    || o.Status == (int)RepairOrderStatus.Processed));
 
         return new DashboardSummaryDto
         {
-            SalesTodayCount = salesTodayCount,
-            SalesTodayTotal = salesTodayTotal,
-            OrdersPendingCount = groupedStatuses.FirstOrDefault(x => x.Status == (int)RepairOrderStatus.Pending)?.Count ?? 0,
-            OrdersInProcessCount = groupedStatuses.FirstOrDefault(x => x.Status == (int)RepairOrderStatus.InProcess)?.Count ?? 0,
-            OrdersProcessedCount = groupedStatuses.FirstOrDefault(x => x.Status == (int)RepairOrderStatus.Processed)?.Count ?? 0,
-            OrdersDeliveredCount = groupedStatuses.FirstOrDefault(x => x.Status == (int)RepairOrderStatus.Delivered)?.Count ?? 0,
-            InvoicesTodayCount = invoicesTodayCount
+            IngresosHoy = ingresosHoy,
+            GananciaHoy = gananciaHoy,
+            TicketPromedio = ticketPromedio,
+            OrdenesActivas = ordenesActivas
         };
     }
 
@@ -68,16 +64,12 @@ public class DashboardRepository : IDashboardRepository
             .Where(x => x.BusinessId == businessId);
 
         if (from.HasValue)
-        {
             salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value.Date);
-        }
 
         if (to.HasValue)
-        {
             salesQuery = salesQuery.Where(x => x.CreatedAt < to.Value.Date.AddDays(1));
-        }
 
-        if (groupBy == "month")
+        if (string.Equals(groupBy, "month", StringComparison.OrdinalIgnoreCase))
         {
             return await salesQuery
                 .GroupBy(x => new { x.CreatedAt.Year, x.CreatedAt.Month })
@@ -86,7 +78,8 @@ public class DashboardRepository : IDashboardRepository
                 .Select(x => new SalesTrendPointDto
                 {
                     Date = $"{x.Key.Year:D4}-{x.Key.Month:D2}",
-                    Total = x.Sum(s => s.Total > 0 ? s.Total : s.TotalAmount)
+                    Ingresos = x.Sum(s => s.Total > 0 ? s.Total : s.TotalAmount),
+                    Ganancia = x.Sum(s => s.TotalProfit)
                 })
                 .ToListAsync();
         }
@@ -97,7 +90,8 @@ public class DashboardRepository : IDashboardRepository
             .Select(x => new SalesTrendPointDto
             {
                 Date = x.Key.ToString("yyyy-MM-dd"),
-                Total = x.Sum(s => s.Total > 0 ? s.Total : s.TotalAmount)
+                Ingresos = x.Sum(s => s.Total > 0 ? s.Total : s.TotalAmount),
+                Ganancia = x.Sum(s => s.TotalProfit)
             })
             .ToListAsync();
     }
@@ -109,14 +103,10 @@ public class DashboardRepository : IDashboardRepository
             .Where(x => x.BusinessId == businessId);
 
         if (from.HasValue)
-        {
             salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value.Date);
-        }
 
         if (to.HasValue)
-        {
             salesQuery = salesQuery.Where(x => x.CreatedAt < to.Value.Date.AddDays(1));
-        }
 
         var average = await salesQuery
             .Select(x => (decimal?)(x.Total > 0 ? x.Total : x.TotalAmount))
@@ -130,7 +120,6 @@ public class DashboardRepository : IDashboardRepository
 
     public async Task<List<ActivityItemDto>> GetRecentActivityAsync(Guid businessId, int limit)
     {
-        // EF Core cannot translate Union across projected DTOs to SQL. Load capped slices per source, merge in memory.
         var perSource = Math.Min(Math.Max(limit * 4, 40), 300);
 
         var saleActivities = await _context.Sales
@@ -178,5 +167,122 @@ public class DashboardRepository : IDashboardRepository
             .OrderByDescending(x => x.CreatedAt)
             .Take(limit)
             .ToList();
+    }
+
+    public async Task<List<TopProductRowDto>> GetTopProductsAsync(Guid businessId, int take)
+    {
+        take = Math.Clamp(take, 1, 100);
+
+        return await (
+                from si in _context.SaleItems.AsNoTracking()
+                join s in _context.Sales.AsNoTracking() on si.SaleId equals s.Id
+                join v in _context.CatalogVariants.AsNoTracking() on si.CatalogVariantId equals v.Id
+                join ci in _context.CatalogItems.AsNoTracking() on v.CatalogItemId equals ci.Id
+                where s.BusinessId == businessId
+                      && si.ItemType == "Product"
+                      && si.CatalogVariantId != null
+                group new { si.Quantity, si.Total } by ci.Name into g
+                orderby g.Sum(x => x.Total) descending
+                select new TopProductRowDto
+                {
+                    Name = g.Key ?? string.Empty,
+                    TotalSold = g.Sum(x => x.Quantity),
+                    TotalRevenue = g.Sum(x => x.Total)
+                })
+            .Take(take)
+            .ToListAsync();
+    }
+
+    public async Task<List<PendingOrderRowDto>> GetPendingOrdersWithBalanceAsync(Guid businessId)
+    {
+        var business = await _context.Businesses.AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == businessId);
+        if (business == null)
+            return new List<PendingOrderRowDto>();
+
+        var taxRate = business.TaxRatePercent < 0 ? 0m : business.TaxRatePercent;
+
+        var orders = await _context.RepairOrders
+            .AsNoTracking()
+            .Where(o => o.BusinessId == businessId
+                        && o.IsActive
+                        && o.Status != (int)RepairOrderStatus.Cancelled)
+            .Include(o => o.Items)
+            .Include(o => o.Contact)
+            .ToListAsync();
+
+        if (orders.Count == 0)
+            return new List<PendingOrderRowDto>();
+
+        var orderIds = orders.Select(o => o.Id).ToList();
+        var paidRows = await _context.Payments
+            .AsNoTracking()
+            .Where(p => p.BusinessId == businessId && orderIds.Contains(p.RepairOrderId))
+            .GroupBy(p => p.RepairOrderId)
+            .Select(g => new { RepairOrderId = g.Key, Sum = g.Sum(x => x.Amount) })
+            .ToListAsync();
+
+        var paidByOrder = paidRows.ToDictionary(x => x.RepairOrderId, x => x.Sum);
+
+        var result = new List<PendingOrderRowDto>();
+        foreach (var o in orders)
+        {
+            var totalOrden = ComputeRepairOrderTotalWithTax(o, taxRate);
+            var paid = paidByOrder.GetValueOrDefault(o.Id, 0m);
+            var saldo = Math.Max(0m, totalOrden - paid);
+            if (saldo <= 0)
+                continue;
+
+            result.Add(new PendingOrderRowDto
+            {
+                OrderNumber = o.OrderNumber,
+                CustomerName = o.Contact?.Name?.Trim() ?? string.Empty,
+                PendingAmount = Math.Round(saldo, 2, MidpointRounding.AwayFromZero)
+            });
+        }
+
+        return result
+            .OrderByDescending(x => x.PendingAmount)
+            .ThenBy(x => x.OrderNumber)
+            .ToList();
+    }
+
+    public async Task<ProfitBySourceDto> GetProfitBySourceAsync(Guid businessId)
+    {
+        var rows = await _context.Sales
+            .AsNoTracking()
+            .Where(s => s.BusinessId == businessId)
+            .GroupBy(s => s.Source)
+            .Select(g => new { Source = g.Key, Profit = g.Sum(x => x.TotalProfit) })
+            .ToListAsync();
+
+        var dto = new ProfitBySourceDto();
+        foreach (var r in rows)
+        {
+            var src = r.Source?.Trim() ?? string.Empty;
+            if (string.Equals(src, "Repair", StringComparison.OrdinalIgnoreCase))
+                dto.Repair = r.Profit;
+            else if (string.Equals(src, "WhatsApp", StringComparison.OrdinalIgnoreCase))
+                dto.Whatsapp = r.Profit;
+            else if (string.Equals(src, "Manual", StringComparison.OrdinalIgnoreCase))
+                dto.Manual = r.Profit;
+            else
+                dto.Manual += r.Profit;
+        }
+
+        return dto;
+    }
+
+    private static decimal ComputeRepairOrderTotalWithTax(RepairOrder order, decimal taxRatePercent)
+    {
+        var subtotal = order.Items?.Sum(x => x.Price * x.Quantity) ?? 0m;
+        var discountPercentAmount = Math.Round(
+            subtotal * (order.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
+        if (discountPercentAmount > subtotal)
+            discountPercentAmount = subtotal;
+
+        var taxableBase = subtotal - discountPercentAmount;
+        var tax = Math.Round(taxableBase * (taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
+        return taxableBase + tax;
     }
 }

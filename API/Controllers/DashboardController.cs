@@ -12,17 +12,26 @@ public class DashboardController : ControllerBase
     private readonly IGetSalesTrendUseCase _getSalesTrendUseCase;
     private readonly IGetTicketAverageUseCase _getTicketAverageUseCase;
     private readonly IGetRecentActivityUseCase _getRecentActivityUseCase;
+    private readonly IGetTopProductsUseCase _getTopProductsUseCase;
+    private readonly IGetPendingOrdersDashboardUseCase _getPendingOrdersDashboardUseCase;
+    private readonly IGetProfitBySourceUseCase _getProfitBySourceUseCase;
 
     public DashboardController(
         IGetDashboardSummaryUseCase getDashboardSummaryUseCase,
         IGetSalesTrendUseCase getSalesTrendUseCase,
         IGetTicketAverageUseCase getTicketAverageUseCase,
-        IGetRecentActivityUseCase getRecentActivityUseCase)
+        IGetRecentActivityUseCase getRecentActivityUseCase,
+        IGetTopProductsUseCase getTopProductsUseCase,
+        IGetPendingOrdersDashboardUseCase getPendingOrdersDashboardUseCase,
+        IGetProfitBySourceUseCase getProfitBySourceUseCase)
     {
         _getDashboardSummaryUseCase = getDashboardSummaryUseCase;
         _getSalesTrendUseCase = getSalesTrendUseCase;
         _getTicketAverageUseCase = getTicketAverageUseCase;
         _getRecentActivityUseCase = getRecentActivityUseCase;
+        _getTopProductsUseCase = getTopProductsUseCase;
+        _getPendingOrdersDashboardUseCase = getPendingOrdersDashboardUseCase;
+        _getProfitBySourceUseCase = getProfitBySourceUseCase;
     }
 
     [HttpGet("{businessId:guid}/summary")]
@@ -65,6 +74,33 @@ public class DashboardController : ControllerBase
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
         var limitN = QueryParamParsing.ParsePositiveInt(limit, 20, 100);
         var result = await _getRecentActivityUseCase.Execute(businessId, limitN);
+        return Ok(result);
+    }
+
+    /// <summary>Top productos por ingresos (líneas tipo Product con variante de catálogo).</summary>
+    [HttpGet("{businessId:guid}/top-products")]
+    public async Task<IActionResult> TopProducts(Guid businessId, [FromQuery] int take = 10)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _getTopProductsUseCase.Execute(businessId, take);
+        return Ok(result);
+    }
+
+    /// <summary>Órdenes de reparación con saldo pendiente (total orden − pagos).</summary>
+    [HttpGet("{businessId:guid}/pending-orders")]
+    public async Task<IActionResult> PendingOrders(Guid businessId)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _getPendingOrdersDashboardUseCase.Execute(businessId);
+        return Ok(result);
+    }
+
+    /// <summary>Ganancia acumulada agrupada por <c>Sale.Source</c>.</summary>
+    [HttpGet("{businessId:guid}/profit-by-source")]
+    public async Task<IActionResult> ProfitBySource(Guid businessId)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _getProfitBySourceUseCase.Execute(businessId);
         return Ok(result);
     }
 }

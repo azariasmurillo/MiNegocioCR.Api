@@ -28,6 +28,8 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public ICollection<CatalogVariantOptionValue> VariantOptionValues { get; set; } = new List<CatalogVariantOptionValue>();
 
+        public ICollection<CatalogVariantImage> VariantImages { get; set; } = new List<CatalogVariantImage>();
+
         public ICollection<RepairOrderItem> RepairOrderItems { get; set; } = new List<RepairOrderItem>();
 
         public void IncreaseStock(int quantity)

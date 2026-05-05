@@ -1,10 +1,7 @@
-namespace MiNegocioCR.Api.Application.Interfaces
+namespace MiNegocioCR.Api.Application.Interfaces.UseCases.Sales
 {
-    namespace MiNegocioCR.Api.Application.Interfaces.UseCases.Sales
+    public interface ISendSaleEmailUseCase
     {
-        public interface ISendSaleEmailUseCase
-        {
-            Task Execute(Guid id, string htmlContent, string? destinationEmail = null);
-        }
+        Task Execute(Guid id, string htmlContent, string? destinationEmail = null);
     }
 }

@@ -14,6 +14,9 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public decimal Price { get; set; }
 
+        /// <summary>Costo unitario al momento de la venta (snapshot desde <see cref="CatalogVariant.CostPrice"/>).</summary>
+        public decimal CostPrice { get; set; }
+
         public Sale Sale { get; set; }
         public decimal UnitPrice { get; internal set; }
         public decimal Total { get; internal set; }

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.API.Http;
 using MiNegocioCR.Api.Application.DTOs;
-using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 
 namespace MiNegocioCR.Api.API.Controllers

@@ -42,6 +42,7 @@ public class GetBusinessByIdUseCaseTests
         result.Name.Should().Be("Mi Negocio");
         result.IsActive.Should().BeTrue();
         result.SmtpHost.Should().Be("smtp.test.com");
+        result.TaxRatePercent.Should().Be(13m);
     }
 
     [Fact]

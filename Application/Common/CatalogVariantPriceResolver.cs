@@ -1,7 +1,10 @@
+using MiNegocioCR.Api.Domain.Pricing;
+
 namespace MiNegocioCR.Api.Application.Common;
 
 /// <summary>
-/// Precio de venta persistido: override manual o costo + margen % cuando aplica.
+/// Precio de venta persistido: override manual o costo + margen % cuando aplica;
+/// siempre normalizado a CRC (múltiplo de 5 colones hacia arriba).
 /// </summary>
 public static class CatalogVariantPriceResolver
 {
@@ -15,10 +18,14 @@ public static class CatalogVariantPriceResolver
         decimal? profitMargin,
         decimal requestedPrice)
     {
+        decimal raw;
         if (setPriceManually)
-            return requestedPrice;
-        if (costPrice > 0 && profitMargin.HasValue)
-            return decimal.Round(costPrice * (1 + profitMargin.Value / 100m), 2, MidpointRounding.AwayFromZero);
-        return requestedPrice;
+            raw = requestedPrice;
+        else if (costPrice > 0 && profitMargin.HasValue)
+            raw = decimal.Round(costPrice * (1 + profitMargin.Value / 100m), 2, MidpointRounding.AwayFromZero);
+        else
+            raw = requestedPrice;
+
+        return CrcSalePriceNormalizer.NormalizeSalePriceColones(raw);
     }
 }

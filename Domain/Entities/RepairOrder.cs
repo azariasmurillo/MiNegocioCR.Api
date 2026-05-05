@@ -46,4 +46,6 @@ public class RepairOrder
     public Business Business { get; set; } = null!;
 
     public ICollection<RepairOrderItem> Items { get; set; } = new List<RepairOrderItem>();
+
+    public ICollection<RepairOrderImage> Images { get; set; } = new List<RepairOrderImage>();
 }

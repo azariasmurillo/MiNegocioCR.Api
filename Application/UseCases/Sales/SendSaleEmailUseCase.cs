@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Exceptions;
-using MiNegocioCR.Api.Application.Interfaces.MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
 
 namespace MiNegocioCR.Api.Application.UseCases.Sales;
 

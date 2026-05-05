@@ -9,7 +9,6 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
         public decimal Discount { get; set; } = 0m;
-        public decimal TaxRatePercent { get; set; } = 13m;
         public bool PayCash { get; set; }
         public bool PayTransfer { get; set; }
         public bool PaySinpe { get; set; }

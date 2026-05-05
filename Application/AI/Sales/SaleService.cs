@@ -32,19 +32,23 @@ namespace MiNegocioCR.Api.Application.AI.Sales
             var unitPrice = variant.Price;
             var totalAmount = unitPrice * quantity;
 
+            var now = DateTime.UtcNow;
             var sale = new Sale
             {
                 Id = Guid.NewGuid(),
                 BusinessId = businessId,
                 InvoiceNumber = await BuildInvoiceNumberAsync(businessId),
                 Source = "WhatsApp",
-                CreatedAt = DateTime.UtcNow,
+                SaleDate = now,
+                CreatedAt = now,
                 CustomerPhone = phoneNumber,
                 Subtotal = totalAmount,
                 TaxAmount = 0m,
                 DiscountAmount = 0m,
                 Total = totalAmount,
                 TotalAmount = totalAmount,
+                TotalCost = variant.CostPrice * quantity,
+                TotalProfit = totalAmount - variant.CostPrice * quantity
             };
 
             _context.Sales.Add(sale);
@@ -56,7 +60,9 @@ namespace MiNegocioCR.Api.Application.AI.Sales
                 CatalogVariantId = variant.Id,
                 ItemType = "Product",
                 Quantity = quantity,
+                Price = unitPrice,
                 UnitPrice = unitPrice,
+                CostPrice = variant.CostPrice,
                 Total = totalAmount
             };
 

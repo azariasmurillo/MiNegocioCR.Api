@@ -30,13 +30,34 @@ public class GetRepairOrderBalanceUseCase : IGetRepairOrderBalanceUseCase
         if (order is null)
             throw new NotFoundException("RepairOrder", "Repair order not found.");
 
-        var totalOrden = order.Items.Sum(x => x.Price * x.Quantity);
+        var business = await _context.Businesses.AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == businessId);
+        if (business == null)
+            throw new NotFoundException("Business", "Business not found.");
+
+        var taxRate = business.TaxRatePercent;
+        if (taxRate < 0)
+            throw new InvalidOperationException("Business tax rate cannot be negative.");
+
+        var subtotal = order.Items?.Sum(x => x.Price * x.Quantity) ?? 0m;
+        var discountPercentAmount = Math.Round(
+            subtotal * (order.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
+        if (discountPercentAmount > subtotal)
+            discountPercentAmount = subtotal;
+
+        var taxableBase = subtotal - discountPercentAmount;
+        var tax = Math.Round(taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
+        var totalOrden = taxableBase + tax;
+
         var totalPagado = await _paymentService.GetTotalPaidAsync(businessId, repairOrderId);
         var saldo = Math.Max(0m, totalOrden - totalPagado);
 
         return new RepairOrderBalanceDto
         {
-            TotalOrden = totalOrden,
+            Subtotal = subtotal,
+            Discount = discountPercentAmount,
+            Tax = tax,
+            Total = totalOrden,
             TotalPagado = totalPagado,
             SaldoPendiente = saldo
         };

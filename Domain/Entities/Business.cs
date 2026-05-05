@@ -31,6 +31,9 @@ public class Business
     /// <summary>Porcentaje de ganancia por defecto (referencia para precios; típicamente 0–100). Si la variante no define margen, usar este valor.</summary>
     public decimal DefaultProfitMargin { get; set; }
 
+    /// <summary>Tasa de impuesto (IVA u otro) en porcentaje aplicada en ventas; configurable por negocio.</summary>
+    public decimal TaxRatePercent { get; set; } = 13m;
+
     public BusinessSettings? Settings { get; set; }
     public ICollection<User> Users { get; set; } = new List<User>();
     public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();

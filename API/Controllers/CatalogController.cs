@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
