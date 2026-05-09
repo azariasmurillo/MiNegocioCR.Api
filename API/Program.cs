@@ -141,9 +141,12 @@ builder.Services.AddScoped<IResend>(sp =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+        policy
+            .WithOrigins(
+                "http://localhost:4200",
+                "https://mi-negociocr-frontend.vercel.app")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -333,7 +336,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 
 app.UseForwardedHeaders();
 app.UseRouting();
-app.UseCors();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSwagger();
