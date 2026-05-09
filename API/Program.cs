@@ -336,6 +336,11 @@ await using (var scope = app.Services.CreateAsyncScope())
 
 app.UseForwardedHeaders();
 app.UseRouting();
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Origin: {context.Request.Headers["Origin"]}");
+    await next();
+});
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
