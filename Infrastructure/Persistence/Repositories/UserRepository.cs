@@ -2,35 +2,31 @@
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
 
-namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
+namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
+
+public class UserRepository : IUserRepository
 {
-    public class UserRepository : IUserRepository
+    private readonly AppDbContext _context;
+
+    public UserRepository(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public UserRepository(AppDbContext context)
-        {
-            _context = context;
-        }
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        return await _context.Users
+            .AsNoTracking()
+            .Include(x => x.Business)
+            .FirstOrDefaultAsync(x => x.Email.ToLower() == normalized);
+    }
 
-        public async Task<User?> GetByFirebaseUidAsync(string firebaseUid)
-        {
-            return await _context.Users
-                .FirstOrDefaultAsync(x => x.FirebaseUid == firebaseUid);
-        }
-
-        public async Task<User> CreateFromFirebaseAsync(string firebaseUid)
-        {
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                FirebaseUid = firebaseUid
-            };
-
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
-
-            return user;
-        }
+    public async Task<User?> GetByIdWithBusinessAsync(Guid userId)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .Include(x => x.Business)
+            .FirstOrDefaultAsync(x => x.Id == userId);
     }
 }

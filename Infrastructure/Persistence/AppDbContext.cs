@@ -13,6 +13,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
         public DbSet<Business> Businesses => Set<Business>();
         public DbSet<User> Users => Set<User>();
+        public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
         public DbSet<BusinessSettings> BusinessSettings => Set<BusinessSettings>();
         public DbSet<RepairOrder> RepairOrders => Set<RepairOrder>();
         public DbSet<RepairOrderItem> RepairOrderItems => Set<RepairOrderItem>();
@@ -69,9 +70,31 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.CostPrice).HasPrecision(18, 2);
             });
 
-            modelBuilder.Entity<User>()
-                .HasIndex(x => x.FirebaseUid)
-                .IsUnique();
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("Users", t =>
+                    t.HasCheckConstraint("CK_Users_Role", "\"Role\" IN ('Admin', 'User')"));
+                entity.Property(x => x.Email).IsRequired();
+                entity.Property(x => x.PasswordHash).IsRequired();
+                entity.Property(x => x.FullName).IsRequired(false);
+                entity.Property(x => x.Role).IsRequired();
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasIndex(x => x.Email).IsUnique();
+                entity.HasIndex(x => x.BusinessId);
+            });
+
+            modelBuilder.Entity<PasswordResetToken>(entity =>
+            {
+                entity.ToTable("PasswordResetTokens");
+                entity.Property(x => x.Token).IsRequired();
+                entity.Property(x => x.IsUsed).HasDefaultValue(false);
+                entity.HasIndex(x => x.Token).IsUnique();
+                entity.HasIndex(x => x.UserId);
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
             modelBuilder.Entity<WhatsAppMessage>()
                 .HasIndex(x => x.MessageId)

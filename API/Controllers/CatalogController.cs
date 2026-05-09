@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using MiNegocioCR.Api.API.Helpers;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
@@ -66,6 +68,21 @@ namespace MiNegocioCR.Api.API.Controllers
         public async Task<IActionResult> GetItemsByBusiness([FromRoute] Guid businessId, [FromQuery] bool includeInactive = false)
         {
             var items = await _getCatalogItemsByBusiness.ExecuteAsync(businessId, includeInactive);
+            return Ok(items);
+        }
+
+        // Multi-tenant seguro: BusinessId SIEMPRE desde JWT, nunca desde el cliente.
+        [Authorize]
+        [HttpGet("mine")]
+        public async Task<IActionResult> GetMyBusinessItems([FromQuery] bool includeInactive = false)
+        {
+            var businessId = AuthHelper.GetBusinessId(HttpContext);
+            if (!businessId.HasValue || businessId.Value == Guid.Empty)
+            {
+                return Unauthorized(new { sessionMessage = "Token inválido para negocio." });
+            }
+
+            var items = await _getCatalogItemsByBusiness.ExecuteAsync(businessId.Value, includeInactive);
             return Ok(items);
         }
     }

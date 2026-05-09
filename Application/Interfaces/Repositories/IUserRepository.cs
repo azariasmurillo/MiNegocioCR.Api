@@ -1,11 +1,12 @@
 ﻿using MiNegocioCR.Api.Domain.Entities;
 
-namespace MiNegocioCR.Api.Application.Interfaces.Repositories
-{
-    public interface IUserRepository
-    {
-        Task<User?> GetByFirebaseUidAsync(string firebaseUid);
+namespace MiNegocioCR.Api.Application.Interfaces.Repositories;
 
-        Task<User> CreateFromFirebaseAsync(string firebaseUid);
-    }
+public interface IUserRepository
+{
+    /// <summary>Incluye <see cref="User.Business"/> para sesión.</summary>
+    Task<User?> GetByEmailAsync(string email);
+
+    /// <summary>Incluye <see cref="User.Business"/> para sesión.</summary>
+    Task<User?> GetByIdWithBusinessAsync(Guid userId);
 }

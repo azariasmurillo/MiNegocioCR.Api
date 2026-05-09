@@ -1,5 +1,4 @@
-﻿using MailKit.Search;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Application.AI.Models;
 using MiNegocioCR.Api.Infrastructure.Persistence;

@@ -20,7 +20,10 @@ public class AdminAuthService : IAdminAuthService
     public AdminAuthService(IDataProtectionProvider dataProtection, IConfiguration configuration)
     {
         _dataProtection = dataProtection;
-        _adminPassword = configuration["Admin:Password"] ?? "AzaMur542431@";
+        _adminPassword = configuration["Admin:Password"]
+            ?? throw new InvalidOperationException("Admin:Password must be configured from secure settings.");
+        if (string.IsNullOrWhiteSpace(_adminPassword))
+            throw new InvalidOperationException("Admin:Password cannot be empty.");
     }
 
     public bool ValidatePassword(string password) => password == _adminPassword;

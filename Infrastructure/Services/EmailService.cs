@@ -1,12 +1,49 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MiNegocioCR.Api.Application.Configuration;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Domain.Entities;
+using Resend;
 
 namespace MiNegocioCR.Api.Infrastructure.Services;
 
-public class SmtpEmailService : IEmailService
+public class ResendEmailService : IEmailService
 {
+    private readonly IResend _resend;
+    private readonly ResendSettings _settings;
+    private readonly ILogger<ResendEmailService> _logger;
+
+    public ResendEmailService(
+        IResend resend,
+        IOptions<ResendSettings> settings,
+        ILogger<ResendEmailService> logger)
+    {
+        _resend = resend;
+        _settings = settings.Value;
+        _logger = logger;
+    }
+
+    public async Task SendPasswordResetEmail(string toEmail, string resetLink)
+    {
+        var safeLink = System.Net.WebUtility.HtmlEncode(resetLink);
+        var body =
+            "<h2>Recuperación de contraseña</h2>" +
+            "<p>Recibimos una solicitud para restablecer tu contraseña.</p>" +
+            $"<p><a href=\"{safeLink}\" style=\"display:inline-block;padding:10px 16px;background:#2b6ef2;color:#ffffff;text-decoration:none;border-radius:6px;\">Restablecer contraseña</a></p>" +
+            "<p>Si el botón no funciona, copiá y pegá este enlace en tu navegador:</p>" +
+            $"<p>{safeLink}</p>" +
+            "<p>Este enlace expira en 10 minutos.</p>";
+
+        await SendWithResendAsync(toEmail, "Recuperación de contraseña", body);
+    }
+
+    public async Task SendTestEmail(string toEmail)
+    {
+        const string subject = "Test Resend - MiNegocioCR";
+        const string body = "<h2>Prueba Resend</h2><p>Este correo confirma que la configuración de Resend está funcionando.</p>";
+        await SendWithResendAsync(toEmail, subject, body);
+    }
+
     public async Task SendAsync(
         Business business,
         string toEmail,
@@ -14,45 +51,41 @@ public class SmtpEmailService : IEmailService
         string body)
     {
         if (!business.EnableEmailNotifications)
-            throw new InvalidOperationException("Email notifications are disabled for this business.");
-
-        if (string.IsNullOrWhiteSpace(business.SmtpHost) ||
-            !business.SmtpPort.HasValue ||
-            string.IsNullOrWhiteSpace(business.SmtpUsername) ||
-            string.IsNullOrWhiteSpace(business.SmtpPassword) ||
-            string.IsNullOrWhiteSpace(business.SmtpFromEmail))
         {
-            throw new InvalidOperationException("SMTP configuration is incomplete for this business.");
+            throw new InvalidOperationException("Email notifications are disabled for this business.");
         }
 
-        var email = new MimeMessage();
-        email.From.Add(new MailboxAddress(
-            business.SmtpFromName ?? business.Name,
-            business.SmtpFromEmail));
+        await SendWithResendAsync(toEmail, subject, body);
+    }
 
-        email.To.Add(MailboxAddress.Parse(toEmail));
-        email.Subject = subject;
-
-        email.Body = new TextPart("html")
+    private async Task SendWithResendAsync(string toEmail, string subject, string htmlBody)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.ApiKey) ||
+            string.IsNullOrWhiteSpace(_settings.FromEmail))
         {
-            Text = body
+            throw new InvalidOperationException("Resend config missing required values: ApiKey and FromEmail.");
+        }
+
+        var fromName = string.IsNullOrWhiteSpace(_settings.FromName) ? "MiNegocioCR" : _settings.FromName;
+        var email = new EmailMessage
+        {
+            From = $"{fromName} <{_settings.FromEmail}>",
+            To = new[] { toEmail },
+            Subject = subject,
+            HtmlBody = htmlBody
         };
 
-        using var smtp = new SmtpClient();
-        var socketOptions = business.EnableSsl
-            ? SecureSocketOptions.StartTls
-            : SecureSocketOptions.None;
-
-        await smtp.ConnectAsync(
-            business.SmtpHost,
-            business.SmtpPort.Value,
-            socketOptions);
-
-        await smtp.AuthenticateAsync(
-            business.SmtpUsername,
-            business.SmtpPassword);
-
-        await smtp.SendAsync(email);
-        await smtp.DisconnectAsync(true);
+        _logger.LogInformation(
+            "Resend send phase. from={From}, to={To}, subject={Subject}",
+            _settings.FromEmail,
+            toEmail,
+            subject);
+        var response = await _resend.EmailSendAsync(email);
+        if (!response.Success)
+        {
+            throw new InvalidOperationException(
+                response.Exception?.Message ?? "Resend failed to send email.");
+        }
+        _logger.LogInformation("Resend email sent. id={MessageId}", response.Content);
     }
 }

@@ -1,5 +1,5 @@
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Text.Json;
@@ -23,13 +23,17 @@ using MiNegocioCR.Api.Application.AI.State;
 using MiNegocioCR.Api.Application.AI.Tools;
 using MiNegocioCR.Api.Application.AI.Upsell;
 using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.Configuration;
 using MiNegocioCR.Api.Application.Handler;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.ArchiveConversation;
 using MiNegocioCR.Api.Application.Interfaces.Auth;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
+using MiNegocioCR.Api.Application.Interfaces.UseCases.Auth;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
@@ -39,6 +43,7 @@ using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Application.UseCases.ArchiveConversationUseCase;
+using MiNegocioCR.Api.Application.UseCases.Auth;
 using MiNegocioCR.Api.Application.UseCases.Business;
 using MiNegocioCR.Api.Application.UseCases.Contacts;
 using MiNegocioCR.Api.Application.UseCases.Conversations;
@@ -52,32 +57,67 @@ using MiNegocioCR.Api.Application.UseCases.Payments;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
 using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.AI;
-using MiNegocioCR.Api.Infrastructure.Auth;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using MiNegocioCR.Api.Infrastructure.Security;
 using MiNegocioCR.Api.Infrastructure.Services;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Firebase ---
-var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS");
-if (FirebaseApp.DefaultInstance == null)
-{
-    if (!string.IsNullOrEmpty(firebaseJson))
-        FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromJson(firebaseJson) });
-    else
+builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<AppOptions>(builder.Configuration.GetSection(AppOptions.SectionName));
+builder.Services.Configure<ResendSettings>(builder.Configuration.GetSection(ResendSettings.SectionName));
+
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+var jwtOptions = jwtSection.Get<JwtOptions>() ?? new JwtOptions();
+var jwtSigningKey = jwtOptions.ResolveSigningKey();
+if (string.IsNullOrWhiteSpace(jwtSigningKey))
+    throw new InvalidOperationException("Configurá Jwt:Key en appsettings, variables de entorno o User Secrets.");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        var path = Path.Combine(Directory.GetCurrentDirectory(), "Infrastructure", "Auth", "firebase-adminsdk.json");
-        FirebaseApp.Create(new AppOptions { Credential = GoogleCredential.FromFile(path) });
-    }
-}
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidAudience = jwtSection["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey))
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddSignalR();
 
 // --- Core ---
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT en header Authorization: Bearer {token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFilter>())
     .AddJsonOptions(options =>
     {
@@ -88,6 +128,16 @@ builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFi
     });
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IResend>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var apiKey = configuration["Resend:ApiKey"] ?? configuration["RESEND_API_KEY"] ?? string.Empty;
+    var client = sp.GetRequiredService<IHttpClientFactory>().CreateClient();
+    return ResendClient.Create(new ResendClientOptions
+    {
+        ApiToken = apiKey
+    }, client);
+});
 
 builder.Services.AddCors(options =>
 {
@@ -144,7 +194,7 @@ builder.Services.AddScoped<IGetBusinessConfigUseCase, GetBusinessConfigUseCase>(
 builder.Services.AddScoped<IUpdateBusinessConfigUseCase, UpdateBusinessConfigUseCase>();
 builder.Services.AddScoped<IUploadBusinessLogoUseCase, UploadBusinessLogoUseCase>();
 builder.Services.AddScoped<IBusinessLogoStorageService, SupabaseBusinessLogoStorageService>();
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IEmailService, ResendEmailService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IWhatsappApplicationService, WhatsappApplicationService>();
@@ -240,7 +290,11 @@ builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
 builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();
 
 // --- Auth ---
-builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+builder.Services.AddScoped<IRequestPasswordResetUseCase, RequestPasswordResetUseCase>();
+builder.Services.AddScoped<IValidateResetTokenUseCase, ValidateResetTokenUseCase>();
+builder.Services.AddScoped<IResetPasswordUseCase, ResetPasswordUseCase>();
 builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 
 // --- AI ---
@@ -280,7 +334,8 @@ await using (var scope = app.Services.CreateAsyncScope())
 app.UseForwardedHeaders();
 app.UseRouting();
 app.UseCors();
-app.UseMiddleware<FirebaseAuthMiddleware>();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseSwagger();
 app.UseSwaggerUI();
 

@@ -13,6 +13,7 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<RepairOrder> RepairOrders { get; }
         DbSet<RepairOrderItem> RepairOrderItems { get; }
         DbSet<User> Users { get; }
+        DbSet<PasswordResetToken> PasswordResetTokens { get; }
         DbSet<BusinessSettings> BusinessSettings { get; }
         DbSet<WhatsAppMessage> WhatsAppMessages { get; }
         DbSet<WhatsAppConversation> WhatsAppConversations { get; }
