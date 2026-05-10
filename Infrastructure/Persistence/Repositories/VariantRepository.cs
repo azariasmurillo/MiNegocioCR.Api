@@ -159,5 +159,24 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .AnyAsync(i => i.CatalogVariantId == variantId);
         }
+
+        public async Task<bool> ExistsSkuForCatalogItemAsync(
+            Guid catalogItemId,
+            string sku,
+            Guid? excludeVariantId = null)
+        {
+            if (string.IsNullOrWhiteSpace(sku))
+                return false;
+
+            var normalized = sku.Trim().ToLowerInvariant();
+            var query = _context.CatalogVariants
+                .AsNoTracking()
+                .Where(v => v.CatalogItemId == catalogItemId && v.SKU != null);
+
+            if (excludeVariantId.HasValue)
+                query = query.Where(v => v.Id != excludeVariantId.Value);
+
+            return await query.AnyAsync(v => v.SKU!.ToLower() == normalized);
+        }
     }
 }

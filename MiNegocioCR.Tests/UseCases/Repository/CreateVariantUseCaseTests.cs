@@ -26,6 +26,12 @@ public class CreateVariantUseCaseTests
         _catalogRepositoryMock = new Mock<ICatalogRepository>();
         _optionValueRepositoryMock = new Mock<ICatalogOptionValueRepository>();
         _variantOptionValueRepositoryMock = new Mock<ICatalogVariantOptionValueRepository>();
+        _variantOptionValueRepositoryMock
+            .Setup(x => x.ExistsVariantWithSameOptionValueCombinationAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyList<Guid>>()))
+            .ReturnsAsync(false);
+        _variantRepositoryMock
+            .Setup(x => x.ExistsSkuForCatalogItemAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>()))
+            .ReturnsAsync(false);
         _sut = new CreateVariantUseCase(
             _variantRepositoryMock.Object,
             _inventoryRepositoryMock.Object,

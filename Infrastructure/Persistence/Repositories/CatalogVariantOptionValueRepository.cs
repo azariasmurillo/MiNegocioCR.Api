@@ -37,8 +37,17 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
             Guid catalogItemId,
             IReadOnlyList<Guid> sortedDistinctOptionValueIds)
         {
-            if (sortedDistinctOptionValueIds == null || sortedDistinctOptionValueIds.Count == 0)
+            if (sortedDistinctOptionValueIds == null)
                 return false;
+
+            if (sortedDistinctOptionValueIds.Count == 0)
+            {
+                return await _context.CatalogVariants
+                    .AsNoTracking()
+                    .Where(v => v.CatalogItemId == catalogItemId)
+                    .Where(v => !_context.CatalogVariantOptionValues.Any(l => l.CatalogVariantId == v.Id))
+                    .AnyAsync();
+            }
 
             var variantIds = await _context.CatalogVariants
                 .AsNoTracking()

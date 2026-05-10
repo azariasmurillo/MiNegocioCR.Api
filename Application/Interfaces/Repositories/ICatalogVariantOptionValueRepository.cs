@@ -13,6 +13,7 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
         /// <summary>
         /// Indica si ya existe una variante del ítem con exactamente el mismo conjunto de valores de opción
         /// (<paramref name="sortedDistinctOptionValueIds"/> ordenado, sin duplicados).
+        /// Lista vacía = variante sin opciones: solo puede haber una por ítem sin filas en la tabla de unión.
         /// </summary>
         Task<bool> ExistsVariantWithSameOptionValueCombinationAsync(
             Guid catalogItemId,

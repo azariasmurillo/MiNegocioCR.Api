@@ -32,7 +32,18 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             if (variant == null)
                 throw new NotFoundException("CatalogVariant", "Variant not found.");
 
-            variant.SKU = request.SKU;
+            if (!string.IsNullOrWhiteSpace(request.SKU) &&
+                await _variantRepository.ExistsSkuForCatalogItemAsync(
+                    variant.CatalogItemId,
+                    request.SKU,
+                    variant.Id))
+            {
+                throw new ArgumentException(
+                    "A variant with this SKU already exists for this catalog item.",
+                    nameof(request.SKU));
+            }
+
+            variant.SKU = string.IsNullOrWhiteSpace(request.SKU) ? null : request.SKU.Trim();
             variant.CostPrice = request.CostPrice;
 
             if (request.SetProfitMargin)

@@ -146,6 +146,7 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "http://localhost:4200",
+                "https://localhost:7176/",
                 "https://mi-negociocr-frontend.vercel.app",
                 "https://mi-negociocr.com",
                 "https://www.mi-negociocr.com")

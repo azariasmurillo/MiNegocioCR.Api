@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MiNegocioCR.Api.Application.Interfaces;
 
 namespace MiNegocioCR.Api.Infrastructure.Services;
@@ -7,18 +8,22 @@ namespace MiNegocioCR.Api.Infrastructure.Services;
 public class SupabaseRepairOrderImageStorageService : IRepairOrderImageStorageService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<SupabaseRepairOrderImageStorageService> _logger;
     private readonly string _supabaseUrl;
     private readonly string _serviceKey;
     private readonly string _bucket;
 
     public SupabaseRepairOrderImageStorageService(
         IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<SupabaseRepairOrderImageStorageService> logger)
     {
         _httpClientFactory = httpClientFactory;
-        _supabaseUrl = configuration["Supabase:Url"] ?? string.Empty;
-        _serviceKey = configuration["Supabase:ServiceKey"] ?? string.Empty;
-        _bucket = configuration["Supabase:StorageBucket"] ?? "business-assets";
+        _logger = logger;
+        var resolved = SupabaseStorageConfigurationReader.Read(configuration);
+        _supabaseUrl = resolved.Url;
+        _serviceKey = resolved.ServiceKey;
+        _bucket = resolved.Bucket;
     }
 
     public async Task<string> UploadAsync(
@@ -28,9 +33,11 @@ public class SupabaseRepairOrderImageStorageService : IRepairOrderImageStorageSe
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_supabaseUrl))
-            throw new InvalidOperationException("Supabase config missing");
+            throw new InvalidOperationException(
+                "Supabase config missing: set Supabase:Url or SUPABASE_URL (project URL, e.g. https://xxx.supabase.co).");
         if (string.IsNullOrWhiteSpace(_serviceKey))
-            throw new InvalidOperationException("Supabase config missing");
+            throw new InvalidOperationException(
+                "Supabase config missing: set Supabase:ServiceKey or SUPABASE_SERVICE_ROLE_KEY (service_role, not anon).");
 
         var ext = GetExtension(contentType);
         var objectName = $"{Guid.NewGuid():N}{ext}";
@@ -53,8 +60,19 @@ public class SupabaseRepairOrderImageStorageService : IRepairOrderImageStorageSe
         if (!response.IsSuccessStatusCode)
         {
             var details = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning(
+                "Supabase repair-order image upload failed. Status={Status}, Bucket={Bucket}, Path={Path}, Body={Body}",
+                (int)response.StatusCode,
+                _bucket,
+                path,
+                details);
             throw new InvalidOperationException($"Supabase upload failed: {(int)response.StatusCode} {details}");
         }
+
+        _logger.LogInformation(
+            "Supabase repair-order image uploaded. Bucket={Bucket}, Path={Path}",
+            _bucket,
+            path);
 
         return publicUrl;
     }

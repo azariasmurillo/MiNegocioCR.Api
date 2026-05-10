@@ -32,5 +32,11 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
         Task<bool> ExistsInSalesAsync(Guid variantId);
 
         Task<bool> ExistsInPurchasesAsync(Guid variantId);
+
+        /// <summary>
+        /// True si otra variante del mismo ítem ya usa este SKU (comparación sin distinguir mayúsculas).
+        /// SKU vacío no se considera duplicado.
+        /// </summary>
+        Task<bool> ExistsSkuForCatalogItemAsync(Guid catalogItemId, string sku, Guid? excludeVariantId = null);
     }
 }

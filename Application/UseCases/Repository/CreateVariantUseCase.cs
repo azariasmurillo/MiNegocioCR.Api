@@ -69,15 +69,25 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                             nameof(request));
                     }
                 }
+            }
 
-                if (await _variantOptionValueRepository.ExistsVariantWithSameOptionValueCombinationAsync(
-                        request.CatalogItemId,
-                        sortedValueIds))
-                {
-                    throw new ArgumentException(
-                        "A variant with this option combination already exists.",
-                        nameof(request));
-                }
+            if (await _variantOptionValueRepository.ExistsVariantWithSameOptionValueCombinationAsync(
+                    request.CatalogItemId,
+                    sortedValueIds))
+            {
+                throw new ArgumentException(
+                    sortedValueIds.Count > 0
+                        ? "A variant with this option combination already exists."
+                        : "This catalog item already has a variant without option values.",
+                    nameof(request));
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.SKU) &&
+                await _variantRepository.ExistsSkuForCatalogItemAsync(request.CatalogItemId, request.SKU))
+            {
+                throw new ArgumentException(
+                    "A variant with this SKU already exists for this catalog item.",
+                    nameof(request.SKU));
             }
 
             var resolvedPrice = CatalogVariantPriceResolver.ResolvePersistedPrice(
@@ -92,7 +102,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = request.CatalogItemId,
-                SKU = request.SKU,
+                SKU = string.IsNullOrWhiteSpace(request.SKU) ? null : request.SKU.Trim(),
                 Price = resolvedPrice,
                 CostPrice = request.CostPrice,
                 ProfitMargin = request.ProfitMargin,
