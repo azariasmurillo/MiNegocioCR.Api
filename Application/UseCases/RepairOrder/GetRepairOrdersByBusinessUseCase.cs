@@ -39,10 +39,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                     x.SerialNumber,
                     x.IsDiagnosticPaid,
                     x.DiscountPercent,
-                    x.PayCash,
-                    x.PayTransfer,
-                    x.PaySinpe,
-                    x.PayCard,
                     Status = ((RepairOrderStatus)x.Status).ToString(),
                     x.CreatedAt,
                     Items = x.Items

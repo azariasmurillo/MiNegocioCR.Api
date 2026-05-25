@@ -41,6 +41,7 @@ public class CreatePaymentUseCase : ICreatePaymentUseCase
             Amount = Math.Round(request.Amount, 2, MidpointRounding.AwayFromZero),
             Type = request.Type,
             Method = request.Method,
+            Reference = string.IsNullOrWhiteSpace(request.Reference) ? null : request.Reference.Trim(),
             Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
             CreatedAt = DateTime.UtcNow
         };
@@ -56,6 +57,7 @@ public class CreatePaymentUseCase : ICreatePaymentUseCase
             payment.Amount,
             payment.Type,
             payment.Method,
+            payment.Reference,
             payment.Notes,
             payment.CreatedAt
         };

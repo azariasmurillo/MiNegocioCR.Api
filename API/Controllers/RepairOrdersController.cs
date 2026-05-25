@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Features;
 using MiNegocioCR.Api.Application.DTOs;
@@ -7,6 +8,7 @@ using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class RepairOrdersController : ControllerBase
@@ -268,10 +270,10 @@ public class RepairOrdersController : ControllerBase
     }
 
     [HttpPost("{id:guid}/charge")]
-    public async Task<IActionResult> Charge(Guid id, [FromQuery] Guid businessId)
+    public async Task<IActionResult> Charge(Guid id, [FromQuery] Guid businessId, [FromBody] ChargeRepairOrderRequestDto? body = null)
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
-        var result = await _chargeRepairOrderUseCase.Execute(businessId, id);
+        var result = await _chargeRepairOrderUseCase.Execute(businessId, id, body?.PaymentMethods);
         return Ok(result);
     }
 

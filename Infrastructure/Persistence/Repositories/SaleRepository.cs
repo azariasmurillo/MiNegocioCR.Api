@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
+using MiNegocioCR.Api.Domain.Enums;
 
 namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 {
@@ -33,9 +34,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         {
             return await _context.Sales
                 .Include(x => x.Items)
-                .FirstOrDefaultAsync(x =>
-                    x.Id == id &&
-                    x.BusinessId == businessId);
+                .Include(x => x.PaymentMethods)
+                .FirstOrDefaultAsync(x => x.Id == id && x.BusinessId == businessId);
         }
 
         public async Task<Sale?> GetSaleByIdAsync(Guid id)
@@ -44,6 +44,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .Include(x => x.Items)
                 .Include(x => x.Contact)
+                .Include(x => x.PaymentMethods)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
@@ -51,6 +52,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         {
             var salesQuery = _context.Sales
                 .AsNoTracking()
+                .Include(x => x.PaymentMethods)
                 .Where(x => x.BusinessId == businessId);
 
             if (query.From.HasValue)
@@ -76,25 +78,26 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
 
             if (!string.IsNullOrWhiteSpace(query.PaymentMethod))
             {
-                salesQuery = query.PaymentMethod.Trim().ToLower() switch
+                var methodLower = query.PaymentMethod.Trim().ToLower();
+                var method = methodLower switch
                 {
-                    "cash" => salesQuery.Where(x => x.PayCash),
-                    "transfer" => salesQuery.Where(x => x.PayTransfer),
-                    "sinpe" => salesQuery.Where(x => x.PaySinpe),
-                    "card" => salesQuery.Where(x => x.PayCard),
-                    _ => salesQuery
+                    "transfer" => (int)PaymentMethod.Transfer,
+                    "sinpe"    => (int)PaymentMethod.Sinpe,
+                    "card"     => (int)PaymentMethod.Card,
+                    _          => (int)PaymentMethod.Cash,
                 };
+                salesQuery = salesQuery.Where(x => x.PaymentMethods.Any(pm => (int)pm.Method == method));
             }
 
             var sort = query.Sort?.Trim().ToLower() ?? "createdat desc";
             salesQuery = sort switch
             {
-                "createdat asc" => salesQuery.OrderBy(x => x.CreatedAt),
-                "total asc" => salesQuery.OrderBy(x => x.Total > 0 ? x.Total : x.TotalAmount),
-                "total desc" => salesQuery.OrderByDescending(x => x.Total > 0 ? x.Total : x.TotalAmount),
-                "invoicenumber asc" => salesQuery.OrderBy(x => x.InvoiceNumber),
-                "invoicenumber desc" => salesQuery.OrderByDescending(x => x.InvoiceNumber),
-                _ => salesQuery.OrderByDescending(x => x.CreatedAt)
+                "createdat asc"       => salesQuery.OrderBy(x => x.CreatedAt),
+                "total asc"           => salesQuery.OrderBy(x => x.Total),
+                "total desc"          => salesQuery.OrderByDescending(x => x.Total),
+                "invoicenumber asc"   => salesQuery.OrderBy(x => x.InvoiceNumber),
+                "invoicenumber desc"  => salesQuery.OrderByDescending(x => x.InvoiceNumber),
+                _                     => salesQuery.OrderByDescending(x => x.CreatedAt)
             };
 
             var totalCount = await salesQuery.CountAsync();
@@ -110,11 +113,16 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                     CreatedAt = x.CreatedAt,
                     CustomerName = x.Contact != null ? x.Contact.Name : null,
                     CustomerPhone = x.Contact != null ? x.Contact.Phone : null,
-                    Total = x.Total > 0 ? x.Total : x.TotalAmount,
-                    PayCash = x.PayCash,
-                    PayTransfer = x.PayTransfer,
-                    PaySinpe = x.PaySinpe,
-                    PayCard = x.PayCard
+                    Total = x.Total,
+                    TotalOrden = x.TotalOrden,
+                    PrepaidAmount = x.PrepaidAmount,
+                    PaymentMethods = x.PaymentMethods
+                        .Select(pm => new SalePaymentMethodDto
+                        {
+                            Method = pm.Method.ToString(),
+                            Amount = pm.Amount
+                        })
+                        .ToList()
                 })
                 .ToListAsync();
 

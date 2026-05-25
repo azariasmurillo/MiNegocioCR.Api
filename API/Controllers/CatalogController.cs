@@ -6,6 +6,7 @@ using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/catalog")]
     public class CatalogController : ControllerBase

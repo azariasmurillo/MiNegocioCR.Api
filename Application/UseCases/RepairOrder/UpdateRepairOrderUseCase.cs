@@ -134,14 +134,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 order.IsDiagnosticPaid = request.IsDiagnosticPaid.Value;
             if (request.DiscountPercent.HasValue)
                 order.DiscountPercent = request.DiscountPercent.Value;
-            if (request.PayCash.HasValue)
-                order.PayCash = request.PayCash.Value;
-            if (request.PayTransfer.HasValue)
-                order.PayTransfer = request.PayTransfer.Value;
-            if (request.PaySinpe.HasValue)
-                order.PaySinpe = request.PaySinpe.Value;
-            if (request.PayCard.HasValue)
-                order.PayCard = request.PayCard.Value;
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);

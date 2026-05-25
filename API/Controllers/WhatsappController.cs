@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.ArchiveConversation;
@@ -7,6 +8,7 @@ using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/whatsapp")]
     public class WhatsappController : ControllerBase

@@ -33,6 +33,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<PurchaseItem> PurchaseItems => Set<PurchaseItem>();
         public DbSet<Sale> Sales => Set<Sale>();
         public DbSet<SaleItem> SaleItems => Set<SaleItem>();
+        public DbSet<SalePaymentMethod> SalePaymentMethods => Set<SalePaymentMethod>();
         public DbSet<ConversationState> ConversationStates => Set<ConversationState>();
         public DbSet<AITokenUsage> AITokenUsages => Set<AITokenUsage>();
         public DbSet<UpsellRule> UpsellRules => Set<UpsellRule>();
@@ -253,14 +254,40 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.DiscountAmount)
                     .HasColumnName("Discount")
                     .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.TotalOrden)
+                    .HasColumnType("numeric(18,2)")
+                    .HasDefaultValue(0m);
+                entity.Property(x => x.PrepaidAmount)
+                    .HasColumnType("numeric(18,2)")
+                    .HasDefaultValue(0m);
                 entity.Property(x => x.Total)
                     .HasColumnType("numeric(18,2)");
                 entity.Property(x => x.TotalCost)
                     .HasColumnType("numeric(18,2)");
                 entity.Property(x => x.TotalProfit)
                     .HasColumnType("numeric(18,2)");
+                // TotalAmount es la columna legacy original; se mantiene mapeada
+                // para que las queries LINQ del dashboard puedan usarla como fallback.
+                // Código nuevo siempre escribe sale.Total; TotalAmount = Total por alias.
+                entity.Property(x => x.TotalAmount)
+                    .HasColumnType("numeric")
+                    .HasDefaultValue(0m);
                 entity.HasIndex(x => new { x.BusinessId, x.InvoiceNumber })
                     .IsUnique();
+
+                entity.HasMany(s => s.PaymentMethods)
+                    .WithOne(pm => pm.Sale)
+                    .HasForeignKey(pm => pm.SaleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SalePaymentMethod>(entity =>
+            {
+                entity.Property(x => x.Amount)
+                    .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.Method)
+                    .IsRequired();
+                entity.HasIndex(x => x.SaleId);
             });
 
             modelBuilder.Entity<SaleItem>(entity =>

@@ -15,5 +15,6 @@ public class CreatePaymentRequestDto
 
     [JsonConverter(typeof(PaymentMethodJsonConverter))]
     public PaymentMethod Method { get; set; }
+    public string? Reference { get; set; }
     public string? Notes { get; set; }
 }

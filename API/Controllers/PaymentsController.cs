@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
 
 namespace MiNegocioCR.Api.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/payments")]
 public class PaymentsController : ControllerBase

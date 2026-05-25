@@ -10,6 +10,8 @@ public class Payment
     public decimal Amount { get; set; }
     public PaymentType Type { get; set; }
     public PaymentMethod Method { get; set; }
+    /// <summary>Número de referencia (ej. código SINPE, número de transferencia).</summary>
+    public string? Reference { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

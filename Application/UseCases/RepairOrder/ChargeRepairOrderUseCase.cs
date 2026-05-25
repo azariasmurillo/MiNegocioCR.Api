@@ -17,16 +17,17 @@ public class ChargeRepairOrderUseCase : IChargeRepairOrderUseCase
         _registerSaleUseCase = registerSaleUseCase;
     }
 
-    public Task<object> Execute(Guid businessId, Guid repairOrderId)
+    public Task<object> Execute(Guid businessId, Guid repairOrderId, List<SalePaymentMethodDto>? paymentMethods = null)
     {
         if (businessId == Guid.Empty)
             throw new ArgumentException("BusinessId is required.", nameof(businessId));
 
         var request = new CreateSaleRequestDto
         {
-            BusinessId = businessId,
+            BusinessId    = businessId,
             RepairOrderId = repairOrderId,
-            Source = "Repair"
+            Source        = "Repair",
+            PaymentMethods = paymentMethods ?? []
         };
 
         return _registerSaleUseCase.ExecuteAsync(request);

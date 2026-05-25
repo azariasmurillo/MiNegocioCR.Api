@@ -25,10 +25,6 @@ public class RepairOrder
     /// <summary>Descuento en porcentaje (0–100) para usar al generar la factura desde la orden.</summary>
     public decimal DiscountPercent { get; set; } = 0m;
 
-    public bool PayCash { get; set; } = false;
-    public bool PayTransfer { get; set; } = false;
-    public bool PaySinpe { get; set; } = false;
-    public bool PayCard { get; set; } = false;
     public bool IsInvoiced { get; set; } = false;
     public DateTime? InvoicedAt { get; set; }
     public Guid? SaleId { get; set; }

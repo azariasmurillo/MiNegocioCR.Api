@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.Application.DTOs;
@@ -6,6 +7,7 @@ using MiNegocioCR.Api.Application.Interfaces.Business;
 
 namespace MiNegocioCR.Api.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class BusinessesController : ControllerBase

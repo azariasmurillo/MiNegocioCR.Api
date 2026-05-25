@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/categories")]
     public class CategoriesController : ControllerBase

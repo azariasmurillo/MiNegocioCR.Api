@@ -39,7 +39,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AITokenUsages");
+                    b.ToTable("AITokenUsages", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Business", b =>
@@ -138,7 +138,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Businesses");
+                    b.ToTable("Businesses", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.BusinessSettings", b =>
@@ -154,7 +154,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("BusinessId");
 
-                    b.ToTable("BusinessSettings");
+                    b.ToTable("BusinessSettings", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogCategory", b =>
@@ -183,7 +183,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("CatalogCategories");
+                    b.ToTable("CatalogCategories", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogImage", b =>
@@ -206,7 +206,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogItemId");
 
-                    b.ToTable("CatalogImages");
+                    b.ToTable("CatalogImages", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogItem", b =>
@@ -256,7 +256,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "IsActive");
 
-                    b.ToTable("CatalogItems");
+                    b.ToTable("CatalogItems", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogOption", b =>
@@ -279,7 +279,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogItemId");
 
-                    b.ToTable("CatalogOptions");
+                    b.ToTable("CatalogOptions", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogOptionValue", b =>
@@ -302,7 +302,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("CatalogOptionId");
 
-                    b.ToTable("CatalogOptionValues");
+                    b.ToTable("CatalogOptionValues", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogVariant", b =>
@@ -346,7 +346,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("SKU");
 
-                    b.ToTable("CatalogVariants");
+                    b.ToTable("CatalogVariants", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.CatalogVariantImage", b =>
@@ -403,7 +403,7 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasIndex("CatalogVariantId", "CatalogOptionValueId")
                         .IsUnique();
 
-                    b.ToTable("CatalogVariantOptionValues");
+                    b.ToTable("CatalogVariantOptionValues", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Contact", b =>
@@ -442,7 +442,7 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasIndex("BusinessId", "Phone")
                         .IsUnique();
 
-                    b.ToTable("Contacts");
+                    b.ToTable("Contacts", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationState", b =>
@@ -476,7 +476,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ConversationStates");
+                    b.ToTable("ConversationStates", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationTag", b =>
@@ -496,7 +496,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("ConversationId", "Tag");
 
-                    b.ToTable("ConversationTags");
+                    b.ToTable("ConversationTags", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.InventoryMovement", b =>
@@ -534,7 +534,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "CreatedAt");
 
-                    b.ToTable("InventoryMovements");
+                    b.ToTable("InventoryMovements", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.PasswordResetToken", b =>
@@ -594,6 +594,9 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
+                    b.Property<string>("Reference")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("RepairOrderId")
                         .HasColumnType("uuid");
 
@@ -608,7 +611,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "RepairOrderId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Purchase", b =>
@@ -635,7 +638,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.ToTable("Purchases");
+                    b.ToTable("Purchases", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.PurchaseItem", b =>
@@ -660,7 +663,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("PurchaseId");
 
-                    b.ToTable("PurchaseItems");
+                    b.ToTable("PurchaseItems", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.QuickReplyTemplate", b =>
@@ -684,7 +687,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "Name");
 
-                    b.ToTable("QuickReplyTemplates");
+                    b.ToTable("QuickReplyTemplates", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrder", b =>
@@ -750,18 +753,6 @@ namespace MiNegocioCR.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<bool>("PayCard")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PayCash")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PaySinpe")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PayTransfer")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("ProblemDescription")
                         .HasColumnType("text");
 
@@ -791,7 +782,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "Status");
 
-                    b.ToTable("RepairOrders");
+                    b.ToTable("RepairOrders", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrderImage", b =>
@@ -823,7 +814,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId", "RepairOrderId");
 
-                    b.ToTable("RepairOrderImages");
+                    b.ToTable("RepairOrderImages", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.RepairOrderItem", b =>
@@ -854,7 +845,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("RepairOrderId");
 
-                    b.ToTable("RepairOrderItems");
+                    b.ToTable("RepairOrderItems", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Sale", b =>
@@ -889,17 +880,9 @@ namespace MiNegocioCR.Api.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
-                    b.Property<bool>("PayCard")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PayCash")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PaySinpe")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PayTransfer")
-                        .HasColumnType("boolean");
+                    b.Property<decimal>("PrepaidAmount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<Guid?>("RepairOrderId")
                         .HasColumnType("uuid");
@@ -923,10 +906,15 @@ namespace MiNegocioCR.Api.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasColumnType("numeric");
+                        .HasColumnType("numeric")
+                        .HasDefaultValue(0m);
 
                     b.Property<decimal>("TotalCost")
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("TotalOrden")
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<decimal>("TotalProfit")
                         .HasColumnType("numeric(18,2)");
@@ -945,7 +933,7 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasIndex("BusinessId", "RepairOrderId")
                         .IsUnique();
 
-                    b.ToTable("Sales");
+                    b.ToTable("Sales", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.SaleItem", b =>
@@ -989,7 +977,29 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("SaleId");
 
-                    b.ToTable("SaleItems");
+                    b.ToTable("SaleItems", (string)null);
+                });
+
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.SalePaymentMethod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("Method")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SaleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SaleId");
+
+                    b.ToTable("SalePaymentMethods", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Supplier", b =>
@@ -1021,7 +1031,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("Suppliers");
+                    b.ToTable("Suppliers", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.UpsellRule", b =>
@@ -1041,7 +1051,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UpsellRules");
+                    b.ToTable("UpsellRules", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.User", b =>
@@ -1134,7 +1144,7 @@ namespace MiNegocioCR.Api.Migrations
                     b.HasIndex("BusinessId", "PhoneNumber")
                         .IsUnique();
 
-                    b.ToTable("WhatsAppConversations");
+                    b.ToTable("WhatsAppConversations", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppMessage", b =>
@@ -1200,7 +1210,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasIndex("ConversationId", "Timestamp");
 
-                    b.ToTable("WhatsAppMessages");
+                    b.ToTable("WhatsAppMessages", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsappWebhookLog", b =>
@@ -1218,7 +1228,7 @@ namespace MiNegocioCR.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WhatsappWebhookLogs");
+                    b.ToTable("WhatsappWebhookLogs", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.BusinessSettings", b =>
@@ -1479,6 +1489,17 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("Sale");
                 });
 
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.SalePaymentMethod", b =>
+                {
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Sale", "Sale")
+                        .WithMany("PaymentMethods")
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sale");
+                });
+
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.User", b =>
                 {
                     b.HasOne("MiNegocioCR.Api.Domain.Entities.Business", "Business")
@@ -1576,6 +1597,8 @@ namespace MiNegocioCR.Api.Migrations
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.Sale", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("PaymentMethods");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.WhatsAppConversation", b =>

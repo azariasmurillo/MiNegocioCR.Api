@@ -1,5 +1,7 @@
 -- Seed: Business, BusinessSettings, RepairOrders y WhatsAppConversations
--- Ejecutar en PostgreSQL. BusinessId (tenant) = 24a2cf67-4494-4432-a8c7-c74294de5077
+-- Ejecutar con el business_id real obtenido en login/sesion.
+-- Ejemplo:
+--   psql ... -v business_id=EL_GUID_DEL_LOGIN -f Migrations/SeedWhatsAppConversations.sql
 -- Teléfonos: 50662946202, 50661347303
 
 -- 1. Business (si no existe). Necesario porque WhatsAppConversations tiene FK a Businesses.
@@ -12,7 +14,7 @@ INSERT INTO "Businesses" (
     "EnableWhatsappNotifications"
 )
 VALUES (
-    '24a2cf67-4494-4432-a8c7-c74294de5077'::uuid,
+    :'business_id'::uuid,
     'Mi Negocio CR',
     NOW(),
     true,
@@ -28,7 +30,7 @@ INSERT INTO "BusinessSettings" (
     "NextOrderNumber"
 )
 VALUES (
-    '24a2cf67-4494-4432-a8c7-c74294de5077'::uuid,
+    :'business_id'::uuid,
     false,
     1
 )
@@ -49,7 +51,7 @@ INSERT INTO "RepairOrders" (
 VALUES
     (
         'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid,
-        '24a2cf67-4494-4432-a8c7-c74294de5077'::uuid,
+        :'business_id'::uuid,
         1,
         'María Rojas',
         '50662946202',
@@ -59,7 +61,7 @@ VALUES
     ),
     (
         'b1ffcc00-0d1c-4f09-cc4f-7c81b9502c33'::uuid,
-        '24a2cf67-4494-4432-a8c7-c74294de5077'::uuid,
+        :'business_id'::uuid,
         2,
         'Juan Pérez',
         '50661347303',
@@ -86,7 +88,7 @@ INSERT INTO "WhatsAppConversations" (
 VALUES
     (
         'c2a1dd11-1e2d-5d4f-9e5a-8c91c061d444'::uuid,
-        '24a2cf67-4494-4432-a8c7-c74294de5077'::uuid,
+        :'business_id'::uuid,
         '50662946202',
         'María Rojas',
         'Hola! ¿Cómo estás?',
@@ -99,7 +101,7 @@ VALUES
     ),
     (
         'd3b2ee22-2f3e-6e5a-0f6b-9d02d172e555'::uuid,
-        '24a2cf67-4494-4432-a8c7-c74294de5077'::uuid,
+        :'business_id'::uuid,
         '50661347303',
         'Juan Pérez',
         'Perfecto, te confirmo en un momento.',

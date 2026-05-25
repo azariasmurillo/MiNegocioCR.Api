@@ -30,7 +30,7 @@ public class DashboardRepository : IDashboardRepository
         var salesTodayCount = await salesToday.CountAsync();
         var ingresosHoy = await salesToday
             .Select(x => (decimal?)(x.Total > 0 ? x.Total : x.TotalAmount))
-            .SumAsync() ?? 0m;
+            .SumAsync() ?? 0m;  // TotalAmount = fallback para registros previos al refactor
 
         var gananciaHoy = await salesToday
             .Select(x => (decimal?)x.TotalProfit)

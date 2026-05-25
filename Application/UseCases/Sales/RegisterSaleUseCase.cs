@@ -36,9 +36,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             string? customerEmail = null)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            var businessId = request.BusinessId;
-            var items = request.Items;
             if (request.Discount < 0) throw new ArgumentException("Discount cannot be negative.", nameof(request.Discount));
+
+            var businessId = request.BusinessId;
 
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -48,11 +48,13 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     .FirstOrDefaultAsync(b => b.Id == businessId);
                 if (business == null)
                     throw new ArgumentException("Business not found.", nameof(request.BusinessId));
+
                 var taxRate = business.TaxRatePercent;
                 if (taxRate < 0)
                     throw new ArgumentException("Business tax rate cannot be negative.");
 
-                MiNegocioCR.Api.Domain.Entities.RepairOrder? repairOrder = null;
+                // ── Cargar orden de reparación (si aplica) ─────────────────
+                Domain.Entities.RepairOrder? repairOrder = null;
                 if (request.RepairOrderId.HasValue)
                 {
                     repairOrder = await _context.RepairOrders
@@ -62,10 +64,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
 
                     if (repairOrder is null)
                         throw new ArgumentException("RepairOrder does not belong to this business.");
-
                     if (repairOrder.IsInvoiced)
                         throw new InvalidOperationException("Repair order is already invoiced.");
-
                     if ((RepairOrderStatus)repairOrder.Status == RepairOrderStatus.Cancelled)
                         throw new InvalidOperationException("Cannot create sale for cancelled repair order.");
 
@@ -75,7 +75,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                         throw new InvalidOperationException("A sale already exists for this repair order.");
                 }
 
-                MiNegocioCR.Api.Domain.Entities.Contact? contact = null;
+                // ── Resolver contacto ──────────────────────────────────────
+                Domain.Entities.Contact? contact = null;
                 if (repairOrder != null)
                 {
                     contact = repairOrder.Contact;
@@ -113,12 +114,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     CustomerPhone = phoneForSale,
                     ContactId = contact?.Id,
                     Contact = contact,
-                    PayCash = repairOrder?.PayCash ?? request.PayCash,
-                    PayTransfer = repairOrder?.PayTransfer ?? request.PayTransfer,
-                    PaySinpe = repairOrder?.PaySinpe ?? request.PaySinpe,
-                    PayCard = repairOrder?.PayCard ?? request.PayCard
                 };
 
+                // ── Construir ítems ────────────────────────────────────────
                 if (repairOrder != null)
                 {
                     if (repairOrder.Items == null || repairOrder.Items.Count == 0)
@@ -134,16 +132,14 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                         var normalizedType = item.CatalogVariantId.HasValue ? "Product" : "Service";
                         if (normalizedType == "Product")
                         {
-                            var variantId = item.CatalogVariantId ?? throw new ArgumentException("CatalogVariantId is required for Product items.");
-                            var variantBelongsToBusiness = await _context.CatalogVariants
+                            var variantId = item.CatalogVariantId!.Value;
+                            var variantBelongs = await _context.CatalogVariants
                                 .AnyAsync(v => v.Id == variantId && v.CatalogItem.BusinessId == businessId);
-                            if (!variantBelongsToBusiness)
+                            if (!variantBelongs)
                                 throw new ArgumentException("CatalogVariantId does not belong to this business.");
 
                             await _inventoryService.DecreaseStockAsync(
-                                businessId,
-                                variantId,
-                                item.Quantity,
+                                businessId, variantId, item.Quantity,
                                 $"Repair charge {repairOrder.OrderNumber}");
                         }
                         else if (string.IsNullOrWhiteSpace(item.Description))
@@ -166,7 +162,10 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 }
                 else
                 {
-                    if (items == null || !items.Any()) throw new ArgumentException("At least one item is required.", nameof(items));
+                    var items = request.Items;
+                    if (items == null || !items.Any())
+                        throw new ArgumentException("At least one item is required.", nameof(items));
+
                     foreach (var item in items)
                     {
                         if (item.Quantity <= 0)
@@ -180,16 +179,13 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                             if (!item.CatalogVariantId.HasValue)
                                 throw new ArgumentException("CatalogVariantId is required for Product items.");
 
-                            var variantBelongsToBusiness = await _context.CatalogVariants
+                            var variantBelongs = await _context.CatalogVariants
                                 .AnyAsync(v => v.Id == item.CatalogVariantId.Value && v.CatalogItem.BusinessId == businessId);
-                            if (!variantBelongsToBusiness)
+                            if (!variantBelongs)
                                 throw new ArgumentException("CatalogVariantId does not belong to this business.");
 
                             await _inventoryService.DecreaseStockAsync(
-                                businessId,
-                                item.CatalogVariantId.Value,
-                                item.Quantity,
-                                "Sale");
+                                businessId, item.CatalogVariantId.Value, item.Quantity, "Sale");
                         }
                         else if (string.IsNullOrWhiteSpace(item.Description))
                         {
@@ -210,37 +206,39 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     }
                 }
 
+                // ── Calcular totales ───────────────────────────────────────
                 sale.Subtotal = sale.Items.Sum(x => x.UnitPrice * x.Quantity);
+
                 if (repairOrder != null)
                 {
-                    // Mismo criterio que el antiguo /charge: % sobre subtotal de líneas, IVA sobre base gravable.
-                    var discountPercentAmount = Math.Round(
+                    // CORRECTO: DiscountAmount = SOLO el descuento real (%), nunca incluye prepagos.
+                    var discountAmount = Math.Round(
                         sale.Subtotal * (repairOrder.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
-                    if (discountPercentAmount > sale.Subtotal)
-                        discountPercentAmount = sale.Subtotal;
+                    discountAmount = Math.Min(discountAmount, sale.Subtotal);
 
-                    var taxableBase = sale.Subtotal - discountPercentAmount;
-                    sale.TaxAmount = Math.Round(
+                    var taxableBase = sale.Subtotal - discountAmount;
+                    var taxAmount = Math.Round(
                         taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
 
-                    // Payments: única fuente de prepagos; no usar montos del request.
+                    var totalOrden = taxableBase + taxAmount;
+
+                    // Prepagos: abonos registrados ANTES de esta factura.
                     var payments = await _paymentService.GetPaymentsByRepairOrderAsync(businessId, repairOrder.Id);
-                    var totalPagado = payments.Sum(p => p.Amount);
+                    var prepaidAmount = payments.Sum(p => p.Amount);
 
-                    var totalOrden = taxableBase + sale.TaxAmount;
-
-                    if (totalPagado > totalOrden)
-                        throw new InvalidOperationException("La suma de pagos supera el total de la orden.");
-
-                    if (totalPagado >= totalOrden)
+                    if (prepaidAmount > totalOrden)
+                        throw new InvalidOperationException("La suma de abonos supera el total de la orden.");
+                    if (prepaidAmount >= totalOrden)
                         throw new InvalidOperationException(
-                            "No se puede crear la venta: la orden ya está pagada en su totalidad (no hay saldo pendiente por facturar).");
+                            "No se puede facturar: la orden ya está pagada en su totalidad (no hay saldo pendiente).");
 
-                    var saldoPendiente = totalOrden - totalPagado;
+                    var saldoPendiente = totalOrden - prepaidAmount;
 
-                    // DiscountAmount = descuento % de la orden + pagos ya registrados (sin duplicar filas en Payments).
-                    sale.DiscountAmount = discountPercentAmount + totalPagado;
-                    sale.Total = saldoPendiente;
+                    sale.DiscountAmount = discountAmount;   // descuento REAL, sin mezclar abonos
+                    sale.TaxAmount = taxAmount;
+                    sale.TotalOrden = totalOrden;           // total bruto de la orden
+                    sale.PrepaidAmount = prepaidAmount;     // abonos previos informados en factura
+                    sale.Total = saldoPendiente;            // lo que se cobra hoy
 
                     repairOrder.IsInvoiced = true;
                     repairOrder.InvoicedAt = DateTime.UtcNow;
@@ -251,51 +249,44 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 else
                 {
                     var appliedDiscount = Math.Min(request.Discount, sale.Subtotal);
-                    var taxableBaseManual = sale.Subtotal - appliedDiscount;
-                    sale.TaxAmount = Math.Round(
-                        taxableBaseManual * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
+                    var taxableBase = sale.Subtotal - appliedDiscount;
+                    var taxAmount = Math.Round(
+                        taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
+                    var total = taxableBase + taxAmount;
+
                     sale.DiscountAmount = appliedDiscount;
-                    sale.Total = taxableBaseManual + sale.TaxAmount;
+                    sale.TaxAmount = taxAmount;
+                    sale.TotalOrden = total;
+                    sale.PrepaidAmount = 0m;
+                    sale.Total = total;
                 }
+
                 sale.TotalAmount = sale.Total;
 
+                // ── Métodos de pago con monto real ─────────────────────────
+                foreach (var pm in request.PaymentMethods ?? [])
+                {
+                    if (pm.Amount < 0)
+                        throw new ArgumentException("Payment method amount cannot be negative.");
+
+                    var method = ParsePaymentMethod(pm.Method);
+                    sale.PaymentMethods.Add(new SalePaymentMethod
+                    {
+                        Id = Guid.NewGuid(),
+                        SaleId = sale.Id,
+                        Method = method,
+                        Amount = pm.Amount
+                    });
+                }
+
+                // ── Snapshot de costos y métricas ─────────────────────────
                 await ApplyCostSnapshotAndTotalsAsync(sale);
 
                 await _saleRepository.AddSaleAsync(sale);
 
                 await transaction.CommitAsync();
 
-                return new
-                {
-                    sale.Id,
-                    sale.InvoiceNumber,
-                    sale.Source,
-                    taxRatePercent = taxRate,
-                    Contact = contact == null ? null : new
-                    {
-                        contact.Id,
-                        contact.Name,
-                        contact.Phone,
-                        contact.Email
-                    },
-                    Items = sale.Items.Select(i => new
-                    {
-                        i.Id,
-                        i.ItemType,
-                        i.CatalogVariantId,
-                        i.Description,
-                        i.Quantity,
-                        i.UnitPrice,
-                        LineTotal = i.UnitPrice * i.Quantity
-                    }),
-                    Totals = new
-                    {
-                        sale.Subtotal,
-                        Tax = sale.TaxAmount,
-                        Discount = sale.DiscountAmount,
-                        sale.Total
-                    }
-                };
+                return BuildResponse(sale, contact, taxRate);
             }
             catch
             {
@@ -304,7 +295,48 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             }
         }
 
-        /// <summary>Copia CostPrice desde catálogo y calcula TotalCost / TotalProfit (solo esta venta).</summary>
+        // ── Helpers ────────────────────────────────────────────────────────
+
+        private static object BuildResponse(Sale sale, Domain.Entities.Contact? contact, decimal taxRate) =>
+            new
+            {
+                sale.Id,
+                sale.InvoiceNumber,
+                sale.Source,
+                taxRatePercent = taxRate,
+                Contact = contact == null ? null : new
+                {
+                    contact.Id,
+                    contact.Name,
+                    contact.Phone,
+                    contact.Email
+                },
+                Items = sale.Items.Select(i => new
+                {
+                    i.Id,
+                    i.ItemType,
+                    i.CatalogVariantId,
+                    i.Description,
+                    i.Quantity,
+                    i.UnitPrice,
+                    LineTotal = i.UnitPrice * i.Quantity
+                }),
+                Totals = new
+                {
+                    sale.Subtotal,
+                    Discount = sale.DiscountAmount,
+                    Tax = sale.TaxAmount,
+                    TotalOrden = sale.TotalOrden,
+                    PrepaidAmount = sale.PrepaidAmount,
+                    Total = sale.Total
+                },
+                PaymentMethods = sale.PaymentMethods.Select(pm => new
+                {
+                    Method = pm.Method.ToString(),
+                    pm.Amount
+                })
+            };
+
         private async Task ApplyCostSnapshotAndTotalsAsync(Sale sale)
         {
             var variantIds = sale.Items
@@ -328,14 +360,15 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             }
 
             sale.TotalCost = sale.Items.Sum(i => i.CostPrice * i.Quantity);
-            sale.TotalProfit = sale.Total - sale.TotalCost;
+            // TotalOrden = gross order value (not saldo pendiente) → correct profit base
+            sale.TotalProfit = sale.TotalOrden - sale.TotalCost;
         }
 
         private async Task<string> BuildInvoiceNumberAsync(Guid businessId)
         {
             var today = DateTime.UtcNow.Date;
             var prefix = $"FACT-{today:yyyyMMdd}-";
-            var next = await _context.Sales
+            var existing = await _context.Sales
                 .Where(s => s.BusinessId == businessId
                     && s.InvoiceNumber != null
                     && s.InvoiceNumber.StartsWith(prefix))
@@ -343,9 +376,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 .ToListAsync();
 
             var seq = 1;
-            if (next.Count > 0)
+            if (existing.Count > 0)
             {
-                var max = next
+                var max = existing
                     .Select(x => int.TryParse(x[^4..], out var n) ? n : 0)
                     .DefaultIfEmpty(0)
                     .Max();
@@ -355,16 +388,27 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             return $"{prefix}{seq:D4}";
         }
 
-        private static string NormalizeItemType(string? value)
-        {
-            return string.Equals(value, "Product", StringComparison.OrdinalIgnoreCase) ? "Product" : "Service";
-        }
+        private static string NormalizeItemType(string? value) =>
+            string.Equals(value, "Product", StringComparison.OrdinalIgnoreCase) ? "Product" : "Service";
 
         private static string NormalizeSource(string? value)
         {
-            if (string.Equals(value, "Repair", StringComparison.OrdinalIgnoreCase)) return "Repair";
-            if (string.Equals(value, "WhatsApp", StringComparison.OrdinalIgnoreCase)) return "WhatsApp";
+            if (string.Equals(value, "Repair",     StringComparison.OrdinalIgnoreCase)) return "Repair";
+            if (string.Equals(value, "FromRepair", StringComparison.OrdinalIgnoreCase)) return "Repair";
+            if (string.Equals(value, "WhatsApp",   StringComparison.OrdinalIgnoreCase)) return "WhatsApp";
             return "Manual";
+        }
+
+        private static PaymentMethod ParsePaymentMethod(string value)
+        {
+            return value.Trim().ToLowerInvariant() switch
+            {
+                "cash"         or "efectivo"                  => PaymentMethod.Cash,
+                "transfer"     or "transferencia"             => PaymentMethod.Transfer,
+                "sinpe"        or "sinpe móvil" or "sinpemovil" => PaymentMethod.Sinpe,
+                "card"         or "tarjeta"                   => PaymentMethod.Card,
+                _ => throw new ArgumentException($"Método de pago no reconocido: '{value}'. Valores válidos: Cash, Transfer, Sinpe, Card.")
+            };
         }
     }
 }

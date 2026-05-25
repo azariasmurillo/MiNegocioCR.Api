@@ -1,10 +1,9 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using MiNegocioCR.Api.API.Content;
 using MiNegocioCR.Api.API.Filters;
 using MiNegocioCR.Api.API.Hubs;
@@ -28,44 +27,57 @@ using MiNegocioCR.Api.Application.Handler;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.ArchiveConversation;
 using MiNegocioCR.Api.Application.Interfaces.Auth;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
+using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
+using MiNegocioCR.Api.Application.Interfaces.Repositories;
+using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Auth;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
-using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Variants;
-using MiNegocioCR.Api.Application.Interfaces.Repositories;
-using MiNegocioCR.Api.Application.Interfaces.Services;
 using MiNegocioCR.Api.Application.Interfaces.Whatsapp;
 using MiNegocioCR.Api.Application.UseCases.ArchiveConversationUseCase;
 using MiNegocioCR.Api.Application.UseCases.Auth;
 using MiNegocioCR.Api.Application.UseCases.Business;
+using MiNegocioCR.Api.Application.UseCases.Catalog;
 using MiNegocioCR.Api.Application.UseCases.Contacts;
 using MiNegocioCR.Api.Application.UseCases.Conversations;
-using MiNegocioCR.Api.Application.UseCases.RepairOrder;
-using MiNegocioCR.Api.Application.UseCases.Catalog;
-using MiNegocioCR.Api.Application.UseCases.Variants;
-using MiNegocioCR.Api.Application.UseCases.Repository;
-using MiNegocioCR.Api.Application.UseCases.Sales;
 using MiNegocioCR.Api.Application.UseCases.Dashboard;
 using MiNegocioCR.Api.Application.UseCases.Payments;
+using MiNegocioCR.Api.Application.UseCases.RepairOrder;
+using MiNegocioCR.Api.Application.UseCases.Repository;
+using MiNegocioCR.Api.Application.UseCases.Sales;
+using MiNegocioCR.Api.Application.UseCases.Variants;
 using MiNegocioCR.Api.Application.UseCases.Whatsapp;
-using MiNegocioCR.Api.Domain.Entities;
 using MiNegocioCR.Api.Infrastructure.AI;
 using MiNegocioCR.Api.Infrastructure.Persistence;
 using MiNegocioCR.Api.Infrastructure.Persistence.Repositories;
 using MiNegocioCR.Api.Infrastructure.Security;
 using MiNegocioCR.Api.Infrastructure.Services;
 using Resend;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
+
+// Orden de resolución:
+//   1. Variable de entorno POSTGRES_CONNECTION_STRING (producción / Railway)
+//   2. ConnectionStrings:DefaultConnection en appsettings*.json (desarrollo local)
+var postgresConnectionString =
+    builder.Configuration["POSTGRES_CONNECTION_STRING"]
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrWhiteSpace(postgresConnectionString))
+    throw new InvalidOperationException(
+        "No se encontró la cadena de conexión a PostgreSQL. " +
+        "Configurá la variable de entorno POSTGRES_CONNECTION_STRING " +
+        "o ConnectionStrings:DefaultConnection en appsettings.Development.json.");
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection(AppOptions.SectionName));
@@ -171,7 +183,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 // --- Db ---
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(postgresConnectionString)
+           .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+);
 builder.Services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
 // --- Repositories ---
@@ -329,21 +343,47 @@ builder.Services.AddSingleton<IIntentClassifier, IntentClassifier>();
 // --- Build ---
 var app = builder.Build();
 
-// Aplica migraciones pendientes en la BD configurada (añade columnas como TotalCost/TotalProfit).
-// Si falla con Supabase pooler (puerto 6543), usá conexión sesión/directa (5432) o ejecutá Scripts/AddSaleCostAndProfitMetrics.sql en el SQL Editor.
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
-}
+// Migraciones: ejecutar manualmente con `dotnet ef database update` apuntando a la
+// conexión directa de Supabase (puerto 5432, no el pooler 6543).
+// Variable de entorno: POSTGRES_CONNECTION_STRING
 
 app.UseForwardedHeaders();
-app.UseRouting();
-app.Use(async (context, next) =>
+
+// IMPORTANTE: el exception handler debe correr ANTES de UseCors para que,
+// cuando ocurre un 500, la respuesta de error también incluya los headers CORS.
+app.UseExceptionHandler(errorApp =>
 {
-    Console.WriteLine($"Origin: {context.Request.Headers["Origin"]}");
-    await next();
+    errorApp.Run(async context =>
+    {
+        var origin = context.Request.Headers.Origin.ToString();
+        var allowedOrigins = new[]
+        {
+            "http://localhost:4200",
+            "https://localhost:7176",
+            "https://mi-negociocr-frontend.vercel.app",
+            "https://mi-negociocr.com",
+            "https://www.mi-negociocr.com"
+        };
+        if (!string.IsNullOrEmpty(origin) && allowedOrigins.Contains(origin))
+            context.Response.Headers.Append("Access-Control-Allow-Origin", origin);
+
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode  = 500;
+
+        var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var message = feature?.Error?.Message ?? "Internal server error";
+
+        // No exponer detalles en producción
+        var isDev = app.Environment.IsDevelopment();
+        var body  = isDev
+            ? System.Text.Json.JsonSerializer.Serialize(new { error = message, detail = feature?.Error?.ToString() })
+            : System.Text.Json.JsonSerializer.Serialize(new { error = "Error interno del servidor." });
+
+        await context.Response.WriteAsync(body);
+    });
 });
+
+app.UseRouting();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();

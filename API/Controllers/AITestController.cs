@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.Application.AI.Interfaces;
 using MiNegocioCR.Api.Application.AI.Models;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/ai")]
     public class AITestController : ControllerBase

@@ -8,8 +8,7 @@ public class SalesListItemDto
     public string? CustomerName { get; set; }
     public string? CustomerPhone { get; set; }
     public decimal Total { get; set; }
-    public bool PayCash { get; set; }
-    public bool PayTransfer { get; set; }
-    public bool PaySinpe { get; set; }
-    public bool PayCard { get; set; }
+    public decimal TotalOrden { get; set; }
+    public decimal PrepaidAmount { get; set; }
+    public List<SalePaymentMethodDto> PaymentMethods { get; set; } = new();
 }

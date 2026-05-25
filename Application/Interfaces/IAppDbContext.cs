@@ -27,6 +27,7 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<ContactEntity> Contacts { get; }
         DbSet<Sale> Sales { get; }
         DbSet<SaleItem> SaleItems { get; }
+        DbSet<SalePaymentMethod> SalePaymentMethods { get; }
         DbSet<Payment> Payments { get; }
         DbSet<RepairOrderImage> RepairOrderImages { get; }
         DbSet<CatalogVariantImage> CatalogVariantImages { get; }

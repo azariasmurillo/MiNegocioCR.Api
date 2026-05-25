@@ -8,12 +8,17 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? CustomerPhone { get; set; }
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
+
+        /// <summary>Descuento en colones para ventas directas (no aplica cuando hay RepairOrderId).</summary>
         public decimal Discount { get; set; } = 0m;
-        public bool PayCash { get; set; }
-        public bool PayTransfer { get; set; }
-        public bool PaySinpe { get; set; }
-        public bool PayCard { get; set; }
-        public string Source { get; set; } = "Manual"; // Manual | WhatsApp
+
+        /// <summary>
+        /// Métodos de pago con monto real. Reemplaza los booleans PayCash/etc.
+        /// Suma de Amount debe ser >= Total de la venta (se valida en el use case).
+        /// </summary>
+        public List<SalePaymentMethodDto> PaymentMethods { get; set; } = new();
+
+        public string Source { get; set; } = "Manual";
 
         public List<SaleItemRequestDto> Items { get; set; } = new();
     }

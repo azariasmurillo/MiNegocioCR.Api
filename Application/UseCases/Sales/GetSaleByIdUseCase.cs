@@ -22,7 +22,6 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
             return null;
 
         var contact = sale.Contact;
-        var totalDisplay = sale.Total > 0 ? sale.Total : sale.TotalAmount;
 
         return new
         {
@@ -55,15 +54,17 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
             Totals = new
             {
                 sale.Subtotal,
-                Tax = sale.TaxAmount,
                 Discount = sale.DiscountAmount,
-                Total = totalDisplay,
-                sale.TotalAmount
+                Tax = sale.TaxAmount,
+                TotalOrden = sale.TotalOrden,
+                PrepaidAmount = sale.PrepaidAmount,
+                Total = sale.Total
             },
-            PayCash = sale.PayCash,
-            PayTransfer = sale.PayTransfer,
-            PaySinpe = sale.PaySinpe,
-            PayCard = sale.PayCard
+            PaymentMethods = sale.PaymentMethods.Select(pm => new
+            {
+                Method = pm.Method.ToString(),
+                pm.Amount
+            })
         };
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Features;
 using MiNegocioCR.Api.Application.DTOs;
@@ -6,6 +7,7 @@ using MiNegocioCR.Api.Application.Interfaces.Variants;
 
 namespace MiNegocioCR.Api.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/variants")]
     public class VariantController : ControllerBase
