@@ -48,6 +48,7 @@ public class PasswordResetTokenRepository : IPasswordResetTokenRepository
         {
             var now = DateTime.UtcNow;
             var row = await _context.PasswordResetTokens
+                .AsTracking()
                 .Include(x => x.User)
                 .FirstOrDefaultAsync(
                     x => x.Token == tokenHash && !x.IsUsed && x.ExpiresAt > now,
