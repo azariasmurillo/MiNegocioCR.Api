@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Domain.Enums;
@@ -16,47 +17,49 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
 
         public async Task<object?> Execute(Guid businessId, Guid id)
         {
-            return await _context.RepairOrders
+            var order = await _context.RepairOrders
                 .AsNoTracking()
-                .Where(x => x.BusinessId == businessId && x.Id == id)
-                .Select(x => new
+                .AsSplitQuery()
+                .Include(x => x.Contact)
+                .Include(x => x.Items)
+                    .ThenInclude(i => i.CatalogVariant)
+                        .ThenInclude(v => v!.CatalogItem)
+                .FirstOrDefaultAsync(x => x.BusinessId == businessId && x.Id == id);
+
+            if (order == null)
+                return null;
+
+            return new
+            {
+                order.Id,
+                order.OrderNumber,
+                order.ContactId,
+                Contact = new
                 {
-                    x.Id,
-                    x.OrderNumber,
-                    x.ContactId,
-                    Contact = new
-                    {
-                        x.Contact.Id,
-                        Name = x.Contact.Name,
-                        Phone = x.Contact.Phone,
-                        Email = x.Contact.Email
-                    },
-                    x.ProblemDescription,
-                    x.DeviceType,
-                    x.DeviceTypeOther,
-                    x.Brand,
-                    x.Model,
-                    x.SerialNumber,
-                    x.AccessoriesIncluded,
-                    x.OperatingSystem,
-                    x.Password,
-                    x.IsDiagnosticPaid,
-                    x.DiscountPercent,
-                    Status = ((RepairOrderStatus)x.Status).ToString(),
-                    x.CreatedAt,
-                    x.UpdatedAt,
-                    Items = x.Items
-                        .OrderBy(i => i.Id)
-                        .Select(i => new
-                        {
-                            i.Id,
-                            i.CatalogVariantId,
-                            i.Description,
-                            i.Quantity,
-                            i.Price
-                        })
-                })
-                .FirstOrDefaultAsync();
+                    order.Contact.Id,
+                    Name = order.Contact.Name,
+                    Phone = order.Contact.Phone,
+                    Email = order.Contact.Email
+                },
+                order.ProblemDescription,
+                order.DeviceType,
+                order.DeviceTypeOther,
+                order.Brand,
+                order.Model,
+                order.SerialNumber,
+                order.AccessoriesIncluded,
+                order.OperatingSystem,
+                order.Password,
+                order.IsDiagnosticPaid,
+                order.DiscountPercent,
+                Status = ((RepairOrderStatus)order.Status).ToString(),
+                order.CreatedAt,
+                order.UpdatedAt,
+                Items = order.Items
+                    .OrderBy(i => i.Id)
+                    .Select(RepairOrderItemProjection.Map)
+                    .ToList()
+            };
         }
     }
 }

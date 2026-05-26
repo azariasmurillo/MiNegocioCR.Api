@@ -58,6 +58,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 if (request.RepairOrderId.HasValue)
                 {
                     repairOrder = await _context.RepairOrders
+                        .AsTracking()
                         .Include(r => r.Contact)
                         .Include(r => r.Items)
                         .FirstOrDefaultAsync(r => r.BusinessId == businessId && r.Id == request.RepairOrderId.Value);

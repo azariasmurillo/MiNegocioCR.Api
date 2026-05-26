@@ -23,6 +23,7 @@ public class UpdateRepairOrderStatusUseCase : IUpdateRepairOrderStatusUseCase
     public async Task<object> Execute(Guid businessId, Guid id, UpdateStatusRequestDto request)
     {
         var order = await _context.RepairOrders
+            .AsTracking()
             .Include(o => o.Contact)
             .FirstOrDefaultAsync(o => o.BusinessId == businessId && o.Id == id);
 

@@ -25,6 +25,7 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var order = await _context.RepairOrders
+                .AsTracking()
                 .Include(o => o.Contact)
                 .FirstOrDefaultAsync(o => o.BusinessId == businessId && o.Id == id);
 

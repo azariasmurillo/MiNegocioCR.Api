@@ -16,12 +16,54 @@ namespace MiNegocioCR.Tests.UseCases.RepairOrder;
 
 public class UpdateRepairOrderStatusUseCaseTests
 {
-    private static AppDbContext CreateInMemoryContext()
+    private static AppDbContext CreateInMemoryContext(QueryTrackingBehavior tracking = QueryTrackingBehavior.TrackAll)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseQueryTrackingBehavior(tracking)
             .Options;
         return new AppDbContext(options);
+    }
+
+    [Fact]
+    public async Task Execute_WithGlobalNoTracking_PendingToInProcess_PersistsStatus()
+    {
+        await using var context = CreateInMemoryContext(QueryTrackingBehavior.NoTracking);
+        var businessId = Guid.NewGuid();
+        var business = new BusinessEntity { Id = businessId, Name = "Test" };
+        var contact = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "C",
+            Phone = "50666666666",
+            CreatedAt = DateTime.UtcNow
+        };
+        var order = new RepairOrderEntity
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            OrderNumber = "000001",
+            Status = (int)RepairOrderStatus.Pending,
+            ContactId = contact.Id
+        };
+        context.Businesses.Add(business);
+        context.Contacts.Add(contact);
+        context.RepairOrders.Add(order);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var notificationMock = new Mock<INotificationService>();
+        var sut = new UpdateRepairOrderStatusUseCase(context, notificationMock.Object);
+
+        await sut.Execute(
+            businessId,
+            order.Id,
+            new UpdateStatusRequestDto { NewStatus = RepairOrderStatus.InProcess });
+
+        context.ChangeTracker.Clear();
+        var persisted = await context.RepairOrders.AsNoTracking().FirstAsync(o => o.Id == order.Id);
+        persisted.Status.Should().Be((int)RepairOrderStatus.InProcess);
     }
 
     [Fact]
