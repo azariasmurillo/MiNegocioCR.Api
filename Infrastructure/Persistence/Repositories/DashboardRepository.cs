@@ -276,13 +276,7 @@ public class DashboardRepository : IDashboardRepository
     private static decimal ComputeRepairOrderTotalWithTax(RepairOrder order, decimal taxRatePercent)
     {
         var subtotal = order.Items?.Sum(x => x.Price * x.Quantity) ?? 0m;
-        var discountPercentAmount = Math.Round(
-            subtotal * (order.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
-        if (discountPercentAmount > subtotal)
-            discountPercentAmount = subtotal;
-
-        var taxableBase = subtotal - discountPercentAmount;
-        var tax = Math.Round(taxableBase * (taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
-        return taxableBase + tax;
+        var tax = Math.Round(subtotal * (taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
+        return subtotal + tax;
     }
 }

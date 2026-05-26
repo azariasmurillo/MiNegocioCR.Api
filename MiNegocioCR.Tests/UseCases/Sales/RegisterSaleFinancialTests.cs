@@ -94,7 +94,6 @@ public class RegisterSaleFinancialTests
         Guid businessId,
         decimal itemPrice      = 50_000m,
         int    itemQty         = 1,
-        decimal discountPct    = 0m,
         bool   isInvoiced      = false,
         RepairOrderStatus status = RepairOrderStatus.Processed)
     {
@@ -118,7 +117,6 @@ public class RegisterSaleFinancialTests
             IsActive       = !isInvoiced,
             ContactId      = contact.Id,
             Contact        = contact,
-            DiscountPercent = discountPct
         };
 
         var repairItem = new RepairOrderItem
@@ -217,7 +215,7 @@ public class RegisterSaleFinancialTests
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 13m);
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m, discountPct: 0m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m);
         await ctx.SaveChangesAsync();
 
         var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
@@ -239,13 +237,12 @@ public class RegisterSaleFinancialTests
     }
 
     [Fact]
-    public async Task RepairSale_WithRealDiscount_DoesNotMixPrepayments()
+    public async Task RepairSale_NoOrderDiscount_DiscountAmountIsZero()
     {
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 13m);
-        // 15% discount on order of 85000 → discountAmt = 12750
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m, discountPct: 15m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m);
         await ctx.SaveChangesAsync();
 
         var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
@@ -259,11 +256,11 @@ public class RegisterSaleFinancialTests
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
         sale.Subtotal.Should().Be(85_000m);
-        sale.DiscountAmount.Should().Be(12_750m);                // 85000 × 15%
-        sale.TaxAmount.Should().Be(9_392.50m);                   // 72250 × 13% = 9392.50
-        sale.TotalOrden.Should().Be(81_642.50m);                 // 72250 + 9392.50
-        sale.PrepaidAmount.Should().Be(0m);                      // sin abonos previos
-        sale.Total.Should().Be(81_642.50m);                      // cobrado hoy = totalOrden (sin prepagos)
+        sale.DiscountAmount.Should().Be(0m);
+        sale.TaxAmount.Should().Be(11_050m);
+        sale.TotalOrden.Should().Be(96_050m);
+        sale.PrepaidAmount.Should().Be(0m);
+        sale.Total.Should().Be(96_050m);
     }
 
     // ── 3. VENTA DESDE REPARACIÓN — con prepagos parciales ───────────────────
@@ -274,7 +271,7 @@ public class RegisterSaleFinancialTests
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 13m);
-        var order  = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m, discountPct: 0m);
+        var order  = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m);
         await ctx.SaveChangesAsync();
 
         // El cliente abonó ₡30,000 antes de facturar
@@ -314,7 +311,7 @@ public class RegisterSaleFinancialTests
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 13m);
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 100_000m, discountPct: 0m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 100_000m);
         await ctx.SaveChangesAsync();
 
         var payments = new List<Payment>
@@ -353,7 +350,7 @@ public class RegisterSaleFinancialTests
         SeedBusiness(ctx, bizId, taxRate: 13m);
 
         // Orden: 1 ítem de 100000, costo unitario 30000
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 100_000m, discountPct: 0m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 100_000m);
         // Agregar relación variant para calcular costo (si el item tiene CatalogVariantId)
         await ctx.SaveChangesAsync();
 
@@ -556,7 +553,7 @@ public class RegisterSaleFinancialTests
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 0m);  // sin IVA para simplificar
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 50_000m, discountPct: 0m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 50_000m);
         await ctx.SaveChangesAsync();
 
         // El cliente ya pagó el 100% de la orden
@@ -583,7 +580,7 @@ public class RegisterSaleFinancialTests
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 0m);
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 50_000m, discountPct: 0m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 50_000m);
         await ctx.SaveChangesAsync();
 
         // Overpay: abonos > totalOrden
@@ -657,7 +654,7 @@ public class RegisterSaleFinancialTests
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 13m);
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m, discountPct: 15m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m);
         await ctx.SaveChangesAsync();
 
         var prepayment = new Payment
@@ -671,7 +668,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = [ new SalePaymentMethodDto { Method = "Card", Amount = 41_643.50m } ]
+            PaymentMethods = [ new SalePaymentMethodDto { Method = "Card", Amount = 56_050m } ]
         });
 
         var totalOrden    = GetTotalsField<decimal>(result, "TotalOrden");
@@ -679,10 +676,10 @@ public class RegisterSaleFinancialTests
         var total         = GetTotalsField<decimal>(result, "Total");
         var discount      = GetTotalsField<decimal>(result, "Discount");
 
-        totalOrden.Should().Be(81_642.50m);          // (85000 × 0.85 = 72250) + (72250 × 0.13 = 9392.50)
+        totalOrden.Should().Be(96_050m);
         prepaidAmount.Should().Be(40_000m);
-        total.Should().Be(41_642.50m);               // saldo cobrado hoy: 81642.50 − 40000
-        discount.Should().Be(12_750m);               // descuento REAL, sin abonos
+        total.Should().Be(56_050m);
+        discount.Should().Be(0m);
     }
 
     // ── 9. VENTA MANUAL — PrepaidAmount siempre 0 ────────────────────────────

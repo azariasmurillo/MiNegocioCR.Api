@@ -22,9 +22,6 @@ public class RepairOrder
     public string? Password { get; set; }
     public bool IsDiagnosticPaid { get; set; } = false;
 
-    /// <summary>Descuento en porcentaje (0–100) para usar al generar la factura desde la orden.</summary>
-    public decimal DiscountPercent { get; set; } = 0m;
-
     public bool IsInvoiced { get; set; } = false;
     public DateTime? InvoicedAt { get; set; }
     public Guid? SaleId { get; set; }

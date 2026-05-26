@@ -212,10 +212,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
 
                 if (repairOrder != null)
                 {
-                    // CORRECTO: DiscountAmount = SOLO el descuento real (%), nunca incluye prepagos.
-                    var discountAmount = Math.Round(
-                        sale.Subtotal * (repairOrder.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
-                    discountAmount = Math.Min(discountAmount, sale.Subtotal);
+                    var discountAmount = 0m;
 
                     var taxableBase = sale.Subtotal - discountAmount;
                     var taxAmount = Math.Round(

@@ -24,8 +24,6 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? OperatingSystem { get; set; }
         public string? Password { get; set; }
         public bool? IsDiagnosticPaid { get; set; }
-        public decimal? DiscountPercent { get; set; }
-
         /// <summary>Null: no tocar ítems. No vacía: reemplaza todas las líneas. Lista vacía: quita los ítems.</summary>
         public List<RepairOrderItemDto>? Items { get; set; }
     }

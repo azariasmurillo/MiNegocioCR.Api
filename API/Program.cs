@@ -343,9 +343,26 @@ builder.Services.AddSingleton<IIntentClassifier, IntentClassifier>();
 // --- Build ---
 var app = builder.Build();
 
-// Migraciones: ejecutar manualmente con `dotnet ef database update` apuntando a la
-// conexión directa de Supabase (puerto 5432, no el pooler 6543).
-// Variable de entorno: POSTGRES_CONNECTION_STRING
+// Migraciones EF al arrancar (POSTGRES_CONNECTION_STRING; Supabase directo puerto 5432).
+// Desactivar con APPLY_MIGRATIONS_ON_STARTUP=false si hace falta arrancar sin tocar el schema.
+var applyMigrationsOnStartup = builder.Configuration.GetValue("APPLY_MIGRATIONS_ON_STARTUP", true);
+if (applyMigrationsOnStartup)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var migrationLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseMigration");
+    try
+    {
+        migrationLogger.LogInformation("Applying pending EF Core migrations…");
+        db.Database.Migrate();
+        migrationLogger.LogInformation("EF Core migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        migrationLogger.LogError(ex, "Failed to apply EF Core migrations on startup.");
+        throw;
+    }
+}
 
 app.UseForwardedHeaders();
 

@@ -133,8 +133,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
             order.Password = request.Password;
             if (request.IsDiagnosticPaid.HasValue)
                 order.IsDiagnosticPaid = request.IsDiagnosticPaid.Value;
-            if (request.DiscountPercent.HasValue)
-                order.DiscountPercent = request.DiscountPercent.Value;
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync(CancellationToken.None);

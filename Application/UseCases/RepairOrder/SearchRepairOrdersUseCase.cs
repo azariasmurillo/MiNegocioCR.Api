@@ -71,7 +71,6 @@ public class SearchRepairOrdersUseCase : ISearchRepairOrdersUseCase
                 r.OperatingSystem,
                 r.Password,
                 r.IsDiagnosticPaid,
-                r.DiscountPercent,
                 Status = ((RepairOrderStatus)r.Status).ToString(),
                 r.IsActive,
                 r.CreatedAt,

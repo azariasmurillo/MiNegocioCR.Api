@@ -40,14 +40,8 @@ public class GetRepairOrderBalanceUseCase : IGetRepairOrderBalanceUseCase
             throw new InvalidOperationException("Business tax rate cannot be negative.");
 
         var subtotal = order.Items?.Sum(x => x.Price * x.Quantity) ?? 0m;
-        var discountPercentAmount = Math.Round(
-            subtotal * (order.DiscountPercent / 100m), 2, MidpointRounding.AwayFromZero);
-        if (discountPercentAmount > subtotal)
-            discountPercentAmount = subtotal;
-
-        var taxableBase = subtotal - discountPercentAmount;
-        var tax = Math.Round(taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
-        var totalOrden = taxableBase + tax;
+        var tax = Math.Round(subtotal * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
+        var totalOrden = subtotal + tax;
 
         var totalPagado = await _paymentService.GetTotalPaidAsync(businessId, repairOrderId);
         var saldo = Math.Max(0m, totalOrden - totalPagado);
@@ -55,7 +49,7 @@ public class GetRepairOrderBalanceUseCase : IGetRepairOrderBalanceUseCase
         return new RepairOrderBalanceDto
         {
             Subtotal = subtotal,
-            Discount = discountPercentAmount,
+            Discount = 0m,
             Tax = tax,
             Total = totalOrden,
             TotalPagado = totalPagado,

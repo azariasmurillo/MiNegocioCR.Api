@@ -336,9 +336,6 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.InvoicedAt)
                     .HasColumnType("timestamp with time zone");
 
-                entity.Property(x => x.DiscountPercent)
-                    .HasColumnType("numeric(18,2)");
-
                 entity.HasIndex(x => x.CreatedAt);
                 entity.HasIndex(x => x.ContactId);
                 entity.HasIndex(x => new { x.BusinessId, x.CreatedAt });

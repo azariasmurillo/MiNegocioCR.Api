@@ -721,9 +721,6 @@ namespace MiNegocioCR.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<decimal>("DiscountPercent")
-                        .HasColumnType("numeric(18,2)");
-
                     b.Property<DateTime?>("InvoicedAt")
                         .HasColumnType("timestamp with time zone");
 

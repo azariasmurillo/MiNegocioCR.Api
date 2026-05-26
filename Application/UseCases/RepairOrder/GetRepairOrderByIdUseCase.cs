@@ -51,7 +51,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                 order.OperatingSystem,
                 order.Password,
                 order.IsDiagnosticPaid,
-                order.DiscountPercent,
                 Status = ((RepairOrderStatus)order.Status).ToString(),
                 order.CreatedAt,
                 order.UpdatedAt,
