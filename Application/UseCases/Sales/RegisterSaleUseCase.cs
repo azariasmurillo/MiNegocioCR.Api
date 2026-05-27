@@ -377,8 +377,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
             }
 
             sale.TotalCost = sale.Items.Sum(i => i.CostPrice * i.Quantity);
-            // TotalOrden = gross order value (not saldo pendiente) → correct profit base
-            sale.TotalProfit = sale.TotalOrden - sale.TotalCost;
+            // Ganancia neta sin IVA (pass-through): (TotalOrden − TaxAmount) − costo
+            sale.TotalProfit = sale.TotalOrden - sale.TaxAmount - sale.TotalCost;
         }
 
         private async Task<string> BuildInvoiceNumberAsync(Guid businessId)

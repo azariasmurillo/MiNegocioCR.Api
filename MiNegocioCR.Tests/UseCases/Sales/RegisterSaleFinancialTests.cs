@@ -160,25 +160,25 @@ public class RegisterSaleFinancialTests
         var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
         {
             BusinessId = bizId,
-            PaymentMethods = Cash(22_600m),
+            PaymentMethods = Cash(20_000m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 2, UnitPrice = 10_000m, ItemType = "Product" } }
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
-        // subtotal = 2 × 10000 = 20000
+        // subtotal = 2 × 10000 = 20000 (IVA incluido)
         sale.Subtotal.Should().Be(20_000m);
         // no discount
         sale.DiscountAmount.Should().Be(0m);
-        // tax = 20000 × 13% = 2600
-        sale.TaxAmount.Should().Be(2_600m);
-        // TotalOrden = TaxableBase + Tax = 20000 + 2600 = 22600
-        sale.TotalOrden.Should().Be(22_600m);
+        // impuesto extraído del bruto
+        sale.TaxAmount.Should().Be(2_300.88m);
+        // TotalOrden = bruto − descuento (sin sumar IVA)
+        sale.TotalOrden.Should().Be(20_000m);
         // manual sale: PrepaidAmount = 0
         sale.PrepaidAmount.Should().Be(0m);
         // Total (cobrado hoy) = TotalOrden
-        sale.Total.Should().Be(22_600m);
+        sale.Total.Should().Be(20_000m);
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class RegisterSaleFinancialTests
         {
             BusinessId = bizId,
             Discount   = 10_000m,
-            PaymentMethods = Cash(101_700m),
+            PaymentMethods = Cash(90_000m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 100_000m, ItemType = "Product" } }
         });
 
@@ -203,7 +203,7 @@ public class RegisterSaleFinancialTests
 
         sale.DiscountAmount.Should().Be(10_000m);
         sale.DiscountKind.Should().Be((byte)SaleDiscountKind.FixedAmount);
-        sale.TotalOrden.Should().Be(101_700m);
+        sale.TotalOrden.Should().Be(90_000m);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             DiscountKind  = "Percent",
             DiscountValue = 10m,
-            PaymentMethods = Cash(101_700m),
+            PaymentMethods = Cash(90_000m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 100_000m, ItemType = "Product" } }
         });
 
@@ -231,8 +231,8 @@ public class RegisterSaleFinancialTests
         sale.DiscountAmount.Should().Be(10_000m);
         sale.DiscountKind.Should().Be((byte)SaleDiscountKind.Percent);
         sale.DiscountInputValue.Should().Be(10m);
-        sale.TaxAmount.Should().Be(11_700m);
-        sale.TotalOrden.Should().Be(101_700m);
+        sale.TaxAmount.Should().Be(10_353.98m);
+        sale.TotalOrden.Should().Be(90_000m);
     }
 
     [Fact]
@@ -249,7 +249,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             DiscountKind  = "FixedAmount",
             DiscountValue = 5_000m,
-            PaymentMethods = Cash(50_850m),
+            PaymentMethods = Cash(45_000m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 50_000m, ItemType = "Product" } }
         });
 
@@ -258,8 +258,8 @@ public class RegisterSaleFinancialTests
 
         sale.DiscountAmount.Should().Be(5_000m);
         sale.DiscountKind.Should().Be((byte)SaleDiscountKind.FixedAmount);
-        sale.TaxAmount.Should().Be(5_850m);      // 45000 × 13%
-        sale.TotalOrden.Should().Be(50_850m);
+        sale.TaxAmount.Should().Be(5_176.99m);      // extraído de 45000 bruto
+        sale.TotalOrden.Should().Be(45_000m);
     }
 
     [Fact]
@@ -303,7 +303,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = Cash(96_050m),
+            PaymentMethods = Cash(85_000m),
         });
 
         var saleId = GetSaleId(result);
@@ -311,10 +311,10 @@ public class RegisterSaleFinancialTests
 
         sale.Subtotal.Should().Be(85_000m);
         sale.DiscountAmount.Should().Be(0m);
-        sale.TaxAmount.Should().Be(11_050m);     // 85000 × 13%
-        sale.TotalOrden.Should().Be(96_050m);
+        sale.TaxAmount.Should().Be(9_778.76m);
+        sale.TotalOrden.Should().Be(85_000m);
         sale.PrepaidAmount.Should().Be(0m);
-        sale.Total.Should().Be(96_050m);         // saldo cobrado hoy = totalOrden
+        sale.Total.Should().Be(85_000m);
     }
 
     [Fact]
@@ -333,16 +333,16 @@ public class RegisterSaleFinancialTests
             Source        = "Repair",
             DiscountKind  = "Percent",
             DiscountValue = 10m,
-            PaymentMethods = Cash(101_700m),
+            PaymentMethods = Cash(90_000m),
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
         sale.DiscountAmount.Should().Be(10_000m);
-        sale.TaxAmount.Should().Be(11_700m);
-        sale.TotalOrden.Should().Be(101_700m);
-        sale.Total.Should().Be(101_700m);
+        sale.TaxAmount.Should().Be(10_353.98m);
+        sale.TotalOrden.Should().Be(90_000m);
+        sale.Total.Should().Be(90_000m);
     }
 
     // ── 3. VENTA DESDE REPARACIÓN — con prepagos parciales ───────────────────
@@ -372,18 +372,18 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = Cash(66_050m),
+            PaymentMethods = Cash(55_000m),
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
-        // TotalOrden = 85000 + 11050 (13%) = 96050
-        sale.TotalOrden.Should().Be(96_050m);
+        // TotalOrden = 85000 (IVA incluido)
+        sale.TotalOrden.Should().Be(85_000m);
         // PrepaidAmount = abono previo (NO es descuento)
         sale.PrepaidAmount.Should().Be(30_000m);
         // Total cobrado hoy = saldoPendiente
-        sale.Total.Should().Be(66_050m);         // 96050 − 30000
+        sale.Total.Should().Be(55_000m);         // 85000 − 30000
         // Descuento = 0, NO suma los abonos
         sale.DiscountAmount.Should().Be(0m);
     }
@@ -409,18 +409,18 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = Cash(68_000m),
+            PaymentMethods = Cash(55_000m),
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
-        // TotalOrden = 100000 + 13000 = 113000
-        sale.TotalOrden.Should().Be(113_000m);
+        // TotalOrden = 100000 (IVA incluido)
+        sale.TotalOrden.Should().Be(100_000m);
         // PrepaidAmount = 20000 + 15000 + 10000 = 45000
         sale.PrepaidAmount.Should().Be(45_000m);
         // Saldo cobrado hoy
-        sale.Total.Should().Be(68_000m);         // 113000 − 45000
+        sale.Total.Should().Be(55_000m);         // 100000 − 45000
     }
 
     // ── 4. TotalProfit usa TotalOrden, NO el saldo parcial ───────────────────
@@ -449,20 +449,18 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = Cash(33_000m),
+            PaymentMethods = Cash(20_000m),
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
-        // TotalProfit = TotalOrden − TotalCost (el costo es 0 si no hay variant costo)
-        // TotalOrden = 113000, saldo hoy = 33000
-        // TotalProfit debe ser ≥ saldo (no calcular sobre saldo)
-        sale.TotalOrden.Should().Be(113_000m);
-        sale.Total.Should().Be(33_000m);          // saldo cobrado hoy
-        // TotalProfit basado en TotalOrden
-        sale.TotalProfit.Should().Be(113_000m - sale.TotalCost);
-        sale.TotalProfit.Should().BeGreaterThan(sale.Total);  // ganancia > saldo parcial
+        // TotalProfit = (TotalOrden − TaxAmount) − TotalCost
+        // TotalOrden = 100000, saldo hoy = 20000
+        sale.TotalOrden.Should().Be(100_000m);
+        sale.Total.Should().Be(20_000m);
+        sale.TotalProfit.Should().Be(100_000m - sale.TaxAmount - sale.TotalCost);
+        sale.TotalProfit.Should().BeGreaterThan(sale.Total);
     }
 
     // ── 5. SalePaymentMethods guardados correctamente ────────────────────────
@@ -706,7 +704,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = Cash(11_300m),
+            PaymentMethods = Cash(10_000m),
         });
 
         await ctx.Entry(order).ReloadAsync();
@@ -731,7 +729,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = Cash(11_300m),
+            PaymentMethods = Cash(10_000m),
         };
 
         // Primera factura OK
@@ -764,7 +762,7 @@ public class RegisterSaleFinancialTests
             BusinessId    = bizId,
             RepairOrderId = order.Id,
             Source        = "Repair",
-            PaymentMethods = [ new SalePaymentMethodDto { Method = "Card", Amount = 56_050m } ]
+            PaymentMethods = [ new SalePaymentMethodDto { Method = "Card", Amount = 45_000m } ]
         });
 
         var totalOrden    = GetTotalsField<decimal>(result, "TotalOrden");
@@ -772,9 +770,9 @@ public class RegisterSaleFinancialTests
         var total         = GetTotalsField<decimal>(result, "Total");
         var discount      = GetTotalsField<decimal>(result, "Discount");
 
-        totalOrden.Should().Be(96_050m);
+        totalOrden.Should().Be(85_000m);
         prepaidAmount.Should().Be(40_000m);
-        total.Should().Be(56_050m);
+        total.Should().Be(45_000m);
         discount.Should().Be(0m);
     }
 
@@ -793,7 +791,7 @@ public class RegisterSaleFinancialTests
         {
             BusinessId = bizId,
             Discount   = 5_000m,
-            PaymentMethods = Cash(50_850m),
+            PaymentMethods = Cash(45_000m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 50_000m, ItemType = "Product" } }
         });
 
@@ -819,7 +817,7 @@ public class RegisterSaleFinancialTests
             RepairOrderId = order.Id,
             Discount = 5_000m,
             CustomerEmail = "cliente@example.com",
-            PaymentMethods = Cash(32_743m),
+            PaymentMethods = Cash(42_250m),
             Items =
             {
                 new SaleItemRequestDto

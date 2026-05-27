@@ -34,6 +34,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 19. [Ventas — contacto repetido y email en factura](#19-ventas--contacto-repetido-y-email-en-factura)
 20. [UI — WhatsApp panel recogido por defecto](#20-ui--whatsapp-panel-recogido-por-defecto)
 21. [Dashboard — datos desde Sales + zona Costa Rica](#21-dashboard--datos-desde-sales--zona-costa-rica)
+22. [Clientes — editar contacto no persistía](#22-clientes--editar-contacto-no-persistía)
 
 ---
 
@@ -58,6 +59,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 | 15 | Ventas | Error `PK_Contacts` al facturar + email vacío en factura | ✅ |
 | 16 | UI | WhatsApp panel expandido al cargar (molesto) | ✅ |
 | 17 | Dashboard | Reparaciones = 0, fechas UTC, totales mal interpretados | ✅ |
+| 18 | Clientes | Editar nombre/teléfono no se guardaba | ✅ |
 
 ---
 
@@ -517,12 +519,120 @@ Documentados en [SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./SETUP_LOCAL_Y_CAMBIOS_MAY
 
 ---
 
+## 21. Dashboard — datos desde Sales + zona Costa Rica
+
+### Síntoma
+
+- Bloque **Reparaciones** en ganancia por fuente siempre en **0**.
+- Tabla «Ventas por reparación» vacía aunque existían facturas de órdenes.
+- Algunas ventas no aparecían en filtros por fecha; KPI «hoy» desfasado respecto a Costa Rica.
+- Montos percibidos ~13% más altos (en realidad `Sales.Total` incluye IVA; no debía recalcularse en dashboard).
+
+### Causa
+
+| Problema | Causa |
+|----------|--------|
+| Reparaciones = 0 | `GetProfitBySourceAsync` agrupaba por `Source == "Repair"`, pero al facturar `SalesController` fuerza `Source = "Manual"` aunque `RepairOrderId` sí se guarda. |
+| Ventas por reparación | El listado no exponía `RepairOrderId` / `Source`; el frontend no podía clasificar. |
+| Fechas | Filtros y «hoy» usaban `DateTime.UtcNow.Date` o ISO del navegador, no calendario **America/Costa_Rica**. |
+| Búsqueda | No incluía `CustomerPhone`. |
+
+### Fix
+
+| Archivo | Cambio |
+|---------|--------|
+| `Application/Common/CostaRicaTime.cs` | Utilidad TZ Costa Rica (`ToUtcStartOfDay`, `Today`, `ToLocalDate`). |
+| `API/Http/QueryParamParsing.cs` | `ParseCostaRicaDateRange(from, to)` → UTC inclusivo / fin exclusivo. |
+| `Infrastructure/Persistence/Repositories/DashboardRepository.cs` | KPI «hoy» y tendencia en CR; ganancia por fuente: **`RepairOrderId != null` → Repair**; lee `Total` y `TotalProfit` de `Sales`. |
+| `Infrastructure/Persistence/Repositories/SaleRepository.cs` | Filtro `ToExclusive`; búsqueda con teléfono; DTO con `RepairOrderId`, `Source`, `TaxAmount`, `TotalProfit`. |
+| `Application/DTOs/SalesListItemDto.cs`, `PendingOrderRowDto.cs` | Campos nuevos para UI. |
+| `API/Controllers/DashboardController.cs`, `SalesController.cs` | Rango de fechas CR. |
+| `mi-negociocr-frontend/.../dashboard.service.ts` | Envía `yyyy-MM-dd` sin convertir a ISO UTC del navegador. |
+| `mi-negociocr-frontend/.../dashboard.html` | Copy: totales = `Sales.Total` (con IVA), zona CR. |
+| `MiNegocioCR.Tests/Application/Common/CostaRicaTimeTests.cs` | Tests de conversión TZ. |
+
+### Verificación
+
+1. Facturar una orden de reparación → bloque **Reparaciones** > 0 en ganancia por fuente.
+2. Esa venta aparece en «Ventas por reparación».
+3. Filtro «hoy» coincide con medianoche–medianoche Costa Rica.
+4. `dotnet test` → 143 tests OK; `npm run build` frontend OK.
+
+---
+
+## 22. Clientes — editar contacto no persistía
+
+### Síntoma
+
+Al corregir el nombre (o teléfono/email) de un cliente en la pantalla **Clientes**, la UI podía mostrar éxito pero al recargar seguía el dato viejo. El nombre incorrecto seguía en órdenes y ventas vinculadas.
+
+### Causa
+
+| Problema | Causa |
+|----------|--------|
+| Endpoint equivocado | `CustomerContactsService.update()` llamaba a `POST /whatsapp/contacts/import`, que busca por **teléfono** e ignora el `id` del contacto. |
+| No persistía en BD | `UpdateContactUseCase` cargaba el contacto sin `.AsTracking()` con EF global `NoTracking` → `SaveChanges()` no aplicaba cambios (mismo bug que estados de orden / reset password). |
+
+Los nombres en órdenes y ventas vienen de la tabla `Contacts` vía `ContactId`; si el update no persiste, nada se refleja en ningún lado.
+
+### Fix
+
+| Archivo | Cambio |
+|---------|--------|
+| `mi-negociocr-frontend/.../customer-contacts.service.ts` | `update()` usa **`PUT /api/contacts/{id}?businessId=...`** con body `{ name, phone, email }`. |
+| `Application/UseCases/Contacts/UpdateContactUseCase.cs` | `.AsTracking()` al cargar el contacto antes de modificar. |
+| `Application/Contact/Contacts.cs` | `.AsTracking()` en `ImportContactsAsync` (import WhatsApp). |
+| `MiNegocioCR.Tests/UseCases/Contacts/UpdateContactUseCaseTests.cs` | Test con `NoTracking` global: verifica persistencia del nombre. |
+
+### Verificación
+
+1. **Clientes** → Editar → cambiar nombre → Guardar → recargar: nombre nuevo visible.
+2. Órdenes de reparación de ese cliente muestran el nombre actualizado (join con `Contacts`).
+3. `dotnet test --filter UpdateContactUseCaseTests` → OK.
+
+**Nota:** el modal **Gestionar orden** sigue mostrando el cliente solo lectura; la edición maestra es en **Clientes**.
+
+---
+
+## 23. Ventas — IVA incluido en precios (no sumar 13% extra)
+
+### Síntoma
+
+Los totales de venta y factura quedaban ~13% más altos que los precios del catálogo/POS. Ej.: 2 × ₡10,000 mostraba ₡25,538 en lugar de ₡22,600. La ganancia del dashboard incluía IVA como si fuera margen.
+
+### Causa
+
+El motor de ventas trataba el subtotal como **base neta** y **sumaba** IVA encima (`TotalOrden = Base + IVA`), pero los precios de catálogo y líneas ya traen IVA incluido (como indica el tooltip de margen en inventario).
+
+### Fix
+
+| Archivo | Cambio |
+|---------|--------|
+| `Application/Common/SaleDiscountCalculator.cs` | `ComputeTotals`: bruto − descuento = `TotalOrden`; `TaxAmount` **extraído** (`bruto ÷ (1+rate)`) |
+| `Application/UseCases/Sales/RegisterSaleUseCase.cs` | `TotalProfit = (TotalOrden − TaxAmount) − TotalCost` |
+| `MiNegocioCR.Tests/Application/Common/SaleDiscountCalculatorTests.cs` | Tests unitarios del nuevo cálculo |
+| `MiNegocioCR.Tests/UseCases/Sales/RegisterSaleFinancialTests.cs` | Expectativas numéricas actualizadas |
+| `mi-negociocr-frontend/.../manual-sale-totals.ts` | `computeSaleTotals` alineado vía `splitTaxInclusiveGross` |
+| `mi-negociocr-frontend/.../sales-manual.html` | Copy: subtotal con IVA incluido |
+| `mi-negociocr-frontend/.../sales-invoice-print.ts` | Preferir `totalOrden` del API; no duplicar IVA en legacy |
+
+**Ventas históricas en BD:** sin backfill (quedan con la fórmula anterior). Solo ventas nuevas usan IVA incluido.
+
+### Verificación
+
+1. POS: 1 × ₡11,300 @ 13% → Total ₡11,300, impuesto desglosado ≈ ₡1,300.
+2. POS: 2 × ₡10,000 → Total ₡22,600 (no ₡25,538).
+3. Facturar reparación con abonos: `prepaid ≤ TotalOrden`, saldo correcto.
+4. `dotnet test` → 150 tests OK; `npm run build` frontend OK.
+
+---
+
 ## 15. Pendiente / deploy
 
 Antes de producción, revisar [DEPLOY.md](./DEPLOY.md):
 
-- [ ] **Commit + push API** (`master`) — incluye fix contacto reparación (§18) si aún está local
-- [ ] **Commit + push frontend** (`main`) — WhatsApp recogido (§20) si aún está local
+- [ ] **Commit + push API** (`master`) — dashboard, contactos, reparaciones sin IVA en orden (si local)
+- [ ] **Commit + push frontend** (`main`) — clientes PUT, dashboard, calendario filtros (si local)
 - [ ] Variables Railway (JWT, Resend, Supabase, Admin, `App__PublicUrl`, etc.)
 - [ ] `dotnet ef database update` en Supabase prod (puerto **5432**)
 - [ ] `Scripts/verify-schema.sql` — columnas de ventas + historial de 4 migraciones mayo 2026
@@ -540,7 +650,7 @@ cd ../mi-negociocr-frontend
 npm run build
 ```
 
-**Esperado:** 140 tests API, build frontend sin errores TypeScript (warnings de budget CSS son aceptables).
+**Esperado:** 150 tests API, build frontend sin errores TypeScript (warnings de budget CSS son aceptables).
 
 ### Ubicación de esta documentación
 
@@ -572,4 +682,4 @@ Cómo confirmar que quedó resuelto.
 
 ---
 
-*Última actualización: 27 mayo 2026 — deploy prep + contactos + WhatsApp recogido*
+*Última actualización: 27 mayo 2026 — IVA incluido en ventas*

@@ -74,6 +74,10 @@ public static class SaleDiscountCalculator
         return (kind, inputValue, amount);
     }
 
+    /// <summary>
+    /// Precios de línea con IVA incluido: descuento sobre bruto; impuesto extraído (no sumado).
+    /// <paramref name="subtotal"/> = Σ precios con IVA; <see cref="TotalOrden"/> = bruto − descuento.
+    /// </summary>
     public static (decimal TaxAmount, decimal TotalOrden) ComputeTotals(
         decimal subtotal,
         decimal discountAmount,
@@ -82,10 +86,13 @@ public static class SaleDiscountCalculator
         if (taxRatePercent < 0)
             throw new ArgumentException("Tax rate cannot be negative.", nameof(taxRatePercent));
 
-        var taxableBase = subtotal - discountAmount;
-        var taxAmount = Math.Round(
-            taxableBase * (taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
-        var totalOrden = taxableBase + taxAmount;
-        return (taxAmount, totalOrden);
+        var grossAfterDiscount = subtotal - discountAmount;
+        if (taxRatePercent <= 0m)
+            return (0m, grossAfterDiscount);
+
+        var netBase = Math.Round(
+            grossAfterDiscount / (1m + taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
+        var taxAmount = grossAfterDiscount - netBase;
+        return (taxAmount, grossAfterDiscount);
     }
 }
