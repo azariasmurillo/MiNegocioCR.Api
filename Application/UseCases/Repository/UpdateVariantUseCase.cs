@@ -1,5 +1,6 @@
 using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
 
@@ -8,10 +9,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
     public class UpdateVariantUseCase : IUpdateVariantUseCase
     {
         private readonly IVariantRepository _variantRepository;
+        private readonly IBusinessRepository _businessRepository;
 
-        public UpdateVariantUseCase(IVariantRepository variantRepository)
+        public UpdateVariantUseCase(IVariantRepository variantRepository, IBusinessRepository businessRepository)
         {
             _variantRepository = variantRepository;
+            _businessRepository = businessRepository;
         }
 
         public async Task ExecuteAsync(Guid variantId, UpdateVariantRequestDto request)
@@ -53,10 +56,19 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 variant.ProfitMargin = request.ProfitMargin;
             }
 
+            var business = await _businessRepository.GetByIdAsync(request.BusinessId);
+            if (business == null)
+                throw new NotFoundException("Business", "Business not found.");
+
+            var taxRate = business.TaxRatePercent;
+            if (taxRate < 0)
+                throw new ArgumentException("Business tax rate cannot be negative.");
+
             variant.Price = CatalogVariantPriceResolver.ResolvePersistedPrice(
                 request.SetPriceManually,
                 variant.CostPrice,
                 variant.ProfitMargin,
+                taxRate,
                 request.Price);
 
             if (variant.Price < 0)

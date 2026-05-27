@@ -11,7 +11,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         /// <summary>
         /// Si es true, se guarda <see cref="Price"/> tal cual.
         /// Si es false, costo &gt; 0 y margen de variante no nulo tras aplicar <see cref="SetProfitMargin"/>:
-        /// precio = costo * (1 + margen/100).
+        /// precio = costo + ganancia (margen %) + IVA % del negocio.
         /// </summary>
         public bool SetPriceManually { get; set; }
 

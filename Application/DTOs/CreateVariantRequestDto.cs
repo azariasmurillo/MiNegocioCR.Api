@@ -11,7 +11,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         /// <summary>
         /// Si es true, se guarda <see cref="Price"/> tal cual.
         /// Si es false y <see cref="CostPrice"/> &gt; 0 y <see cref="ProfitMargin"/> tiene valor,
-        /// <c>Price = CostPrice * (1 + ProfitMargin/100)</c>.
+        /// precio = costo + ganancia (margen %) + IVA % del negocio.
         /// </summary>
         public bool SetPriceManually { get; set; }
 

@@ -1,5 +1,6 @@
 using FluentAssertions;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.UseCases.Repository;
 using MiNegocioCR.Api.Domain.Entities;
@@ -17,6 +18,7 @@ public class CreateVariantUseCaseTests
     private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
     private readonly Mock<ICatalogOptionValueRepository> _optionValueRepositoryMock;
     private readonly Mock<ICatalogVariantOptionValueRepository> _variantOptionValueRepositoryMock;
+    private readonly Mock<IBusinessRepository> _businessRepositoryMock;
     private readonly CreateVariantUseCase _sut;
 
     public CreateVariantUseCaseTests()
@@ -26,6 +28,10 @@ public class CreateVariantUseCaseTests
         _catalogRepositoryMock = new Mock<ICatalogRepository>();
         _optionValueRepositoryMock = new Mock<ICatalogOptionValueRepository>();
         _variantOptionValueRepositoryMock = new Mock<ICatalogVariantOptionValueRepository>();
+        _businessRepositoryMock = new Mock<IBusinessRepository>();
+        _businessRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync(new MiNegocioCR.Api.Domain.Entities.Business { Id = Guid.NewGuid(), TaxRatePercent = 13m });
         _variantOptionValueRepositoryMock
             .Setup(x => x.ExistsVariantWithSameOptionValueCombinationAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyList<Guid>>()))
             .ReturnsAsync(false);
@@ -37,7 +43,8 @@ public class CreateVariantUseCaseTests
             _inventoryRepositoryMock.Object,
             _catalogRepositoryMock.Object,
             _optionValueRepositoryMock.Object,
-            _variantOptionValueRepositoryMock.Object);
+            _variantOptionValueRepositoryMock.Object,
+            _businessRepositoryMock.Object);
     }
 
     [Fact]
@@ -67,7 +74,7 @@ public class CreateVariantUseCaseTests
 
         _variantRepositoryMock.Verify(
             x => x.AddVariantAsync(It.Is<CatalogVariant>(v =>
-                v.Price == 125m &&
+                v.Price == 145m &&
                 v.CostPrice == 100m &&
                 v.ProfitMargin == 25m)),
             Times.Once);
@@ -100,7 +107,7 @@ public class CreateVariantUseCaseTests
 
         _variantRepositoryMock.Verify(
             x => x.AddVariantAsync(It.Is<CatalogVariant>(v =>
-                v.Price == 12590m)),
+                v.Price == 14230m)),
             Times.Once);
     }
 

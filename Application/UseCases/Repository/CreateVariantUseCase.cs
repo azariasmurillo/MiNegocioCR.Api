@@ -1,5 +1,6 @@
 using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
+using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain;
 using MiNegocioCR.Api.Domain.Entities;
@@ -15,19 +16,22 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         private readonly ICatalogRepository _catalogRepository;
         private readonly ICatalogOptionValueRepository _optionValueRepository;
         private readonly ICatalogVariantOptionValueRepository _variantOptionValueRepository;
+        private readonly IBusinessRepository _businessRepository;
 
         public CreateVariantUseCase(
             IVariantRepository variantRepository,
             IInventoryRepository inventoryRepository,
             ICatalogRepository catalogRepository,
             ICatalogOptionValueRepository optionValueRepository,
-            ICatalogVariantOptionValueRepository variantOptionValueRepository)
+            ICatalogVariantOptionValueRepository variantOptionValueRepository,
+            IBusinessRepository businessRepository)
         {
             _variantRepository = variantRepository;
             _inventoryRepository = inventoryRepository;
             _catalogRepository = catalogRepository;
             _optionValueRepository = optionValueRepository;
             _variantOptionValueRepository = variantOptionValueRepository;
+            _businessRepository = businessRepository;
         }
 
         public async Task<Guid> ExecuteAsync(CreateVariantRequestDto request)
@@ -90,10 +94,19 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     nameof(request.SKU));
             }
 
+            var business = await _businessRepository.GetByIdAsync(catalogItem.BusinessId);
+            if (business == null)
+                throw new NotFoundException("Business", "Business not found.");
+
+            var taxRate = business.TaxRatePercent;
+            if (taxRate < 0)
+                throw new ArgumentException("Business tax rate cannot be negative.");
+
             var resolvedPrice = CatalogVariantPriceResolver.ResolvePersistedPrice(
                 request.SetPriceManually,
                 request.CostPrice,
                 request.ProfitMargin,
+                taxRate,
                 request.Price);
             if (resolvedPrice < 0)
                 throw new ArgumentException("Resolved price cannot be negative.", nameof(request));
