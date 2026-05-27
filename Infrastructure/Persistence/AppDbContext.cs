@@ -254,6 +254,12 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.Property(x => x.DiscountAmount)
                     .HasColumnName("Discount")
                     .HasColumnType("numeric(18,2)");
+                entity.Property(x => x.DiscountKind)
+                    .HasColumnType("smallint")
+                    .HasDefaultValue((byte)0);
+                entity.Property(x => x.DiscountInputValue)
+                    .HasColumnType("numeric(18,2)")
+                    .HasDefaultValue(0m);
                 entity.Property(x => x.TotalOrden)
                     .HasColumnType("numeric(18,2)")
                     .HasDefaultValue(0m);

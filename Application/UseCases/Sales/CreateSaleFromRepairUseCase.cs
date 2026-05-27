@@ -29,6 +29,9 @@ public class CreateSaleFromRepairUseCase : ICreateSaleFromRepairUseCase
             RepairOrderId = repairOrderId,
             Source = "FromRepair",
             PaymentMethods = request.PaymentMethods ?? new(),
+            DiscountKind = request.DiscountKind,
+            DiscountValue = request.DiscountValue,
+            Discount = request.Discount,
         };
 
         return await _registerSaleUseCase.ExecuteAsync(saleRequest);

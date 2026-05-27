@@ -55,7 +55,11 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
             {
                 sale.Subtotal,
                 Discount = sale.DiscountAmount,
+                sale.DiscountAmount,
+                DiscountKind = ((Domain.Enums.SaleDiscountKind)sale.DiscountKind).ToString(),
+                DiscountInputValue = sale.DiscountInputValue,
                 Tax = sale.TaxAmount,
+                sale.TaxAmount,
                 TotalOrden = sale.TotalOrden,
                 PrepaidAmount = sale.PrepaidAmount,
                 Total = sale.Total

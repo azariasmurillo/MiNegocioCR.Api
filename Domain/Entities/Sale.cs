@@ -16,6 +16,12 @@ namespace MiNegocioCR.Api.Domain.Entities
         /// <summary>Descuento REAL aplicado (colones), nunca incluye abonos/prepagos.</summary>
         public decimal DiscountAmount { get; set; }
 
+        /// <summary>0=None, 1=Percent, 2=FixedAmount — metadata de cómo se ingresó el descuento.</summary>
+        public byte DiscountKind { get; set; }
+
+        /// <summary>Valor ingresado (10 para 10%, o 5000 para ₡5000).</summary>
+        public decimal DiscountInputValue { get; set; }
+
         /// <summary>Impuesto (IVA) calculado sobre (Subtotal − DiscountAmount).</summary>
         public decimal TaxAmount { get; set; }
 

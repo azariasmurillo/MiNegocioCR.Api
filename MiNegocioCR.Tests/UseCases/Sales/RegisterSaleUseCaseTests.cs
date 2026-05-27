@@ -78,6 +78,9 @@ public class RegisterSaleUseCaseTests
         return id is Guid g ? g : Guid.Empty;
     }
 
+    private static List<SalePaymentMethodDto> Cash(decimal amount) =>
+        [new SalePaymentMethodDto { Method = "Cash", Amount = amount }];
+
     [Fact]
     public async Task ExecuteAsync_WithoutContactFields_CreatesSaleWithoutContact()
     {
@@ -93,6 +96,7 @@ public class RegisterSaleUseCaseTests
         var request = new CreateSaleRequestDto
         {
             BusinessId = businessId,
+            PaymentMethods = Cash(100m),
             Items =
             {
                 new SaleItemRequestDto
@@ -132,6 +136,7 @@ public class RegisterSaleUseCaseTests
             CustomerPhone = "50670001122",
             CustomerName = "Ana",
             CustomerEmail = "a@a.com",
+            PaymentMethods = Cash(100m),
             Items =
             {
                 new SaleItemRequestDto
@@ -183,6 +188,7 @@ public class RegisterSaleUseCaseTests
             CustomerPhone = "88889999",
             CustomerName = "Nuevo",
             CustomerEmail = "new@x.com",
+            PaymentMethods = Cash(100m),
             Items =
             {
                 new SaleItemRequestDto
@@ -219,6 +225,7 @@ public class RegisterSaleUseCaseTests
             BusinessId = businessId,
             CustomerName = "Sólo nombre",
             CustomerEmail = "m@e.com",
+            PaymentMethods = Cash(100m),
             Items =
             {
                 new SaleItemRequestDto

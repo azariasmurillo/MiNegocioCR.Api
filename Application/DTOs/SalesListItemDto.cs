@@ -10,5 +10,9 @@ public class SalesListItemDto
     public decimal Total { get; set; }
     public decimal TotalOrden { get; set; }
     public decimal PrepaidAmount { get; set; }
+    public decimal Subtotal { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public string DiscountKind { get; set; } = "None";
+    public decimal DiscountInputValue { get; set; }
     public List<SalePaymentMethodDto> PaymentMethods { get; set; } = new();
 }

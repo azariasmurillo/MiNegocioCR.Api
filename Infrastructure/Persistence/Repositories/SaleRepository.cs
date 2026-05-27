@@ -116,6 +116,10 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                     Total = x.Total,
                     TotalOrden = x.TotalOrden,
                     PrepaidAmount = x.PrepaidAmount,
+                    Subtotal = x.Subtotal,
+                    DiscountAmount = x.DiscountAmount,
+                    DiscountKind = ((Domain.Enums.SaleDiscountKind)x.DiscountKind).ToString(),
+                    DiscountInputValue = x.DiscountInputValue,
                     PaymentMethods = x.PaymentMethods
                         .Select(pm => new SalePaymentMethodDto
                         {

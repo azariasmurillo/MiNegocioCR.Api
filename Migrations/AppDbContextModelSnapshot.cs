@@ -868,6 +868,16 @@ namespace MiNegocioCR.Api.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("Discount");
 
+                    b.Property<byte>("DiscountKind")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((byte)0);
+
+                    b.Property<decimal>("DiscountInputValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<string>("HaciendaConsecutive")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");

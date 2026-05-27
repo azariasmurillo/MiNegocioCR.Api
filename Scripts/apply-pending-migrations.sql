@@ -61,4 +61,21 @@ WHERE NOT EXISTS (
   SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260522120000_RefactorPaymentsAndSalePaymentMethods'
 );
 
+ALTER TABLE "RepairOrders" DROP COLUMN IF EXISTS "DiscountPercent";
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260526120000_RemoveRepairOrderDiscountPercent', '8.0.4'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260526120000_RemoveRepairOrderDiscountPercent'
+);
+
+ALTER TABLE "Sales" ADD COLUMN IF NOT EXISTS "DiscountKind" smallint NOT NULL DEFAULT 0;
+ALTER TABLE "Sales" ADD COLUMN IF NOT EXISTS "DiscountInputValue" numeric(18,2) NOT NULL DEFAULT 0;
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260526130000_AddSaleDiscountMetadata', '8.0.4'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260526130000_AddSaleDiscountMetadata'
+);
+
 COMMIT;

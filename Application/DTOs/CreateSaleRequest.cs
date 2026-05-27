@@ -9,8 +9,14 @@ namespace MiNegocioCR.Api.Application.DTOs
         public string? CustomerName { get; set; }
         public string? CustomerEmail { get; set; }
 
-        /// <summary>Descuento en colones para ventas directas (no aplica cuando hay RepairOrderId).</summary>
+        /// <summary>Descuento en colones (legacy / fallback cuando no hay DiscountKind).</summary>
         public decimal Discount { get; set; } = 0m;
+
+        /// <summary>None | Percent | FixedAmount</summary>
+        public string DiscountKind { get; set; } = "None";
+
+        /// <summary>Valor ingresado: porcentaje o monto según DiscountKind.</summary>
+        public decimal DiscountValue { get; set; } = 0m;
 
         /// <summary>
         /// Métodos de pago con monto real. Reemplaza los booleans PayCash/etc.

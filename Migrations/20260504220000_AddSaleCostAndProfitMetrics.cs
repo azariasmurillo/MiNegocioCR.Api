@@ -1,3 +1,5 @@
+using MiNegocioCR.Api.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -5,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MiNegocioCR.Api.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260504220000_AddSaleCostAndProfitMetrics")]
     public class AddSaleCostAndProfitMetrics : Migration
     {
         /// <inheritdoc />

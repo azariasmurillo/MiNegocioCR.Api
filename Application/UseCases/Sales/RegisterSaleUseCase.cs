@@ -37,6 +37,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.Discount < 0) throw new ArgumentException("Discount cannot be negative.", nameof(request.Discount));
+            if (request.DiscountValue < 0) throw new ArgumentException("Discount value cannot be negative.", nameof(request.DiscountValue));
 
             var businessId = request.BusinessId;
 
@@ -207,36 +208,36 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     }
                 }
 
-                // ── Calcular totales ───────────────────────────────────────
+                // ── Calcular totales (unificado: directo y reparación) ─────
                 sale.Subtotal = sale.Items.Sum(x => x.UnitPrice * x.Quantity);
+
+                var (discountKind, discountInput, discountAmount) = SaleDiscountCalculator.Resolve(
+                    sale.Subtotal,
+                    request.DiscountKind,
+                    request.DiscountValue,
+                    request.Discount);
+
+                var (taxAmount, totalOrden) = SaleDiscountCalculator.ComputeTotals(
+                    sale.Subtotal, discountAmount, taxRate);
+
+                sale.DiscountAmount = discountAmount;
+                sale.DiscountKind = (byte)discountKind;
+                sale.DiscountInputValue = discountInput;
+                sale.TaxAmount = taxAmount;
+                sale.TotalOrden = totalOrden;
 
                 if (repairOrder != null)
                 {
-                    var discountAmount = 0m;
-
-                    var taxableBase = sale.Subtotal - discountAmount;
-                    var taxAmount = Math.Round(
-                        taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
-
-                    var totalOrden = taxableBase + taxAmount;
-
-                    // Prepagos: abonos registrados ANTES de esta factura.
                     var payments = await _paymentService.GetPaymentsByRepairOrderAsync(businessId, repairOrder.Id);
                     var prepaidAmount = payments.Sum(p => p.Amount);
 
                     if (prepaidAmount > totalOrden)
                         throw new InvalidOperationException("La suma de abonos supera el total de la orden.");
-                    if (prepaidAmount >= totalOrden)
-                        throw new InvalidOperationException(
-                            "No se puede facturar: la orden ya está pagada en su totalidad (no hay saldo pendiente).");
 
-                    var saldoPendiente = totalOrden - prepaidAmount;
+                    var saldoPendiente = Math.Max(0m, totalOrden - prepaidAmount);
 
-                    sale.DiscountAmount = discountAmount;   // descuento REAL, sin mezclar abonos
-                    sale.TaxAmount = taxAmount;
-                    sale.TotalOrden = totalOrden;           // total bruto de la orden
-                    sale.PrepaidAmount = prepaidAmount;     // abonos previos informados en factura
-                    sale.Total = saldoPendiente;            // lo que se cobra hoy
+                    sale.PrepaidAmount = prepaidAmount;
+                    sale.Total = saldoPendiente;
 
                     repairOrder.IsInvoiced = true;
                     repairOrder.InvoicedAt = DateTime.UtcNow;
@@ -246,17 +247,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 }
                 else
                 {
-                    var appliedDiscount = Math.Min(request.Discount, sale.Subtotal);
-                    var taxableBase = sale.Subtotal - appliedDiscount;
-                    var taxAmount = Math.Round(
-                        taxableBase * (taxRate / 100m), 2, MidpointRounding.AwayFromZero);
-                    var total = taxableBase + taxAmount;
-
-                    sale.DiscountAmount = appliedDiscount;
-                    sale.TaxAmount = taxAmount;
-                    sale.TotalOrden = total;
                     sale.PrepaidAmount = 0m;
-                    sale.Total = total;
+                    sale.Total = totalOrden;
                 }
 
                 sale.TotalAmount = sale.Total;
@@ -276,6 +268,11 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                         Amount = pm.Amount
                     });
                 }
+
+                var paidToday = sale.PaymentMethods.Sum(pm => pm.Amount);
+                if (sale.Total > 0m && paidToday <= 0m)
+                    throw new ArgumentException(
+                        "Se requiere al menos un método de pago cuando el total a cobrar es mayor a cero.");
 
                 // ── Snapshot de costos y métricas ─────────────────────────
                 await ApplyCostSnapshotAndTotalsAsync(sale);
@@ -323,6 +320,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 {
                     sale.Subtotal,
                     Discount = sale.DiscountAmount,
+                    DiscountKind = ((SaleDiscountKind)sale.DiscountKind).ToString(),
+                    DiscountInputValue = sale.DiscountInputValue,
                     Tax = sale.TaxAmount,
                     TotalOrden = sale.TotalOrden,
                     PrepaidAmount = sale.PrepaidAmount,

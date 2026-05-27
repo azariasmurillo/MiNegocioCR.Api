@@ -143,6 +143,9 @@ public class RegisterSaleFinancialTests
         return (T)Convert.ChangeType(value!, typeof(T));
     }
 
+    private static List<SalePaymentMethodDto> Cash(decimal amount) =>
+        [new SalePaymentMethodDto { Method = "Cash", Amount = amount }];
+
     // ── 1. VENTA MANUAL — cálculo correcto sin prepagos ──────────────────────
 
     [Fact]
@@ -157,6 +160,7 @@ public class RegisterSaleFinancialTests
         var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
         {
             BusinessId = bizId,
+            PaymentMethods = Cash(22_600m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 2, UnitPrice = 10_000m, ItemType = "Product" } }
         });
 
@@ -178,7 +182,7 @@ public class RegisterSaleFinancialTests
     }
 
     [Fact]
-    public async Task ManualSale_WithDiscount_ReducesTaxableBase()
+    public async Task ManualSale_LegacyDiscountColones_StillWorks()
     {
         await using var ctx = CreateContext();
         var bizId     = Guid.NewGuid();
@@ -190,21 +194,97 @@ public class RegisterSaleFinancialTests
         {
             BusinessId = bizId,
             Discount   = 10_000m,
+            PaymentMethods = Cash(101_700m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 100_000m, ItemType = "Product" } }
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
-        // subtotal = 100000, discount = 10000, taxable = 90000
+        sale.DiscountAmount.Should().Be(10_000m);
+        sale.DiscountKind.Should().Be((byte)SaleDiscountKind.FixedAmount);
+        sale.TotalOrden.Should().Be(101_700m);
+    }
+
+    [Fact]
+    public async Task ManualSale_WithPercentDiscount_ReducesTaxableBase()
+    {
+        await using var ctx = CreateContext();
+        var bizId     = Guid.NewGuid();
+        var variantId = SeedVariant(ctx, bizId, price: 100_000m);
+        SeedBusiness(ctx, bizId, taxRate: 13m);
+        await ctx.SaveChangesAsync();
+
+        var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
+        {
+            BusinessId    = bizId,
+            DiscountKind  = "Percent",
+            DiscountValue = 10m,
+            PaymentMethods = Cash(101_700m),
+            Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 100_000m, ItemType = "Product" } }
+        });
+
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
         sale.Subtotal.Should().Be(100_000m);
         sale.DiscountAmount.Should().Be(10_000m);
-        // tax = 90000 × 13% = 11700
+        sale.DiscountKind.Should().Be((byte)SaleDiscountKind.Percent);
+        sale.DiscountInputValue.Should().Be(10m);
         sale.TaxAmount.Should().Be(11_700m);
         sale.TotalOrden.Should().Be(101_700m);
-        sale.Total.Should().Be(101_700m);
-        // CLAVE: prepagos NO son descuentos
-        sale.PrepaidAmount.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task ManualSale_WithFixedAmountDiscount_ReducesTaxableBase()
+    {
+        await using var ctx = CreateContext();
+        var bizId     = Guid.NewGuid();
+        var variantId = SeedVariant(ctx, bizId, price: 50_000m);
+        SeedBusiness(ctx, bizId, taxRate: 13m);
+        await ctx.SaveChangesAsync();
+
+        var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
+        {
+            BusinessId    = bizId,
+            DiscountKind  = "FixedAmount",
+            DiscountValue = 5_000m,
+            PaymentMethods = Cash(50_850m),
+            Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 50_000m, ItemType = "Product" } }
+        });
+
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
+        sale.DiscountAmount.Should().Be(5_000m);
+        sale.DiscountKind.Should().Be((byte)SaleDiscountKind.FixedAmount);
+        sale.TaxAmount.Should().Be(5_850m);      // 45000 × 13%
+        sale.TotalOrden.Should().Be(50_850m);
+    }
+
+    [Fact]
+    public async Task ManualSale_ZeroTotal_AllowedWithoutPayments()
+    {
+        await using var ctx = CreateContext();
+        var bizId     = Guid.NewGuid();
+        var variantId = SeedVariant(ctx, bizId, price: 10_000m);
+        SeedBusiness(ctx, bizId, taxRate: 0m);
+        await ctx.SaveChangesAsync();
+
+        var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
+        {
+            BusinessId    = bizId,
+            DiscountKind  = "FixedAmount",
+            DiscountValue = 10_000m,
+            PaymentMethods = [],
+            Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 10_000m, ItemType = "Product" } }
+        });
+
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
+        sale.Total.Should().Be(0m);
+        sale.DiscountAmount.Should().Be(10_000m);
     }
 
     // ── 2. VENTA DESDE REPARACIÓN — sin prepagos ─────────────────────────────
@@ -222,7 +302,8 @@ public class RegisterSaleFinancialTests
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = Cash(96_050m),
         });
 
         var saleId = GetSaleId(result);
@@ -237,30 +318,31 @@ public class RegisterSaleFinancialTests
     }
 
     [Fact]
-    public async Task RepairSale_NoOrderDiscount_DiscountAmountIsZero()
+    public async Task RepairSale_WithPercentDiscount_AppliesAtInvoice()
     {
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
         SeedBusiness(ctx, bizId, taxRate: 13m);
-        var order = SeedRepairOrder(ctx, bizId, itemPrice: 85_000m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 100_000m);
         await ctx.SaveChangesAsync();
 
         var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            DiscountKind  = "Percent",
+            DiscountValue = 10m,
+            PaymentMethods = Cash(101_700m),
         });
 
         var saleId = GetSaleId(result);
         var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
 
-        sale.Subtotal.Should().Be(85_000m);
-        sale.DiscountAmount.Should().Be(0m);
-        sale.TaxAmount.Should().Be(11_050m);
-        sale.TotalOrden.Should().Be(96_050m);
-        sale.PrepaidAmount.Should().Be(0m);
-        sale.Total.Should().Be(96_050m);
+        sale.DiscountAmount.Should().Be(10_000m);
+        sale.TaxAmount.Should().Be(11_700m);
+        sale.TotalOrden.Should().Be(101_700m);
+        sale.Total.Should().Be(101_700m);
     }
 
     // ── 3. VENTA DESDE REPARACIÓN — con prepagos parciales ───────────────────
@@ -289,7 +371,8 @@ public class RegisterSaleFinancialTests
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = Cash(66_050m),
         });
 
         var saleId = GetSaleId(result);
@@ -325,7 +408,8 @@ public class RegisterSaleFinancialTests
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = Cash(68_000m),
         });
 
         var saleId = GetSaleId(result);
@@ -364,7 +448,8 @@ public class RegisterSaleFinancialTests
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = Cash(33_000m),
         });
 
         var saleId = GetSaleId(result);
@@ -486,7 +571,7 @@ public class RegisterSaleFinancialTests
     }
 
     [Fact]
-    public async Task ManualSale_NullPaymentMethods_DoesNotThrow()
+    public async Task ManualSale_PositiveTotalWithoutPayment_ThrowsArgumentException()
     {
         await using var ctx = CreateContext();
         var bizId     = Guid.NewGuid();
@@ -494,15 +579,15 @@ public class RegisterSaleFinancialTests
         SeedBusiness(ctx, bizId);
         await ctx.SaveChangesAsync();
 
-        // PaymentMethods = null (null-safe foreach)
-        var result = await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
+        var act = () => CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
         {
             BusinessId     = bizId,
             PaymentMethods = null!,
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 1m, ItemType = "Product" } }
         });
 
-        GetSaleId(result).Should().NotBeEmpty();
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*método de pago*");
     }
 
     // ── 6. VALIDACIONES DE ESTADO DE REPARACIÓN ──────────────────────────────
@@ -548,30 +633,34 @@ public class RegisterSaleFinancialTests
     }
 
     [Fact]
-    public async Task RepairSale_FullyPaidOrder_ThrowsInvalidOperation()
+    public async Task RepairSale_FullyPrepaid_ZeroSaldo_AllowedWithoutPayments()
     {
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
-        SeedBusiness(ctx, bizId, taxRate: 0m);  // sin IVA para simplificar
+        SeedBusiness(ctx, bizId, taxRate: 0m);
         var order = SeedRepairOrder(ctx, bizId, itemPrice: 50_000m);
         await ctx.SaveChangesAsync();
 
-        // El cliente ya pagó el 100% de la orden
         var fullPayment = new Payment
         {
             Id = Guid.NewGuid(), BusinessId = bizId, RepairOrderId = order.Id,
             Amount = 50_000m, Method = PaymentMethod.Cash, CreatedAt = DateTime.UtcNow
         };
 
-        var act = () => CreateSut(ctx, [fullPayment]).ExecuteAsync(new CreateSaleRequestDto
+        var result = await CreateSut(ctx, [fullPayment]).ExecuteAsync(new CreateSaleRequestDto
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = []
         });
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*pagada*");
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
+        sale.Total.Should().Be(0m);
+        sale.PrepaidAmount.Should().Be(50_000m);
+        sale.TotalOrden.Should().Be(50_000m);
     }
 
     [Fact]
@@ -616,7 +705,8 @@ public class RegisterSaleFinancialTests
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = Cash(11_300m),
         });
 
         await ctx.Entry(order).ReloadAsync();
@@ -636,7 +726,13 @@ public class RegisterSaleFinancialTests
         await ctx.SaveChangesAsync();
 
         var sut = CreateSut(ctx);
-        var req = new CreateSaleRequestDto { BusinessId = bizId, RepairOrderId = order.Id, Source = "Repair" };
+        var req = new CreateSaleRequestDto
+        {
+            BusinessId    = bizId,
+            RepairOrderId = order.Id,
+            Source        = "Repair",
+            PaymentMethods = Cash(11_300m),
+        };
 
         // Primera factura OK
         await sut.ExecuteAsync(req);
@@ -697,6 +793,7 @@ public class RegisterSaleFinancialTests
         {
             BusinessId = bizId,
             Discount   = 5_000m,
+            PaymentMethods = Cash(50_850m),
             Items = { new SaleItemRequestDto { CatalogVariantId = variantId, Quantity = 1, UnitPrice = 50_000m, ItemType = "Product" } }
         });
 

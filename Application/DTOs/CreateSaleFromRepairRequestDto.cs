@@ -6,7 +6,15 @@ public class CreateSaleFromRepairRequestDto
 
     /// <summary>
     /// Métodos de pago con monto real elegidos al facturar el saldo pendiente.
-    /// Suma de Amount debe ser >= SaldoPendiente de la orden.
     /// </summary>
     public List<SalePaymentMethodDto> PaymentMethods { get; set; } = new();
+
+    /// <summary>None | Percent | FixedAmount</summary>
+    public string DiscountKind { get; set; } = "None";
+
+    /// <summary>Valor ingresado (% o colones según DiscountKind).</summary>
+    public decimal DiscountValue { get; set; } = 0m;
+
+    /// <summary>Monto en colones (legacy / fallback).</summary>
+    public decimal Discount { get; set; } = 0m;
 }
