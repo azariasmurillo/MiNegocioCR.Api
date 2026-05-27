@@ -20,6 +20,7 @@ namespace MiNegocioCR.Api.Application.Contact
             foreach (var c in contacts)
             {
                 var existing = await _context.Contacts
+                    .AsTracking()
                     .FirstOrDefaultAsync(x =>
                         x.BusinessId == businessId &&
                         x.Phone == c.Phone);

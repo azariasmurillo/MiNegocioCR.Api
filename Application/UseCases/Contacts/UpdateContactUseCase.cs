@@ -26,6 +26,7 @@ public class UpdateContactUseCase : IUpdateContactUseCase
         var normalizedPhone = request.Phone.Trim();
 
         var contact = await _context.Contacts
+            .AsTracking()
             .FirstOrDefaultAsync(c => c.BusinessId == businessId && c.Id == id && !c.IsDeleted);
 
         if (contact == null)
