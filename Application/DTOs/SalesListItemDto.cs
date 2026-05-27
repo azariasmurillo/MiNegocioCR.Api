@@ -7,6 +7,10 @@ public class SalesListItemDto
     public DateTime CreatedAt { get; set; }
     public string? CustomerName { get; set; }
     public string? CustomerPhone { get; set; }
+    public Guid? RepairOrderId { get; set; }
+    public string Source { get; set; } = "Manual";
+    public decimal TaxAmount { get; set; }
+    public decimal TotalProfit { get; set; }
     public decimal Total { get; set; }
     public decimal TotalOrden { get; set; }
     public decimal PrepaidAmount { get; set; }

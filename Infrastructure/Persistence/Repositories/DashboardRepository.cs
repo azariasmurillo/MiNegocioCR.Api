@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Entities;
@@ -20,17 +21,19 @@ public class DashboardRepository : IDashboardRepository
         _ = from;
         _ = to;
 
-        var startToday = DateTime.UtcNow.Date;
-        var endToday = startToday.AddDays(1);
+        var startToday = CostaRicaTime.ToUtcStartOfDay(CostaRicaTime.Today);
+        var endToday = CostaRicaTime.ToUtcEndExclusive(CostaRicaTime.Today);
 
         var salesToday = _context.Sales
             .AsNoTracking()
-            .Where(x => x.BusinessId == businessId && x.CreatedAt >= startToday && x.CreatedAt < endToday);
+            .Where(x => x.BusinessId == businessId
+                        && x.CreatedAt >= startToday
+                        && x.CreatedAt < endToday);
 
         var salesTodayCount = await salesToday.CountAsync();
         var ingresosHoy = await salesToday
             .Select(x => (decimal?)(x.Total > 0 ? x.Total : x.TotalAmount))
-            .SumAsync() ?? 0m;  // TotalAmount = fallback para registros previos al refactor
+            .SumAsync() ?? 0m;
 
         var gananciaHoy = await salesToday
             .Select(x => (decimal?)x.TotalProfit)
@@ -57,56 +60,76 @@ public class DashboardRepository : IDashboardRepository
         };
     }
 
-    public async Task<List<SalesTrendPointDto>> GetSalesTrendAsync(Guid businessId, DateTime? from, DateTime? to, string groupBy)
+    public async Task<List<SalesTrendPointDto>> GetSalesTrendAsync(
+        Guid businessId,
+        DateTime? from,
+        DateTime? toExclusive,
+        string groupBy)
     {
         var salesQuery = _context.Sales
             .AsNoTracking()
             .Where(x => x.BusinessId == businessId);
 
         if (from.HasValue)
-            salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value.Date);
+            salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value);
 
-        if (to.HasValue)
-            salesQuery = salesQuery.Where(x => x.CreatedAt < to.Value.Date.AddDays(1));
+        if (toExclusive.HasValue)
+            salesQuery = salesQuery.Where(x => x.CreatedAt < toExclusive.Value);
+
+        var rows = await salesQuery
+            .Select(s => new
+            {
+                s.CreatedAt,
+                Ingresos = s.Total > 0 ? s.Total : s.TotalAmount,
+                s.TotalProfit
+            })
+            .ToListAsync();
 
         if (string.Equals(groupBy, "month", StringComparison.OrdinalIgnoreCase))
         {
-            return await salesQuery
-                .GroupBy(x => new { x.CreatedAt.Year, x.CreatedAt.Month })
+            return rows
+                .GroupBy(x =>
+                {
+                    var local = CostaRicaTime.ToLocalDate(x.CreatedAt);
+                    return new { local.Year, local.Month };
+                })
                 .OrderBy(x => x.Key.Year)
                 .ThenBy(x => x.Key.Month)
                 .Select(x => new SalesTrendPointDto
                 {
                     Date = $"{x.Key.Year:D4}-{x.Key.Month:D2}",
-                    Ingresos = x.Sum(s => s.Total > 0 ? s.Total : s.TotalAmount),
+                    Ingresos = x.Sum(s => s.Ingresos),
                     Ganancia = x.Sum(s => s.TotalProfit)
                 })
-                .ToListAsync();
+                .ToList();
         }
 
-        return await salesQuery
-            .GroupBy(x => x.CreatedAt.Date)
+        return rows
+            .GroupBy(x => CostaRicaTime.ToLocalDate(x.CreatedAt))
             .OrderBy(x => x.Key)
             .Select(x => new SalesTrendPointDto
             {
-                Date = x.Key.ToString("yyyy-MM-dd"),
-                Ingresos = x.Sum(s => s.Total > 0 ? s.Total : s.TotalAmount),
+                Date = x.Key.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                Ingresos = x.Sum(s => s.Ingresos),
                 Ganancia = x.Sum(s => s.TotalProfit)
             })
-            .ToListAsync();
+            .ToList();
     }
 
-    public async Task<TicketAverageDto> GetTicketAverageAsync(Guid businessId, DateTime? from, DateTime? to)
+    public async Task<TicketAverageDto> GetTicketAverageAsync(
+        Guid businessId,
+        DateTime? from,
+        DateTime? toExclusive)
     {
         var salesQuery = _context.Sales
             .AsNoTracking()
             .Where(x => x.BusinessId == businessId);
 
         if (from.HasValue)
-            salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value.Date);
+            salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value);
 
-        if (to.HasValue)
-            salesQuery = salesQuery.Where(x => x.CreatedAt < to.Value.Date.AddDays(1));
+        if (toExclusive.HasValue)
+            salesQuery = salesQuery.Where(x => x.CreatedAt < toExclusive.Value);
 
         var average = await salesQuery
             .Select(x => (decimal?)(x.Total > 0 ? x.Total : x.TotalAmount))
@@ -235,6 +258,7 @@ public class DashboardRepository : IDashboardRepository
 
             result.Add(new PendingOrderRowDto
             {
+                OrderId = o.Id,
                 OrderNumber = o.OrderNumber,
                 CustomerName = o.Contact?.Name?.Trim() ?? string.Empty,
                 PendingAmount = Math.Round(saldo, 2, MidpointRounding.AwayFromZero)
@@ -252,22 +276,23 @@ public class DashboardRepository : IDashboardRepository
         var rows = await _context.Sales
             .AsNoTracking()
             .Where(s => s.BusinessId == businessId)
-            .GroupBy(s => s.Source)
-            .Select(g => new { Source = g.Key, Profit = g.Sum(x => x.TotalProfit) })
+            .Select(s => new { s.RepairOrderId, s.Source, s.TotalProfit })
             .ToListAsync();
 
         var dto = new ProfitBySourceDto();
         foreach (var r in rows)
         {
+            if (r.RepairOrderId.HasValue)
+            {
+                dto.Repair += r.TotalProfit;
+                continue;
+            }
+
             var src = r.Source?.Trim() ?? string.Empty;
-            if (string.Equals(src, "Repair", StringComparison.OrdinalIgnoreCase))
-                dto.Repair = r.Profit;
-            else if (string.Equals(src, "WhatsApp", StringComparison.OrdinalIgnoreCase))
-                dto.Whatsapp = r.Profit;
-            else if (string.Equals(src, "Manual", StringComparison.OrdinalIgnoreCase))
-                dto.Manual = r.Profit;
+            if (string.Equals(src, "WhatsApp", StringComparison.OrdinalIgnoreCase))
+                dto.Whatsapp += r.TotalProfit;
             else
-                dto.Manual += r.Profit;
+                dto.Manual += r.TotalProfit;
         }
 
         return dto;

@@ -40,9 +40,8 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> Summary(Guid businessId, [FromQuery] string? from, [FromQuery] string? to)
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
-        var fromDt = QueryParamParsing.ParseUtcDayStart(from);
-        var toDt = QueryParamParsing.ParseUtcDayStart(to);
-        var result = await _getDashboardSummaryUseCase.Execute(businessId, fromDt, toDt);
+        var (fromDt, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
+        var result = await _getDashboardSummaryUseCase.Execute(businessId, fromDt, toExclusive);
         return Ok(result);
     }
 
@@ -54,9 +53,8 @@ public class DashboardController : ControllerBase
         [FromQuery] string? groupBy = "day")
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
-        var fromDt = QueryParamParsing.ParseUtcDayStart(from);
-        var toDt = QueryParamParsing.ParseUtcDayStart(to);
-        var result = await _getSalesTrendUseCase.Execute(businessId, fromDt, toDt, groupBy);
+        var (fromDt, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
+        var result = await _getSalesTrendUseCase.Execute(businessId, fromDt, toExclusive, groupBy);
         return Ok(result);
     }
 
@@ -64,9 +62,8 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> TicketAverage(Guid businessId, [FromQuery] string? from, [FromQuery] string? to)
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
-        var fromDt = QueryParamParsing.ParseUtcDayStart(from);
-        var toDt = QueryParamParsing.ParseUtcDayStart(to);
-        var result = await _getTicketAverageUseCase.Execute(businessId, fromDt, toDt);
+        var (fromDt, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
+        var result = await _getTicketAverageUseCase.Execute(businessId, fromDt, toExclusive);
         return Ok(result);
     }
 

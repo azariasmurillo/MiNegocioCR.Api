@@ -56,22 +56,17 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .Where(x => x.BusinessId == businessId);
 
             if (query.From.HasValue)
-            {
-                var from = query.From.Value.Date;
-                salesQuery = salesQuery.Where(x => x.CreatedAt >= from);
-            }
+                salesQuery = salesQuery.Where(x => x.CreatedAt >= query.From.Value);
 
-            if (query.To.HasValue)
-            {
-                var toExclusive = query.To.Value.Date.AddDays(1);
-                salesQuery = salesQuery.Where(x => x.CreatedAt < toExclusive);
-            }
+            if (query.ToExclusive.HasValue)
+                salesQuery = salesQuery.Where(x => x.CreatedAt < query.ToExclusive.Value);
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
                 var search = query.Search.Trim().ToLower();
                 salesQuery = salesQuery.Where(x =>
                     x.InvoiceNumber.ToLower().Contains(search) ||
+                    (x.CustomerPhone != null && x.CustomerPhone.ToLower().Contains(search)) ||
                     (x.Contact != null && x.Contact.Name != null && x.Contact.Name.ToLower().Contains(search)) ||
                     (x.Contact != null && x.Contact.Phone != null && x.Contact.Phone.ToLower().Contains(search)));
             }
@@ -81,13 +76,20 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 var methodLower = query.PaymentMethod.Trim().ToLower();
                 var method = methodLower switch
                 {
-                    "transfer" => (int)PaymentMethod.Transfer,
-                    "sinpe"    => (int)PaymentMethod.Sinpe,
-                    "card"     => (int)PaymentMethod.Card,
-                    _          => (int)PaymentMethod.Cash,
+                    "cash" or "efectivo" => (int?)PaymentMethod.Cash,
+                    "transfer" or "transferencia" => (int?)PaymentMethod.Transfer,
+                    "sinpe" => (int?)PaymentMethod.Sinpe,
+                    "card" or "tarjeta" => (int?)PaymentMethod.Card,
+                    _ => null,
                 };
-                salesQuery = salesQuery.Where(x => x.PaymentMethods.Any(pm => (int)pm.Method == method));
+                if (method.HasValue)
+                {
+                    salesQuery = salesQuery.Where(x => x.PaymentMethods.Any(pm => (int)pm.Method == method.Value));
+                }
             }
+
+            if (query.FromRepair == true)
+                salesQuery = salesQuery.Where(x => x.RepairOrderId != null);
 
             var sort = query.Sort?.Trim().ToLower() ?? "createdat desc";
             salesQuery = sort switch
@@ -112,7 +114,13 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                     InvoiceNumber = x.InvoiceNumber,
                     CreatedAt = x.CreatedAt,
                     CustomerName = x.Contact != null ? x.Contact.Name : null,
-                    CustomerPhone = x.Contact != null ? x.Contact.Phone : null,
+                    CustomerPhone = x.Contact != null && x.Contact.Phone != null && x.Contact.Phone != ""
+                        ? x.Contact.Phone
+                        : (string.IsNullOrWhiteSpace(x.CustomerPhone) ? null : x.CustomerPhone),
+                    RepairOrderId = x.RepairOrderId,
+                    Source = x.Source,
+                    TaxAmount = x.TaxAmount,
+                    TotalProfit = x.TotalProfit,
                     Total = x.Total,
                     TotalOrden = x.TotalOrden,
                     PrepaidAmount = x.PrepaidAmount,

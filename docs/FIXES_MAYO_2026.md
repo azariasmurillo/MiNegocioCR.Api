@@ -33,6 +33,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 18. [Reparaciones — contacto repetido al crear orden](#18-reparaciones--contacto-repetido-al-crear-orden)
 19. [Ventas — contacto repetido y email en factura](#19-ventas--contacto-repetido-y-email-en-factura)
 20. [UI — WhatsApp panel recogido por defecto](#20-ui--whatsapp-panel-recogido-por-defecto)
+21. [Dashboard — datos desde Sales + zona Costa Rica](#21-dashboard--datos-desde-sales--zona-costa-rica)
 
 ---
 
@@ -56,6 +57,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 | 14 | Reparaciones | Error `PK_Contacts` al crear orden con cliente existente | ✅ |
 | 15 | Ventas | Error `PK_Contacts` al facturar + email vacío en factura | ✅ |
 | 16 | UI | WhatsApp panel expandido al cargar (molesto) | ✅ |
+| 17 | Dashboard | Reparaciones = 0, fechas UTC, totales mal interpretados | ✅ |
 
 ---
 

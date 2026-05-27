@@ -1,6 +1,6 @@
 namespace MiNegocioCR.Api.Application.DTOs;
 
-/// <summary>Ganancia acumulada por <c>Sale.Source</c> (Repair, Manual, WhatsApp).</summary>
+/// <summary>Ganancia acumulada: reparaciones por <c>RepairOrderId</c>; resto por <c>Source</c>.</summary>
 public class ProfitBySourceDto
 {
     public decimal Repair { get; set; }

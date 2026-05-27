@@ -110,19 +110,22 @@ namespace MiNegocioCR.Api.API.Controllers
             [FromQuery] string? page = null,
             [FromQuery] string? pageSize = null,
             [FromQuery] string? sort = "createdAt desc",
-            [FromQuery] string? paymentMethod = null)
+            [FromQuery] string? paymentMethod = null,
+            [FromQuery] bool? fromRepair = null)
         {
             if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
 
+            var (fromUtc, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
             var query = new SalesListQueryDto
             {
-                From = QueryParamParsing.ParseUtcDayStart(from),
-                To = QueryParamParsing.ParseUtcDayStart(to),
+                From = fromUtc,
+                ToExclusive = toExclusive,
                 Search = search,
                 Page = QueryParamParsing.ParsePositiveInt(page, 1, 1_000_000),
                 PageSize = QueryParamParsing.ParsePositiveInt(pageSize, 20, 100),
                 Sort = sort,
-                PaymentMethod = paymentMethod
+                PaymentMethod = paymentMethod,
+                FromRepair = fromRepair
             };
 
             var result = await _getSalesByBusinessUseCase.Execute(businessId, query);
