@@ -38,6 +38,7 @@ public static class SaleContactResolution
         if (!string.IsNullOrWhiteSpace(sanitizedPhone))
         {
             var existing = await context.Contacts
+                .AsTracking()
                 .FirstOrDefaultAsync(
                     c => c.BusinessId == businessId && c.Phone == sanitizedPhone,
                     cancellationToken);

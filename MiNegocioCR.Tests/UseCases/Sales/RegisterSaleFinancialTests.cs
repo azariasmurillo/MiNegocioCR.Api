@@ -803,4 +803,36 @@ public class RegisterSaleFinancialTests
         sale.PrepaidAmount.Should().Be(0m);
         sale.TotalOrden.Should().Be(sale.Total);  // manual: TotalOrden = Total siempre
     }
+
+    [Fact]
+    public async Task RepairSale_UpdatesContactEmailFromRequest()
+    {
+        await using var ctx = CreateContext();
+        var bizId = Guid.NewGuid();
+        SeedBusiness(ctx, bizId, taxRate: 13m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 47_250m);
+        await ctx.SaveChangesAsync();
+
+        await CreateSut(ctx).ExecuteAsync(new CreateSaleRequestDto
+        {
+            BusinessId = bizId,
+            RepairOrderId = order.Id,
+            Discount = 5_000m,
+            CustomerEmail = "cliente@example.com",
+            PaymentMethods = Cash(32_743m),
+            Items =
+            {
+                new SaleItemRequestDto
+                {
+                    ItemType = "Service",
+                    Description = "Reparación",
+                    Quantity = 1,
+                    UnitPrice = 47_250m
+                }
+            }
+        });
+
+        var contact = await ctx.Contacts.AsNoTracking().FirstAsync(c => c.Id == order.ContactId);
+        contact.Email.Should().Be("cliente@example.com");
+    }
 }

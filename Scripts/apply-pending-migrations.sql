@@ -1,9 +1,32 @@
--- Migraciones huérfanas (sin Designer) que EF no aplica con dotnet ef database update.
--- Ejecutar una vez en PostgreSQL local después de la primera migración:
---   psql -U postgres -d MiNegocioCR_Dev -f scripts/apply-pending-migrations.sql
+-- =============================================================================
+-- MiNegocioCR — Schema manual (idempotente) — Mayo 2026
+-- =============================================================================
+-- Usar cuando `dotnet ef database update` no corra o falle en local/producción.
+-- El script es seguro de ejecutar varias veces (IF NOT EXISTS / INSERT condicional).
+--
+-- ORDEN RECOMENDADO:
+--   1. dotnet ef database update          ← preferido (desde MiNegocioCR.Api/)
+--   2. Este archivo                       ← respaldo manual
+--   3. Scripts/verify-schema.sql          ← comprobar columnas e historial
+--
+-- LOCAL (PowerShell, desde la raíz del repo):
+--   psql -U postgres -d MiNegocioCR_Dev -f MiNegocioCR.Api/Scripts/apply-pending-migrations.sql
+--
+-- PRODUCCIÓN Supabase (conexión DIRECTA puerto 5432, NO pooler 6543):
+--   psql "<POSTGRES_CONNECTION_STRING>" -f MiNegocioCR.Api/Scripts/apply-pending-migrations.sql
+--
+-- MIGRACIONES QUE CUBRE (registra en __EFMigrationsHistory):
+--   • 20260504220000_AddSaleCostAndProfitMetrics
+--   • 20260522120000_RefactorPaymentsAndSalePaymentMethods
+--   • 20260526120000_RemoveRepairOrderDiscountPercent
+--   • 20260526130000_AddSaleDiscountMetadata
+--
+-- NOTA: DiscountAmount en Sales ya existía antes de mayo 2026; no se agrega aquí.
+-- =============================================================================
 
 BEGIN;
 
+-- ── 1. Costos y ganancia en ventas ───────────────────────────────────────────
 ALTER TABLE "SaleItems" ADD COLUMN IF NOT EXISTS "CostPrice" numeric(18,2) NOT NULL DEFAULT 0;
 ALTER TABLE "Sales" ADD COLUMN IF NOT EXISTS "TotalCost" numeric(18,2) NOT NULL DEFAULT 0;
 ALTER TABLE "Sales" ADD COLUMN IF NOT EXISTS "TotalProfit" numeric(18,2) NOT NULL DEFAULT 0;
@@ -18,6 +41,13 @@ BEGIN
   END IF;
 END $$;
 
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260504220000_AddSaleCostAndProfitMetrics', '8.0.8'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260504220000_AddSaleCostAndProfitMetrics'
+);
+
+-- ── 2. Pagos mixtos en ventas (SalePaymentMethods) ─────────────────────────
 CREATE TABLE IF NOT EXISTS "SalePaymentMethods" (
   "Id" uuid NOT NULL,
   "SaleId" uuid NOT NULL,
@@ -50,30 +80,30 @@ ALTER TABLE "RepairOrders" DROP COLUMN IF EXISTS "PayCard";
 ALTER TABLE "Payments" ADD COLUMN IF NOT EXISTS "Reference" text;
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-SELECT '20260504220000_AddSaleCostAndProfitMetrics', '8.0.4'
-WHERE NOT EXISTS (
-  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260504220000_AddSaleCostAndProfitMetrics'
-);
-
-INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-SELECT '20260522120000_RefactorPaymentsAndSalePaymentMethods', '8.0.4'
+SELECT '20260522120000_RefactorPaymentsAndSalePaymentMethods', '8.0.8'
 WHERE NOT EXISTS (
   SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260522120000_RefactorPaymentsAndSalePaymentMethods'
 );
 
+-- ── 3. Quitar descuento legacy de órdenes de reparación ─────────────────────
+-- El descuento vive en la venta (Sales), no en RepairOrders.
 ALTER TABLE "RepairOrders" DROP COLUMN IF EXISTS "DiscountPercent";
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-SELECT '20260526120000_RemoveRepairOrderDiscountPercent', '8.0.4'
+SELECT '20260526120000_RemoveRepairOrderDiscountPercent', '8.0.8'
 WHERE NOT EXISTS (
   SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260526120000_RemoveRepairOrderDiscountPercent'
 );
 
+-- ── 4. Metadata de descuento en ventas ───────────────────────────────────────
+-- DiscountKind: 0=None, 1=Percent, 2=FixedAmount (SaleDiscountKind)
+-- DiscountInputValue: valor ingresado (% o ₡ según DiscountKind)
+-- DiscountAmount: monto aplicado en colones (columna preexistente en Sales)
 ALTER TABLE "Sales" ADD COLUMN IF NOT EXISTS "DiscountKind" smallint NOT NULL DEFAULT 0;
 ALTER TABLE "Sales" ADD COLUMN IF NOT EXISTS "DiscountInputValue" numeric(18,2) NOT NULL DEFAULT 0;
 
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
-SELECT '20260526130000_AddSaleDiscountMetadata', '8.0.4'
+SELECT '20260526130000_AddSaleDiscountMetadata', '8.0.8'
 WHERE NOT EXISTS (
   SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260526130000_AddSaleDiscountMetadata'
 );

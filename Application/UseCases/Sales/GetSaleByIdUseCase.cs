@@ -34,6 +34,8 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
             sale.SaleDate,
             sale.CreatedAt,
             sale.CustomerPhone,
+            CustomerName = contact?.Name,
+            CustomerEmail = contact?.Email,
             Contact = contact == null ? null : new
             {
                 contact.Id,

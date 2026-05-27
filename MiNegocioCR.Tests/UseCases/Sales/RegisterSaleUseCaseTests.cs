@@ -16,10 +16,11 @@ namespace MiNegocioCR.Tests.UseCases.Sales;
 
 public class RegisterSaleUseCaseTests
 {
-    private static AppDbContext CreateContext()
+    private static AppDbContext CreateContext(QueryTrackingBehavior tracking = QueryTrackingBehavior.TrackAll)
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseQueryTrackingBehavior(tracking)
             .ConfigureWarnings(x => x.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
         return new AppDbContext(options);
@@ -246,5 +247,55 @@ public class RegisterSaleUseCaseTests
         sale.Contact!.Phone.Should().StartWith("SALE-ANON-");
         sale.CustomerPhone.Should().StartWith("SALE-ANON-");
         sale.Contact.Name.Should().Be("Sólo nombre");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithGlobalNoTracking_ReusesExistingContactByPhone()
+    {
+        await using var ctx = CreateContext(QueryTrackingBehavior.NoTracking);
+        var businessId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        SeedBusiness(ctx, businessId);
+        SeedProductVariant(ctx, businessId, variantId);
+        var existing = new Contact
+        {
+            Id = Guid.NewGuid(),
+            BusinessId = businessId,
+            Name = "Cliente",
+            Phone = "62855599",
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.Contacts.Add(existing);
+        await ctx.SaveChangesAsync();
+
+        var sut = CreateSut(ctx);
+        var request = new CreateSaleRequestDto
+        {
+            BusinessId = businessId,
+            CustomerPhone = "62855599",
+            CustomerName = "Cliente actualizado",
+            CustomerEmail = "cliente@example.com",
+            PaymentMethods = Cash(50_723m),
+            Items =
+            {
+                new SaleItemRequestDto
+                {
+                    CatalogVariantId = variantId,
+                    Quantity = 1,
+                    UnitPrice = 47_250m,
+                    ItemType = "Product"
+                }
+            }
+        };
+
+        var result = await sut.ExecuteAsync(request);
+        var saleId = GetSaleId(result);
+
+        var sale = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+        sale.ContactId.Should().Be(existing.Id);
+
+        var contact = await ctx.Contacts.AsNoTracking().FirstAsync(c => c.Id == existing.Id);
+        contact.Email.Should().Be("cliente@example.com");
+        contact.Name.Should().Be("Cliente actualizado");
     }
 }

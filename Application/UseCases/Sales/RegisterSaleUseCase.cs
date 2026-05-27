@@ -86,6 +86,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                 else if (request.ContactId.HasValue)
                 {
                     contact = await _context.Contacts
+                        .AsTracking()
                         .FirstOrDefaultAsync(c => c.Id == request.ContactId.Value && c.BusinessId == businessId);
                     if (contact == null)
                         throw new ArgumentException("Contact does not belong to this business.");
@@ -99,6 +100,11 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                         customerName ?? request.CustomerName,
                         customerEmail ?? request.CustomerEmail);
                 }
+
+                ApplyContactDetailsFromRequest(
+                    contact,
+                    customerName ?? request.CustomerName,
+                    customerEmail ?? request.CustomerEmail);
 
                 var phoneForSale = contact != null
                     ? contact.Phone
@@ -115,7 +121,6 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     CreatedAt = DateTime.UtcNow,
                     CustomerPhone = phoneForSale,
                     ContactId = contact?.Id,
-                    Contact = contact,
                 };
 
                 // ── Construir ítems ────────────────────────────────────────
@@ -291,6 +296,21 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
         }
 
         // ── Helpers ────────────────────────────────────────────────────────
+
+        private static void ApplyContactDetailsFromRequest(
+            Domain.Entities.Contact? contact,
+            string? customerName,
+            string? customerEmail)
+        {
+            if (contact == null)
+                return;
+
+            if (!string.IsNullOrWhiteSpace(customerName))
+                contact.Name = customerName.Trim();
+
+            if (customerEmail != null)
+                contact.Email = string.IsNullOrWhiteSpace(customerEmail) ? null : customerEmail.Trim();
+        }
 
         private static object BuildResponse(Sale sale, Domain.Entities.Contact? contact, decimal taxRate) =>
             new
