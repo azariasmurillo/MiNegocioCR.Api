@@ -218,13 +218,6 @@ public class DashboardRepository : IDashboardRepository
 
     public async Task<List<PendingOrderRowDto>> GetPendingOrdersWithBalanceAsync(Guid businessId)
     {
-        var business = await _context.Businesses.AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == businessId);
-        if (business == null)
-            return new List<PendingOrderRowDto>();
-
-        var taxRate = business.TaxRatePercent < 0 ? 0m : business.TaxRatePercent;
-
         var orders = await _context.RepairOrders
             .AsNoTracking()
             .Where(o => o.BusinessId == businessId
@@ -250,7 +243,7 @@ public class DashboardRepository : IDashboardRepository
         var result = new List<PendingOrderRowDto>();
         foreach (var o in orders)
         {
-            var totalOrden = ComputeRepairOrderTotalWithTax(o, taxRate);
+            var totalOrden = ComputeRepairOrderTotal(o);
             var paid = paidByOrder.GetValueOrDefault(o.Id, 0m);
             var saldo = Math.Max(0m, totalOrden - paid);
             if (saldo <= 0)
@@ -298,10 +291,8 @@ public class DashboardRepository : IDashboardRepository
         return dto;
     }
 
-    private static decimal ComputeRepairOrderTotalWithTax(RepairOrder order, decimal taxRatePercent)
+    private static decimal ComputeRepairOrderTotal(RepairOrder order)
     {
-        var subtotal = order.Items?.Sum(x => x.Price * x.Quantity) ?? 0m;
-        var tax = Math.Round(subtotal * (taxRatePercent / 100m), 2, MidpointRounding.AwayFromZero);
-        return subtotal + tax;
+        return order.Items?.Sum(x => x.Price * x.Quantity) ?? 0m;
     }
 }
