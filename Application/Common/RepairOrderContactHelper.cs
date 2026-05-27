@@ -22,6 +22,7 @@ public static class RepairOrderContactHelper
         if (contactId.HasValue)
         {
             var byId = await context.Contacts
+                .AsTracking()
                 .FirstOrDefaultAsync(
                     c => c.Id == contactId.Value && c.BusinessId == businessId,
                     cancellationToken);
@@ -58,6 +59,7 @@ public static class RepairOrderContactHelper
             throw new ArgumentException("Se requiere el teléfono del cliente.", nameof(customerPhone));
 
         var existing = await context.Contacts
+            .AsTracking()
             .FirstOrDefaultAsync(
                 c => c.BusinessId == businessId && c.Phone == phone,
                 cancellationToken);

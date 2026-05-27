@@ -77,7 +77,6 @@ public class CreateRepairOrderUseCase : ICreateRepairOrderUseCase
             BusinessId = businessId,
             OrderNumber = orderNumber,
             ContactId = contact.Id,
-            Contact = contact,
             ProblemDescription = request.ProblemDescription,
             DeviceType = request.DeviceType,
             DeviceTypeOther = request.DeviceTypeOther,

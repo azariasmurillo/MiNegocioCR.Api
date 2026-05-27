@@ -64,12 +64,12 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
             if (request.ContactId.HasValue)
             {
                 var c = await _context.Contacts
+                    .AsTracking()
                     .FirstOrDefaultAsync(
                         x => x.Id == request.ContactId.Value && x.BusinessId == order.BusinessId);
                 if (c == null)
                     throw new NotFoundException("Contact", "El contacto no existe o no pertenece a este negocio.");
                 order.ContactId = c.Id;
-                order.Contact = c;
                 if (!string.IsNullOrWhiteSpace(request.Name))
                     c.Name = request.Name.Trim();
                 if (request.Email != null)
@@ -87,7 +87,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                         request.Phone,
                         request.Email ?? c.Email);
                     order.ContactId = resolved.Id;
-                    order.Contact = resolved;
                 }
             }
             else
@@ -107,7 +106,6 @@ namespace MiNegocioCR.Api.Application.UseCases.RepairOrder
                         request.Phone,
                         request.Email);
                     order.ContactId = resolved.Id;
-                    order.Contact = resolved;
                 }
                 else if (request.Name != null || request.Email != null)
                 {
