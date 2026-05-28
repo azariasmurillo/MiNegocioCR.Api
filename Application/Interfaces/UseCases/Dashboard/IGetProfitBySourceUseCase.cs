@@ -4,5 +4,5 @@ namespace MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
 
 public interface IGetProfitBySourceUseCase
 {
-    Task<ProfitBySourceDto> Execute(Guid businessId);
+    Task<ProfitBySourceDto> Execute(Guid businessId, DateTime? fromUtcInclusive, DateTime? toUtcExclusive);
 }

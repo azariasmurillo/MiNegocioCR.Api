@@ -13,8 +13,8 @@ public class GetProfitBySourceUseCase : IGetProfitBySourceUseCase
         _dashboardRepository = dashboardRepository;
     }
 
-    public Task<ProfitBySourceDto> Execute(Guid businessId)
+    public Task<ProfitBySourceDto> Execute(Guid businessId, DateTime? fromUtcInclusive, DateTime? toUtcExclusive)
     {
-        return _dashboardRepository.GetProfitBySourceAsync(businessId);
+        return _dashboardRepository.GetProfitBySourceAsync(businessId, fromUtcInclusive, toUtcExclusive);
     }
 }

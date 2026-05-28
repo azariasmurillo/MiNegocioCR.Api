@@ -4,5 +4,5 @@ namespace MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
 
 public interface IGetTopProductsUseCase
 {
-    Task<List<TopProductRowDto>> Execute(Guid businessId, int take = 10);
+    Task<List<TopProductRowDto>> Execute(Guid businessId, int take, DateTime? fromUtcInclusive, DateTime? toUtcExclusive);
 }

@@ -13,8 +13,12 @@ public class GetTopProductsUseCase : IGetTopProductsUseCase
         _dashboardRepository = dashboardRepository;
     }
 
-    public Task<List<TopProductRowDto>> Execute(Guid businessId, int take = 10)
+    public Task<List<TopProductRowDto>> Execute(
+        Guid businessId,
+        int take,
+        DateTime? fromUtcInclusive,
+        DateTime? toUtcExclusive)
     {
-        return _dashboardRepository.GetTopProductsAsync(businessId, take);
+        return _dashboardRepository.GetTopProductsAsync(businessId, take, fromUtcInclusive, toUtcExclusive);
     }
 }

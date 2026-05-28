@@ -13,11 +13,15 @@ public class GetRecentActivityUseCase : IGetRecentActivityUseCase
         _dashboardRepository = dashboardRepository;
     }
 
-    public Task<List<ActivityItemDto>> Execute(Guid businessId, int? limit)
+    public Task<List<ActivityItemDto>> Execute(
+        Guid businessId,
+        int? limit,
+        DateTime? fromUtcInclusive,
+        DateTime? toUtcExclusive)
     {
         var safeLimit = limit.GetValueOrDefault(20);
         if (safeLimit <= 0) safeLimit = 20;
         if (safeLimit > 100) safeLimit = 100;
-        return _dashboardRepository.GetRecentActivityAsync(businessId, safeLimit);
+        return _dashboardRepository.GetRecentActivityAsync(businessId, safeLimit, fromUtcInclusive, toUtcExclusive);
     }
 }

@@ -68,20 +68,30 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("{businessId:guid}/activity")]
-    public async Task<IActionResult> Activity(Guid businessId, [FromQuery] string? limit = null)
+    public async Task<IActionResult> Activity(
+        Guid businessId,
+        [FromQuery] string? limit = null,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null)
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
         var limitN = QueryParamParsing.ParsePositiveInt(limit, 20, 100);
-        var result = await _getRecentActivityUseCase.Execute(businessId, limitN);
+        var (fromDt, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
+        var result = await _getRecentActivityUseCase.Execute(businessId, limitN, fromDt, toExclusive);
         return Ok(result);
     }
 
     /// <summary>Top productos por ingresos (líneas tipo Product con variante de catálogo).</summary>
     [HttpGet("{businessId:guid}/top-products")]
-    public async Task<IActionResult> TopProducts(Guid businessId, [FromQuery] int take = 10)
+    public async Task<IActionResult> TopProducts(
+        Guid businessId,
+        [FromQuery] int take = 10,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null)
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
-        var result = await _getTopProductsUseCase.Execute(businessId, take);
+        var (fromDt, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
+        var result = await _getTopProductsUseCase.Execute(businessId, take, fromDt, toExclusive);
         return Ok(result);
     }
 
@@ -96,10 +106,14 @@ public class DashboardController : ControllerBase
 
     /// <summary>Ganancia acumulada agrupada por <c>Sale.Source</c>.</summary>
     [HttpGet("{businessId:guid}/profit-by-source")]
-    public async Task<IActionResult> ProfitBySource(Guid businessId)
+    public async Task<IActionResult> ProfitBySource(
+        Guid businessId,
+        [FromQuery] string? from = null,
+        [FromQuery] string? to = null)
     {
         if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
-        var result = await _getProfitBySourceUseCase.Execute(businessId);
+        var (fromDt, toExclusive) = QueryParamParsing.ParseCostaRicaDateRange(from, to);
+        var result = await _getProfitBySourceUseCase.Execute(businessId, fromDt, toExclusive);
         return Ok(result);
     }
 }

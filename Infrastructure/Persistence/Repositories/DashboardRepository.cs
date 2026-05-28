@@ -16,31 +16,35 @@ public class DashboardRepository : IDashboardRepository
         _context = context;
     }
 
-    public async Task<DashboardSummaryDto> GetSummaryAsync(Guid businessId, DateTime? from, DateTime? to)
+    public async Task<DashboardSummaryDto> GetSummaryAsync(Guid businessId, DateTime? from, DateTime? toExclusive)
     {
-        _ = from;
-        _ = to;
-
-        var startToday = CostaRicaTime.ToUtcStartOfDay(CostaRicaTime.Today);
-        var endToday = CostaRicaTime.ToUtcEndExclusive(CostaRicaTime.Today);
-
-        var salesToday = _context.Sales
+        var salesQuery = _context.Sales
             .AsNoTracking()
-            .Where(x => x.BusinessId == businessId
-                        && x.CreatedAt >= startToday
-                        && x.CreatedAt < endToday);
+            .Where(x => x.BusinessId == businessId);
 
-        var salesTodayCount = await salesToday.CountAsync();
-        var ingresosHoy = await salesToday
+        if (from.HasValue)
+            salesQuery = salesQuery.Where(x => x.CreatedAt >= from.Value);
+        else if (!toExclusive.HasValue)
+        {
+            var startToday = CostaRicaTime.ToUtcStartOfDay(CostaRicaTime.Today);
+            var endToday = CostaRicaTime.ToUtcEndExclusive(CostaRicaTime.Today);
+            salesQuery = salesQuery.Where(x => x.CreatedAt >= startToday && x.CreatedAt < endToday);
+        }
+
+        if (toExclusive.HasValue)
+            salesQuery = salesQuery.Where(x => x.CreatedAt < toExclusive.Value);
+
+        var salesCount = await salesQuery.CountAsync();
+        var ingresosHoy = await salesQuery
             .Select(x => (decimal?)(x.Total > 0 ? x.Total : x.TotalAmount))
             .SumAsync() ?? 0m;
 
-        var gananciaHoy = await salesToday
+        var gananciaHoy = await salesQuery
             .Select(x => (decimal?)x.TotalProfit)
             .SumAsync() ?? 0m;
 
-        var ticketPromedio = salesTodayCount > 0
-            ? Math.Round(ingresosHoy / salesTodayCount, 2, MidpointRounding.AwayFromZero)
+        var ticketPromedio = salesCount > 0
+            ? Math.Round(ingresosHoy / salesCount, 2, MidpointRounding.AwayFromZero)
             : 0m;
 
         var ordenesActivas = await _context.RepairOrders
@@ -141,13 +145,23 @@ public class DashboardRepository : IDashboardRepository
         };
     }
 
-    public async Task<List<ActivityItemDto>> GetRecentActivityAsync(Guid businessId, int limit)
+    public async Task<List<ActivityItemDto>> GetRecentActivityAsync(
+        Guid businessId,
+        int limit,
+        DateTime? fromUtcInclusive,
+        DateTime? toUtcExclusive)
     {
         var perSource = Math.Min(Math.Max(limit * 4, 40), 300);
 
-        var saleActivities = await _context.Sales
+        var saleQuery = _context.Sales
             .AsNoTracking()
-            .Where(x => x.BusinessId == businessId)
+            .Where(x => x.BusinessId == businessId);
+        if (fromUtcInclusive.HasValue)
+            saleQuery = saleQuery.Where(x => x.CreatedAt >= fromUtcInclusive.Value);
+        if (toUtcExclusive.HasValue)
+            saleQuery = saleQuery.Where(x => x.CreatedAt < toUtcExclusive.Value);
+
+        var saleActivities = await saleQuery
             .OrderByDescending(x => x.CreatedAt)
             .Take(perSource)
             .Select(x => new ActivityItemDto
@@ -158,51 +172,55 @@ public class DashboardRepository : IDashboardRepository
             })
             .ToListAsync();
 
-        var orderActivities = await _context.RepairOrders
+        var orderQuery = _context.RepairOrders
             .AsNoTracking()
-            .Where(x => x.BusinessId == businessId)
+            .Where(x => x.BusinessId == businessId
+                        && x.Status == (int)RepairOrderStatus.Delivered);
+        if (fromUtcInclusive.HasValue)
+            orderQuery = orderQuery.Where(x => x.UpdatedAt >= fromUtcInclusive.Value);
+        if (toUtcExclusive.HasValue)
+            orderQuery = orderQuery.Where(x => x.UpdatedAt < toUtcExclusive.Value);
+
+        var orderActivities = await orderQuery
             .OrderByDescending(x => x.UpdatedAt)
             .Take(perSource)
             .Select(x => new ActivityItemDto
             {
-                Type = "order_updated",
-                Description = $"Orden {x.OrderNumber} actualizada (estado {x.Status})",
+                Type = "order_delivered",
+                Description = $"Orden {x.OrderNumber} entregada",
                 CreatedAt = x.UpdatedAt
-            })
-            .ToListAsync();
-
-        var invoiceActivities = await _context.Sales
-            .AsNoTracking()
-            .Where(x => x.BusinessId == businessId)
-            .OrderByDescending(x => x.CreatedAt)
-            .Take(perSource)
-            .Select(x => new ActivityItemDto
-            {
-                Type = "invoice_sent",
-                Description = $"Factura {x.InvoiceNumber} enviada",
-                CreatedAt = x.CreatedAt
             })
             .ToListAsync();
 
         return saleActivities
             .Concat(orderActivities)
-            .Concat(invoiceActivities)
             .OrderByDescending(x => x.CreatedAt)
             .Take(limit)
             .ToList();
     }
 
-    public async Task<List<TopProductRowDto>> GetTopProductsAsync(Guid businessId, int take)
+    public async Task<List<TopProductRowDto>> GetTopProductsAsync(
+        Guid businessId,
+        int take,
+        DateTime? fromUtcInclusive,
+        DateTime? toUtcExclusive)
     {
         take = Math.Clamp(take, 1, 100);
 
+        var salesInRange = _context.Sales
+            .AsNoTracking()
+            .Where(s => s.BusinessId == businessId);
+        if (fromUtcInclusive.HasValue)
+            salesInRange = salesInRange.Where(s => s.CreatedAt >= fromUtcInclusive.Value);
+        if (toUtcExclusive.HasValue)
+            salesInRange = salesInRange.Where(s => s.CreatedAt < toUtcExclusive.Value);
+
         return await (
                 from si in _context.SaleItems.AsNoTracking()
-                join s in _context.Sales.AsNoTracking() on si.SaleId equals s.Id
+                join s in salesInRange on si.SaleId equals s.Id
                 join v in _context.CatalogVariants.AsNoTracking() on si.CatalogVariantId equals v.Id
                 join ci in _context.CatalogItems.AsNoTracking() on v.CatalogItemId equals ci.Id
-                where s.BusinessId == businessId
-                      && si.ItemType == "Product"
+                where si.ItemType == "Product"
                       && si.CatalogVariantId != null
                 group new { si.Quantity, si.Total } by ci.Name into g
                 orderby g.Sum(x => x.Total) descending
@@ -264,11 +282,20 @@ public class DashboardRepository : IDashboardRepository
             .ToList();
     }
 
-    public async Task<ProfitBySourceDto> GetProfitBySourceAsync(Guid businessId)
+    public async Task<ProfitBySourceDto> GetProfitBySourceAsync(
+        Guid businessId,
+        DateTime? fromUtcInclusive,
+        DateTime? toUtcExclusive)
     {
-        var rows = await _context.Sales
+        var salesQuery = _context.Sales
             .AsNoTracking()
-            .Where(s => s.BusinessId == businessId)
+            .Where(s => s.BusinessId == businessId);
+        if (fromUtcInclusive.HasValue)
+            salesQuery = salesQuery.Where(s => s.CreatedAt >= fromUtcInclusive.Value);
+        if (toUtcExclusive.HasValue)
+            salesQuery = salesQuery.Where(s => s.CreatedAt < toUtcExclusive.Value);
+
+        var rows = await salesQuery
             .Select(s => new { s.RepairOrderId, s.Source, s.TotalProfit })
             .ToListAsync();
 
