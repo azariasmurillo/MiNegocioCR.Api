@@ -730,6 +730,7 @@ public class RegisterSaleFinancialTests
         sale.TotalOrden.Should().Be(5_000m);
         sale.PrepaidAmount.Should().Be(5_000m);
         sale.Total.Should().Be(0m);
+        sale.TotalAmount.Should().Be(0m);
         sale.TaxAmount.Should().Be(575.22m);
     }
 

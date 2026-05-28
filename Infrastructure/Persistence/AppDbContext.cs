@@ -275,9 +275,10 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 // TotalAmount es la columna legacy original; se mantiene mapeada
                 // para que las queries LINQ del dashboard puedan usarla como fallback.
                 // Código nuevo siempre escribe sale.Total; TotalAmount = Total por alias.
+                // ValueGeneratedNever: cuando Total=0 EF no debe omitir la columna (Postgres NOT NULL).
                 entity.Property(x => x.TotalAmount)
-                    .HasColumnType("numeric")
-                    .HasDefaultValue(0m);
+                    .HasColumnType("numeric(18,2)")
+                    .ValueGeneratedNever();
                 entity.HasIndex(x => new { x.BusinessId, x.InvoiceNumber })
                     .IsUnique();
 
@@ -486,6 +487,17 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
             modelBuilder.Entity<QuickReplyTemplate>()
                 .HasIndex(x => new { x.BusinessId, x.Name });
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var entry in ChangeTracker.Entries<Sale>()
+                         .Where(e => e.State is EntityState.Added or EntityState.Modified))
+            {
+                entry.Entity.TotalAmount = entry.Entity.Total;
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
         }
     }
 }

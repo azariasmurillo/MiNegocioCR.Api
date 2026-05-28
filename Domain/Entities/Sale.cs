@@ -63,6 +63,6 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         // ── Campo legacy (solo para queries existentes; no usar en código nuevo) ──
         /// <summary>Alias de <see cref="Total"/>; mantiene compatibilidad con código existente.</summary>
-        public decimal TotalAmount { get; internal set; }
+        public decimal TotalAmount { get; set; }
     }
 }
