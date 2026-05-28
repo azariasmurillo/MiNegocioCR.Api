@@ -40,10 +40,18 @@ namespace MiNegocioCR.Api.API.Controllers
             if (businessId == Guid.Empty)
                 return BadRequest("BusinessId is required.");
 
-            if (request.Items == null || !request.Items.Any())
-                return BadRequest("At least one item is required.");
+            if (request.RepairOrderId.HasValue)
+            {
+                request.Source = "Repair";
+                request.Items ??= new();
+            }
+            else
+            {
+                if (request.Items == null || !request.Items.Any())
+                    return BadRequest("At least one item is required.");
+                request.Source = "Manual";
+            }
 
-            request.Source = "Manual";
             var result = await _registerSale.ExecuteAsync(request);
             return Ok(result);
         }

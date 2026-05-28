@@ -662,7 +662,7 @@ public class RegisterSaleFinancialTests
     }
 
     [Fact]
-    public async Task RepairSale_PrepaymentsExceedTotal_ThrowsInvalidOperation()
+    public async Task RepairSale_PrepaymentsExceedTotal_AllowedWithZeroBalance()
     {
         await using var ctx = CreateContext();
         var bizId = Guid.NewGuid();
@@ -670,22 +670,103 @@ public class RegisterSaleFinancialTests
         var order = SeedRepairOrder(ctx, bizId, itemPrice: 50_000m);
         await ctx.SaveChangesAsync();
 
-        // Overpay: abonos > totalOrden
         var overpayment = new Payment
         {
             Id = Guid.NewGuid(), BusinessId = bizId, RepairOrderId = order.Id,
             Amount = 60_000m, Method = PaymentMethod.Cash, CreatedAt = DateTime.UtcNow
         };
 
-        var act = () => CreateSut(ctx, [overpayment]).ExecuteAsync(new CreateSaleRequestDto
+        var result = await CreateSut(ctx, [overpayment]).ExecuteAsync(new CreateSaleRequestDto
         {
             BusinessId    = bizId,
             RepairOrderId = order.Id,
-            Source        = "Repair"
+            Source        = "Repair",
+            PaymentMethods = [],
         });
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*abonos*");
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
+        sale.TotalOrden.Should().Be(50_000m);
+        sale.PrepaidAmount.Should().Be(60_000m);
+        sale.Total.Should().Be(0m);
+    }
+
+    /// <summary>
+    /// Donación al facturar: servicio ₡15.000, descuento ₡10.000, abono previo ₡5.000 → saldo ₡0.
+    /// </summary>
+    [Fact]
+    public async Task RepairSale_WithFixedDiscountAndPartialPrepaid_ZeroSaldo_Allowed()
+    {
+        await using var ctx = CreateContext();
+        var bizId = Guid.NewGuid();
+        SeedBusiness(ctx, bizId, taxRate: 13m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 15_000m);
+        order.Items.First().Description = "Mantenimiento de Hardware";
+        await ctx.SaveChangesAsync();
+
+        var prepayment = new Payment
+        {
+            Id = Guid.NewGuid(), BusinessId = bizId, RepairOrderId = order.Id,
+            Amount = 5_000m, Method = PaymentMethod.Cash, CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await CreateSut(ctx, [prepayment]).ExecuteAsync(new CreateSaleRequestDto
+        {
+            BusinessId     = bizId,
+            RepairOrderId  = order.Id,
+            Source         = "Repair",
+            DiscountKind   = "FixedAmount",
+            DiscountValue  = 10_000m,
+            Discount       = 10_000m,
+            PaymentMethods = [],
+        });
+
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
+        sale.Subtotal.Should().Be(15_000m);
+        sale.DiscountAmount.Should().Be(10_000m);
+        sale.TotalOrden.Should().Be(5_000m);
+        sale.PrepaidAmount.Should().Be(5_000m);
+        sale.Total.Should().Be(0m);
+        sale.TaxAmount.Should().Be(575.22m);
+    }
+
+    /// <summary>
+    /// Descuento aplicado al facturar reduce el total por debajo de abonos ya registrados (donación / cortesía).
+    /// </summary>
+    [Fact]
+    public async Task RepairSale_WithDiscountAndPrepaidExceedingDiscountedTotal_ZeroSaldo_Allowed()
+    {
+        await using var ctx = CreateContext();
+        var bizId = Guid.NewGuid();
+        SeedBusiness(ctx, bizId, taxRate: 13m);
+        var order = SeedRepairOrder(ctx, bizId, itemPrice: 15_000m);
+        await ctx.SaveChangesAsync();
+
+        var prepayment = new Payment
+        {
+            Id = Guid.NewGuid(), BusinessId = bizId, RepairOrderId = order.Id,
+            Amount = 10_000m, Method = PaymentMethod.Cash, CreatedAt = DateTime.UtcNow
+        };
+
+        var result = await CreateSut(ctx, [prepayment]).ExecuteAsync(new CreateSaleRequestDto
+        {
+            BusinessId     = bizId,
+            RepairOrderId  = order.Id,
+            Source         = "Repair",
+            DiscountKind   = "FixedAmount",
+            DiscountValue  = 10_000m,
+            PaymentMethods = [],
+        });
+
+        var saleId = GetSaleId(result);
+        var sale   = await ctx.Sales.AsNoTracking().FirstAsync(s => s.Id == saleId);
+
+        sale.TotalOrden.Should().Be(5_000m);
+        sale.PrepaidAmount.Should().Be(10_000m);
+        sale.Total.Should().Be(0m);
     }
 
     // ── 7. FACTURAR DESDE REPARACIÓN marca IsInvoiced y estado Delivered ─────

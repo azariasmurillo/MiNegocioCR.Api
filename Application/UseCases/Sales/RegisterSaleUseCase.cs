@@ -236,9 +236,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     var payments = await _paymentService.GetPaymentsByRepairOrderAsync(businessId, repairOrder.Id);
                     var prepaidAmount = payments.Sum(p => p.Amount);
 
-                    if (prepaidAmount > totalOrden)
-                        throw new InvalidOperationException("La suma de abonos supera el total de la orden.");
-
+                    // Abonos pueden superar TotalOrden cuando el descuento se aplica al facturar
+                    // (p. ej. donación/cortesía tras abonos parciales). Saldo cobrado hoy = max(0, …).
                     var saldoPendiente = Math.Max(0m, totalOrden - prepaidAmount);
 
                     sale.PrepaidAmount = prepaidAmount;
