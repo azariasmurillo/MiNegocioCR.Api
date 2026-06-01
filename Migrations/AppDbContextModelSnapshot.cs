@@ -427,6 +427,12 @@ namespace MiNegocioCR.Api.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastMarketingEmailAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -443,6 +449,56 @@ namespace MiNegocioCR.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Contacts", (string)null);
+                });
+
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ContactEmailCampaignLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContactId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("InactiveDaysUsed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuietDaysUsed")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResendMessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContactId");
+
+                    b.HasIndex("BusinessId", "SentAt");
+
+                    b.HasIndex("BusinessId", "ContactId", "SentAt");
+
+                    b.ToTable("ContactEmailCampaignLogs", (string)null);
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationState", b =>
@@ -1339,6 +1395,25 @@ namespace MiNegocioCR.Api.Migrations
                     b.Navigation("CatalogOptionValue");
 
                     b.Navigation("CatalogVariant");
+                });
+
+            modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ContactEmailCampaignLog", b =>
+                {
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Business", "Business")
+                        .WithMany()
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MiNegocioCR.Api.Domain.Entities.Contact", "Contact")
+                        .WithMany()
+                        .HasForeignKey("ContactId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+
+                    b.Navigation("Contact");
                 });
 
             modelBuilder.Entity("MiNegocioCR.Api.Domain.Entities.ConversationTag", b =>

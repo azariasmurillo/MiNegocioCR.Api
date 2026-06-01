@@ -72,7 +72,7 @@ npm run build
 
 | Verificación | Esperado |
 |--------------|----------|
-| Tests API | **140** pasando |
+| Tests API | **154+** pasando (154 sin Postgres local; +1 integración si BD dev disponible) |
 | Build frontend | Sin errores TypeScript (warnings de budget CSS OK) |
 | Cambios commiteados | API (`master`) y frontend (`main`) |
 | Variables Railway | Todas las obligatorias configuradas |
@@ -302,6 +302,7 @@ Checklist manual (5–10 minutos):
 
 - [ ] **Login** con usuario de producción
 - [ ] **Dashboard** carga sin errores 500 en consola del navegador
+- [ ] **Ventas desde reparación — cortesía/donación:** servicio con descuento ₡ (modo fijo, no %) + abonos previos → saldo ₡0 → POST `/api/sales` sin 500; factura con desglose fiscal
 - [ ] **Ventas desde reparación** con descuento (₡ o %) y abonos previos — POST `/api/sales` sin 500
 - [ ] **Factura impresa** muestra línea de descuento cuando aplica
 - [ ] **Dashboard** columna descuento en listado de ventas
@@ -341,6 +342,7 @@ curl -X POST https://minegociocrapi-production-bd7b.up.railway.app/api/auth/logi
 | `App__PublicUrl` incorrecta | Links de reset password rotos | Apuntar al dominio real del frontend |
 | Código sin push | Prod sigue con bugs viejos | Commit + push en API y frontend |
 | Contacto repetido sin fix | 500 `PK_Contacts` al crear orden o facturar | Deploy API con `RepairOrderContactHelper` + `RegisterSaleUseCase` actualizados |
+| Factura reparación saldo ₡0 | 500 `TotalAmount` NULL en PostgreSQL | API ≥ `d15cd40`; ver FIXES_MAYO_2026 §25 |
 
 ### Importantes (estabilidad)
 

@@ -58,6 +58,55 @@ public class ResendEmailService : IEmailService
         await SendWithResendAsync(toEmail, subject, body);
     }
 
+    public async Task<string?> SendCampaignAsync(
+        Business business,
+        string toEmail,
+        string subject,
+        string htmlBody,
+        CancellationToken cancellationToken = default)
+    {
+        if (!business.EnableEmailNotifications)
+            throw new InvalidOperationException("Email notifications are disabled for this business.");
+
+        if (string.IsNullOrWhiteSpace(_settings.ApiKey) ||
+            string.IsNullOrWhiteSpace(_settings.FromEmail))
+        {
+            throw new InvalidOperationException("Resend config missing required values: ApiKey and FromEmail.");
+        }
+
+        var displayName = string.IsNullOrWhiteSpace(business.Name) ? _settings.FromName : business.Name.Trim();
+        if (string.IsNullOrWhiteSpace(displayName))
+            displayName = "MiNegocioCR";
+
+        var email = new EmailMessage
+        {
+            From = $"{displayName} <{_settings.FromEmail}>",
+            To = new[] { toEmail },
+            Subject = subject,
+            HtmlBody = htmlBody
+        };
+
+        if (!string.IsNullOrWhiteSpace(business.PublicEmail) && business.PublicEmail.Contains('@'))
+            email.ReplyTo = business.PublicEmail.Trim();
+
+        _logger.LogInformation(
+            "Resend campaign send. from={From}, replyTo={ReplyTo}, to={To}, subject={Subject}",
+            email.From,
+            email.ReplyTo,
+            toEmail,
+            subject);
+
+        var response = await _resend.EmailSendAsync(email, cancellationToken);
+        if (!response.Success)
+        {
+            throw new InvalidOperationException(
+                response.Exception?.Message ?? "Resend failed to send campaign email.");
+        }
+
+        _logger.LogInformation("Resend campaign email sent. id={MessageId}", response.Content);
+        return response.Content.ToString();
+    }
+
     private async Task SendWithResendAsync(string toEmail, string subject, string htmlBody)
     {
         if (string.IsNullOrWhiteSpace(_settings.ApiKey) ||

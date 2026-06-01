@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Payments;
@@ -25,6 +26,7 @@ public class CreatePaymentUseCase : ICreatePaymentUseCase
         if (request.Amount <= 0) throw new ArgumentException("Amount must be greater than zero.", nameof(request.Amount));
 
         var order = await _context.RepairOrders
+            .Include(x => x.Contact)
             .FirstOrDefaultAsync(x => x.Id == request.RepairOrderId && x.BusinessId == request.BusinessId);
 
         if (order is null)
@@ -47,6 +49,10 @@ public class CreatePaymentUseCase : ICreatePaymentUseCase
         };
 
         _context.Payments.Add(payment);
+
+        if (order.Contact != null)
+            ContactActivityHelper.Touch(order.Contact, payment.CreatedAt);
+
         await _context.SaveChangesAsync(CancellationToken.None);
 
         return new

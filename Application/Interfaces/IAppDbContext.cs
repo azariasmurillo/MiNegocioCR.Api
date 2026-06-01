@@ -31,6 +31,9 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<Payment> Payments { get; }
         DbSet<RepairOrderImage> RepairOrderImages { get; }
         DbSet<CatalogVariantImage> CatalogVariantImages { get; }
+        DbSet<ContactEmailCampaignLog> ContactEmailCampaignLogs { get; }
+        DbSet<EmailCampaign> EmailCampaigns { get; }
+        DbSet<EmailCampaignRecipient> EmailCampaignRecipients { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

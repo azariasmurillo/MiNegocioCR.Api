@@ -12,4 +12,12 @@ public interface IEmailService
         string toEmail,
         string subject,
         string body);
+
+    /// <summary>Envío de campaña con remitente del negocio y Reply-To opcional. Retorna el id del mensaje en Resend.</summary>
+    Task<string?> SendCampaignAsync(
+        BusinessEntity business,
+        string toEmail,
+        string subject,
+        string htmlBody,
+        CancellationToken cancellationToken = default);
 }

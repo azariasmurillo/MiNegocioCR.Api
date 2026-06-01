@@ -39,4 +39,21 @@ public class ConsoleEmailService : IEmailService
             toEmail, subject, body);
         return Task.CompletedTask;
     }
+
+    public Task<string?> SendCampaignAsync(
+        BusinessEntity business,
+        string toEmail,
+        string subject,
+        string htmlBody,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning(
+            "[DEV EMAIL CAMPAIGN] Negocio: {Business} | Reply-To: {ReplyTo} | Para: {Email} | Asunto: {Subject}\n{Body}",
+            business.Name,
+            business.PublicEmail,
+            toEmail,
+            subject,
+            htmlBody);
+        return Task.FromResult<string?>("dev-campaign-message-id");
+    }
 }

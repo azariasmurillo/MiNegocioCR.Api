@@ -20,6 +20,8 @@
 --   • 20260522120000_RefactorPaymentsAndSalePaymentMethods
 --   • 20260526120000_RemoveRepairOrderDiscountPercent
 --   • 20260526130000_AddSaleDiscountMetadata
+--   • 20260527120000_AddContactLastActivityAt
+--   • 20260528120000_AddContactEmailCampaign
 --
 -- NOTA: DiscountAmount en Sales ya existía antes de mayo 2026; no se agrega aquí.
 -- =============================================================================
@@ -107,5 +109,123 @@ SELECT '20260526130000_AddSaleDiscountMetadata', '8.0.8'
 WHERE NOT EXISTS (
   SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260526130000_AddSaleDiscountMetadata'
 );
+
+-- ── 5. Última actividad comercial en contactos (CRM Fase 1) ─────────────────
+ALTER TABLE "Contacts" ADD COLUMN IF NOT EXISTS "LastActivityAt" timestamp with time zone;
+
+UPDATE "Contacts" c
+SET "LastActivityAt" = sub.max_at
+FROM (
+    SELECT contact_id, MAX(at) AS max_at
+    FROM (
+        SELECT ro."ContactId" AS contact_id, p."CreatedAt" AS at
+        FROM "Payments" p
+        INNER JOIN "RepairOrders" ro ON ro."Id" = p."RepairOrderId"
+        WHERE p."Amount" > 0
+
+        UNION ALL
+
+        SELECT s."ContactId" AS contact_id, s."SaleDate" AS at
+        FROM "Sales" s
+        WHERE s."ContactId" IS NOT NULL
+          AND (
+            s."Total" > 0
+            OR s."PrepaidAmount" > 0
+            OR EXISTS (
+                SELECT 1
+                FROM "SalePaymentMethods" spm
+                WHERE spm."SaleId" = s."Id" AND spm."Amount" > 0
+            )
+          )
+    ) events
+    WHERE contact_id IS NOT NULL
+    GROUP BY contact_id
+) sub
+WHERE c."Id" = sub.contact_id
+  AND (c."LastActivityAt" IS NULL OR c."LastActivityAt" < sub.max_at);
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260527120000_AddContactLastActivityAt', '8.0.8'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260527120000_AddContactLastActivityAt'
+);
+
+-- ── 6. Campañas de correo (CRM Fase 2) ───────────────────────────────────────
+ALTER TABLE "Contacts" ADD COLUMN IF NOT EXISTS "LastMarketingEmailAt" timestamp with time zone;
+
+CREATE TABLE IF NOT EXISTS "ContactEmailCampaignLogs" (
+  "Id" uuid NOT NULL,
+  "BusinessId" uuid NOT NULL,
+  "ContactId" uuid NOT NULL,
+  "SentAt" timestamp with time zone NOT NULL,
+  "Subject" character varying(300) NOT NULL,
+  "Status" character varying(20) NOT NULL,
+  "ResendMessageId" character varying(100),
+  "ErrorMessage" character varying(500),
+  "InactiveDaysUsed" integer NOT NULL,
+  "QuietDaysUsed" integer NOT NULL,
+  CONSTRAINT "PK_ContactEmailCampaignLogs" PRIMARY KEY ("Id"),
+  CONSTRAINT "FK_ContactEmailCampaignLogs_Businesses_BusinessId" FOREIGN KEY ("BusinessId") REFERENCES "Businesses" ("Id") ON DELETE CASCADE,
+  CONSTRAINT "FK_ContactEmailCampaignLogs_Contacts_ContactId" FOREIGN KEY ("ContactId") REFERENCES "Contacts" ("Id") ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS "IX_ContactEmailCampaignLogs_BusinessId_SentAt" ON "ContactEmailCampaignLogs" ("BusinessId", "SentAt");
+CREATE INDEX IF NOT EXISTS "IX_ContactEmailCampaignLogs_BusinessId_ContactId_SentAt" ON "ContactEmailCampaignLogs" ("BusinessId", "ContactId", "SentAt");
+CREATE INDEX IF NOT EXISTS "IX_ContactEmailCampaignLogs_ContactId" ON "ContactEmailCampaignLogs" ("ContactId");
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260528120000_AddContactEmailCampaign', '8.0.8'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260528120000_AddContactEmailCampaign'
+);
+
+-- ── 7. Cola de campañas por correo ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "EmailCampaigns" (
+  "Id" uuid NOT NULL,
+  "BusinessId" uuid NOT NULL,
+  "SubjectTemplate" character varying(300) NOT NULL,
+  "BodyText" character varying(8000),
+  "ImageUrl" character varying(2000),
+  "InactiveDaysUsed" integer NOT NULL,
+  "QuietDaysUsed" integer NOT NULL,
+  "AudienceMode" character varying(32) NOT NULL,
+  "Status" character varying(20) NOT NULL,
+  "CreatedAt" timestamp with time zone NOT NULL,
+  "CompletedAt" timestamp with time zone,
+  "TotalRecipients" integer NOT NULL,
+  "SentCount" integer NOT NULL,
+  "FailedCount" integer NOT NULL,
+  CONSTRAINT "PK_EmailCampaigns" PRIMARY KEY ("Id"),
+  CONSTRAINT "FK_EmailCampaigns_Businesses_BusinessId" FOREIGN KEY ("BusinessId") REFERENCES "Businesses" ("Id") ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "EmailCampaignRecipients" (
+  "Id" uuid NOT NULL,
+  "CampaignId" uuid NOT NULL,
+  "ContactId" uuid NOT NULL,
+  "ContactName" character varying(200) NOT NULL,
+  "ContactEmail" character varying(200) NOT NULL,
+  "Status" character varying(20) NOT NULL,
+  "GlobalQueueOrder" bigint NOT NULL,
+  "ProcessedAt" timestamp with time zone,
+  "ErrorMessage" character varying(500),
+  "ResendMessageId" character varying(100),
+  CONSTRAINT "PK_EmailCampaignRecipients" PRIMARY KEY ("Id"),
+  CONSTRAINT "FK_EmailCampaignRecipients_EmailCampaigns_CampaignId" FOREIGN KEY ("CampaignId") REFERENCES "EmailCampaigns" ("Id") ON DELETE CASCADE,
+  CONSTRAINT "FK_EmailCampaignRecipients_Contacts_ContactId" FOREIGN KEY ("ContactId") REFERENCES "Contacts" ("Id") ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS "IX_EmailCampaigns_BusinessId_CreatedAt" ON "EmailCampaigns" ("BusinessId", "CreatedAt");
+CREATE INDEX IF NOT EXISTS "IX_EmailCampaigns_BusinessId_Status" ON "EmailCampaigns" ("BusinessId", "Status");
+CREATE INDEX IF NOT EXISTS "IX_EmailCampaignRecipients_CampaignId" ON "EmailCampaignRecipients" ("CampaignId");
+CREATE INDEX IF NOT EXISTS "IX_EmailCampaignRecipients_ContactId" ON "EmailCampaignRecipients" ("ContactId");
+CREATE INDEX IF NOT EXISTS "IX_EmailCampaignRecipients_Status_GlobalQueueOrder" ON "EmailCampaignRecipients" ("Status", "GlobalQueueOrder");
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260529120000_AddEmailCampaignQueue', '8.0.8'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260529120000_AddEmailCampaignQueue'
+);
+
 
 COMMIT;

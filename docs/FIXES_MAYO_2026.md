@@ -35,6 +35,9 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 20. [UI — WhatsApp panel recogido por defecto](#20-ui--whatsapp-panel-recogido-por-defecto)
 21. [Dashboard — datos desde Sales + zona Costa Rica](#21-dashboard--datos-desde-sales--zona-costa-rica)
 22. [Clientes — editar contacto no persistía](#22-clientes--editar-contacto-no-persistía)
+23. [Ventas — IVA incluido en precios (no sumar 13% extra)](#23-ventas--iva-incluido-en-precios-no-sumar-13-extra)
+24. [Dashboard — filtros por rango y gráfico por canal](#24-dashboard--filtros-por-rango-y-gráfico-por-canal)
+25. [Ventas — facturar reparación con descuento/cortesía (saldo ₡0)](#25-ventas--facturar-reparación-con-descuentocortesía-saldo-0)
 
 ---
 
@@ -60,6 +63,9 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 | 16 | UI | WhatsApp panel expandido al cargar (molesto) | ✅ |
 | 17 | Dashboard | Reparaciones = 0, fechas UTC, totales mal interpretados | ✅ |
 | 18 | Clientes | Editar nombre/teléfono no se guardaba | ✅ |
+| 19 | Ventas | IVA sumado dos veces en POS/factura | ✅ |
+| 20 | Dashboard | KPIs ignoraban filtros; actividad falsa | ✅ |
+| 21 | Ventas | 500 al facturar reparación con descuento + abonos (saldo ₡0) | ✅ |
 
 ---
 
@@ -532,7 +538,7 @@ Documentados en [SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./SETUP_LOCAL_Y_CAMBIOS_MAY
 
 | Problema | Causa |
 |----------|--------|
-| Reparaciones = 0 | `GetProfitBySourceAsync` agrupaba por `Source == "Repair"`, pero al facturar `SalesController` fuerza `Source = "Manual"` aunque `RepairOrderId` sí se guarda. |
+| Reparaciones = 0 | `GetProfitBySourceAsync` agrupaba por `Source == "Repair"`. **Corregido en §25:** `SalesController` ahora guarda `Source = "Repair"` cuando hay `repairOrderId`; el dashboard también clasifica por `RepairOrderId != null`. |
 | Ventas por reparación | El listado no exponía `RepairOrderId` / `Source`; el frontend no podía clasificar. |
 | Fechas | Filtros y «hoy» usaban `DateTime.UtcNow.Date` o ISO del navegador, no calendario **America/Costa_Rica**. |
 | Búsqueda | No incluía `CustomerPhone`. |
@@ -627,18 +633,107 @@ El motor de ventas trataba el subtotal como **base neta** y **sumaba** IVA encim
 
 ---
 
+## 24. Dashboard — filtros por rango y gráfico por canal
+
+**Commits:** API `7f983ef` · Frontend `1c1a975`
+
+### Síntoma
+
+- KPIs del dashboard (ingresos, ganancia, ticket) **no cambiaban** al elegir Semana / Mes / Todo.
+- Gráfico de tendencia y «top productos» ignoraban el rango de fechas.
+- Actividad reciente mostraba entradas falsas («facturas enviadas») o sin filtrar por período.
+- No había desglose visual de ganancia por canal (reparaciones vs ventas directas vs WhatsApp).
+
+### Causa
+
+Los endpoints de summary, `profit-by-source`, `top-products` y `activity` no recibían o no aplicaban `from`/`to`. El frontend enviaba fechas pero el backend usaba rangos fijos o sin filtro en algunos queries.
+
+### Fix
+
+| Archivo | Cambio |
+|---------|--------|
+| `DashboardRepository.cs` | Summary, tendencia, top products, activity y profit-by-source respetan `fromUtcInclusive` / `toUtcExclusive`. |
+| `DashboardController.cs` + use cases | Parámetros de fecha en todos los widgets. |
+| `dashboard.service.ts` | Envía `yyyy-MM-dd` al API para el rango seleccionado. |
+| `dashboard.html` / `dashboard.ts` | Etiqueta dinámica del período; filtros Hoy/Semana/Mes/Todo. |
+| `dashboard-activity-display.ts` | Solo ventas creadas + órdenes **entregadas** (sin «facturas enviadas» inventadas). |
+| `dashboard-source-chart/` (nuevo) | Donut de ganancia por canal. |
+| `dashboard-trend-chart.*` | Total del período en el gráfico de tendencia. |
+
+### Verificación
+
+1. Dashboard → cambiar **Hoy / Semana / Mes / Todo** → KPIs, donut, tendencia y actividad cambian.
+2. Consola del navegador sin 500 en `/api/dashboard/*`.
+3. `dotnet test` y `npm run build` OK.
+
+---
+
+## 25. Ventas — facturar reparación con descuento/cortesía (saldo ₡0)
+
+**Commits:** API `2cb8ed8` (abonos + descuento) · `d15cd40` (TotalAmount) · Frontend `29a679f` (tests totales)
+
+### Síntoma
+
+Al facturar una orden de reparación con **descuento grande** (donación/cortesía) y **abonos previos** que dejan saldo **₡0**, POST `/api/sales` fallaba con **500**:
+
+```text
+An error occurred while saving the entity changes...
+null value in column "TotalAmount" of relation "Sales" violates not-null constraint
+```
+
+Ejemplo real: servicio ₡35.000 − descuento ₡30.000 = total ₡5.000; abonos previos ₡5.000 → saldo ₡0.
+
+### Causa (dos bugs)
+
+| # | Problema | Causa |
+|---|----------|--------|
+| 1 | Rechazo cuando abonos > total con descuento | `RegisterSaleUseCase` lanzaba `InvalidOperationException` si `PrepaidAmount > TotalOrden` tras aplicar descuento al facturar (común en cortesías). |
+| 2 | **500 en PostgreSQL con saldo ₡0** | Columna legacy `TotalAmount` (NOT NULL). EF Core omitía el valor cuando `Total = 0` (`HasDefaultValue` + cero CLR) → INSERT con `NULL`. Los tests **InMemory** no reproducían esto. |
+
+### Fix
+
+| Archivo | Cambio |
+|---------|--------|
+| `RegisterSaleUseCase.cs` | Permite facturar si abonos ≥ total con descuento; `Total = max(0, TotalOrden − PrepaidAmount)`. |
+| `SalesController.cs` | Con `repairOrderId`: `Source = "Repair"`; no exige ítems en el body (vienen de la orden en BD). |
+| `Domain/Entities/Sale.cs` | `TotalAmount` setter público (alias de `Total`). |
+| `AppDbContext.cs` | `SaveChangesAsync`: sincroniza `TotalAmount = Total`; mapeo `ValueGeneratedNever` para que EF siempre envíe la columna. |
+| `RegisterSaleFinancialTests.cs` | Casos donación: descuento fijo + abonos parciales / abonos > total con descuento. |
+| `RegisterSalePostgresIntegrationTests.cs` | **Nuevo** — reproduce el escenario contra PostgreSQL real (detecta el bug de `TotalAmount`). |
+| `manual-sale-totals.spec.ts` | Tests frontend alineados al desglose con descuento + abonos. |
+
+### Reglas de negocio (post-fix)
+
+- **Descuento** se aplica solo al facturar en el POS (% o ₡), no en la orden.
+- **Abonos** (`PrepaidAmount`) y **descuento** (`DiscountAmount`) son conceptos distintos.
+- Se puede emitir factura con **saldo cobrado hoy = ₡0** (sin métodos de pago) si abonos + descuento cubren el total.
+- `TotalAmount` en BD debe igualar `Total` (monto cobrado hoy).
+
+### Verificación
+
+1. Orden con servicio ₡15.000–₡35.000 → abono parcial → facturar con descuento ₡ en modo **₡** (no %) → saldo ₡0 → **Guardar e imprimir** sin 500.
+2. Factura muestra: SubTotal Gravado, Descuento Gravado, Impuestos, Total, Abonos previos, Saldo a cobrar.
+3. `dotnet test` → **154+** tests (incluye integración Postgres si BD local disponible).
+4. `ng test` → specs de `manual-sale-totals`.
+
+**Nota para agentes:** cambios que tocan `Sales`/`TotalAmount` deben probarse con `RegisterSalePostgresIntegrationTests` o PostgreSQL local, no solo InMemory.
+
+---
+
 ## 15. Pendiente / deploy
 
 Antes de producción, revisar [DEPLOY.md](./DEPLOY.md):
 
-- [ ] **Commit + push API** (`master`) — dashboard, contactos, reparaciones sin IVA en orden (si local)
-- [ ] **Commit + push frontend** (`main`) — clientes PUT, dashboard, calendario filtros (si local)
+- [x] **Commit + push API** (`master`) — dashboard filtros, factura reparación saldo ₡0 (`d15cd40`)
+- [x] **Commit + push frontend** (`main`) — dashboard UI, tests `manual-sale-totals`
 - [ ] Variables Railway (JWT, Resend, Supabase, Admin, `App__PublicUrl`, etc.)
-- [ ] `dotnet ef database update` en Supabase prod (puerto **5432**)
+- [ ] `dotnet ef database update` en Supabase prod (puerto **5432**) si faltan migraciones
 - [ ] `Scripts/verify-schema.sql` — columnas de ventas + historial de 4 migraciones mayo 2026
 - [ ] `Scripts/apply-pending-migrations.sql` — solo si verify falla
-- [ ] Smoke test: login, dashboard, **orden con contacto repetido**, venta con descuento + abonos, email factura
+- [ ] Smoke test: login, dashboard (filtros + donut), **facturar reparación con descuento ₡ + abonos → saldo ₡0**, email factura
 - [ ] Opcional: `/health`, desactivar Swagger en prod, `vercel.json` para SPA
+
+**Importante:** pedir confirmación al usuario antes de `git push` / deploy en prod.
 
 ### Comandos rápidos pre-deploy
 
@@ -648,9 +743,10 @@ dotnet test
 
 cd ../mi-negociocr-frontend
 npm run build
+npm run test
 ```
 
-**Esperado:** 150 tests API, build frontend sin errores TypeScript (warnings de budget CSS son aceptables).
+**Esperado:** 154+ tests API (154 sin Postgres local; +1 integración si `MiNegocioCR_Dev` está arriba), build frontend sin errores TypeScript.
 
 ### Ubicación de esta documentación
 
@@ -682,4 +778,4 @@ Cómo confirmar que quedó resuelto.
 
 ---
 
-*Última actualización: 27 mayo 2026 — IVA incluido en ventas*
+*Última actualización: 28 mayo 2026 — dashboard filtros; factura reparación descuento + saldo ₡0 (`TotalAmount`)*

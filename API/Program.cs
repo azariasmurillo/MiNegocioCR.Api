@@ -138,6 +138,10 @@ builder.Services.AddControllers(options => options.Filters.Add<DomainExceptionFi
         options.JsonSerializerOptions.Converters.Add(
             new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
     });
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 5 * 1024 * 1024;
+});
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IResend>(sp =>
@@ -242,6 +246,17 @@ builder.Services.AddScoped<ISearchContactsUseCase, SearchContactsUseCase>();
 builder.Services.AddScoped<IUpdateContactUseCase, UpdateContactUseCase>();
 builder.Services.AddScoped<ISoftDeleteContactUseCase, SoftDeleteContactUseCase>();
 builder.Services.AddScoped<IHardDeleteContactUseCase, HardDeleteContactUseCase>();
+builder.Services.AddScoped<IListContactInsightsUseCase, ListContactInsightsUseCase>();
+builder.Services.AddScoped<IGetContactActivityUseCase, GetContactActivityUseCase>();
+builder.Services.AddScoped<IGetCampaignPreviewUseCase, GetCampaignPreviewUseCase>();
+builder.Services.AddScoped<ISendCampaignEmailUseCase, SendCampaignEmailUseCase>();
+builder.Services.AddScoped<IUploadCampaignImageUseCase, UploadCampaignImageUseCase>();
+builder.Services.AddScoped<IQueueCampaignUseCase, QueueCampaignUseCase>();
+builder.Services.AddScoped<IGetCampaignStatusUseCase, GetCampaignStatusUseCase>();
+builder.Services.AddScoped<IGetActiveCampaignUseCase, GetActiveCampaignUseCase>();
+builder.Services.AddScoped<ICampaignQueueProcessor, CampaignQueueProcessor>();
+builder.Services.AddHostedService<CampaignQueueBackgroundService>();
+builder.Services.AddScoped<ICampaignImageStorageService, SupabaseCampaignImageStorageService>();
 
 // --- Repair orders ---
 builder.Services.AddScoped<ICreateRepairOrderUseCase, CreateRepairOrderUseCase>();

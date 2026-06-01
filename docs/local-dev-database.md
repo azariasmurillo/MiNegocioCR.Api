@@ -56,6 +56,21 @@ WHERE table_name = 'RepairOrders' AND column_name = 'DiscountPercent';
 
 Sin estas columnas/tablas, fallan **dashboard** y **POST /api/sales** con HTTP 500.
 
+### Columna legacy `TotalAmount`
+
+- Existe desde antes del refactor; **NOT NULL** en PostgreSQL.
+- Debe persistirse igual que `Total` (monto cobrado hoy). Con saldo ₡0, EF debe enviar `0`, no omitir la columna (ver FIXES §25).
+- Al arrancar, `AppDbContext.SaveChangesAsync` sincroniza `TotalAmount = Total`.
+
+### Test de integración PostgreSQL
+
+```powershell
+cd MiNegocioCR.Api
+dotnet test --filter RegisterSalePostgresIntegrationTests
+```
+
+Requiere PostgreSQL local (`MiNegocioCR_Dev` en `appsettings.Development.json`). Si la BD no está disponible, el test se omite. **Recomendado** antes de cambiar `RegisterSaleUseCase` o mapeo de `Sales`.
+
 ### SQL manual — quitar descuento de reparaciones
 
 Si EF no aplica la migración `20260526120000`:

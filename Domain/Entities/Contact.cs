@@ -8,6 +8,10 @@ namespace MiNegocioCR.Api.Domain.Entities
         public string Phone { get; set; } = default!;
         public string? Email { get; set; }
         public DateTime CreatedAt { get; set; }
+        /// <summary>Última vez que el contacto generó un pago (venta o abono de reparación).</summary>
+        public DateTime? LastActivityAt { get; set; }
+        /// <summary>Última vez que se le envió un correo de campaña de marketing.</summary>
+        public DateTime? LastMarketingEmailAt { get; set; }
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
 

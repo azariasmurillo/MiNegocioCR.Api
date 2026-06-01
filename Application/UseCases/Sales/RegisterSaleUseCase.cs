@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.Common;
+using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
@@ -280,6 +280,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
 
                 // ── Snapshot de costos y métricas ─────────────────────────
                 await ApplyCostSnapshotAndTotalsAsync(sale);
+
+                if (contact != null && ContactActivityHelper.SaleInvolvesPayment(sale))
+                    ContactActivityHelper.Touch(contact, sale.SaleDate);
 
                 await _saleRepository.AddSaleAsync(sale);
 

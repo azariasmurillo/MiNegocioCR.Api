@@ -13,4 +13,4 @@ Los archivos **`DEPLOY.md`** y **`FIXES_MAYO_2026.md`** son copias de la raíz d
 
 Workspace completo (incluye `REFACTOR_REPAIR_PAYMENTS_SALES.md`, `SETUP_LOCAL_...`): carpeta padre `Mi-negociocr/`.
 
-*Última actualización: 27 mayo 2026*
+*Última actualización: 28 mayo 2026*

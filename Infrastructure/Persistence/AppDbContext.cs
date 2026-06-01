@@ -43,6 +43,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<RepairOrderImage> RepairOrderImages => Set<RepairOrderImage>();
         public DbSet<CatalogVariantImage> CatalogVariantImages => Set<CatalogVariantImage>();
+        public DbSet<ContactEmailCampaignLog> ContactEmailCampaignLogs => Set<ContactEmailCampaignLog>();
+        public DbSet<EmailCampaign> EmailCampaigns => Set<EmailCampaign>();
+        public DbSet<EmailCampaignRecipient> EmailCampaignRecipients => Set<EmailCampaignRecipient>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -487,6 +490,66 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
             modelBuilder.Entity<QuickReplyTemplate>()
                 .HasIndex(x => new { x.BusinessId, x.Name });
+
+            modelBuilder.Entity<ContactEmailCampaignLog>(entity =>
+            {
+                entity.Property(x => x.Subject).HasMaxLength(300);
+                entity.Property(x => x.Status).HasMaxLength(20);
+                entity.Property(x => x.ResendMessageId).HasMaxLength(100);
+                entity.Property(x => x.ErrorMessage).HasMaxLength(500);
+
+                entity.HasOne(x => x.Contact)
+                    .WithMany()
+                    .HasForeignKey(x => x.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.BusinessId, x.SentAt });
+                entity.HasIndex(x => new { x.BusinessId, x.ContactId, x.SentAt });
+            });
+
+            modelBuilder.Entity<EmailCampaign>(entity =>
+            {
+                entity.Property(x => x.SubjectTemplate).HasMaxLength(300);
+                entity.Property(x => x.BodyText).HasMaxLength(8000);
+                entity.Property(x => x.ImageUrl).HasMaxLength(2000);
+                entity.Property(x => x.AudienceMode).HasMaxLength(32);
+                entity.Property(x => x.Status).HasMaxLength(20);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.BusinessId, x.CreatedAt });
+                entity.HasIndex(x => new { x.BusinessId, x.Status });
+            });
+
+            modelBuilder.Entity<EmailCampaignRecipient>(entity =>
+            {
+                entity.Property(x => x.ContactName).HasMaxLength(200);
+                entity.Property(x => x.ContactEmail).HasMaxLength(200);
+                entity.Property(x => x.Status).HasMaxLength(20);
+                entity.Property(x => x.ErrorMessage).HasMaxLength(500);
+                entity.Property(x => x.ResendMessageId).HasMaxLength(100);
+
+                entity.HasOne(x => x.Campaign)
+                    .WithMany(x => x.Recipients)
+                    .HasForeignKey(x => x.CampaignId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Contact)
+                    .WithMany()
+                    .HasForeignKey(x => x.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.Status, x.GlobalQueueOrder });
+                entity.HasIndex(x => x.CampaignId);
+            });
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
