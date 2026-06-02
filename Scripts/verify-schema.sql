@@ -31,6 +31,13 @@ SELECT EXISTS (
   WHERE table_schema = 'public' AND table_name = 'ContactEmailCampaignLogs'
 ) AS contact_email_campaign_logs_exists;
 
+\echo '=== Tablas cola de campañas ==='
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('EmailCampaigns', 'EmailCampaignRecipients')
+ORDER BY table_name;
+
 \echo '=== Migraciones recientes en historial ==='
 SELECT "MigrationId"
 FROM "__EFMigrationsHistory"
@@ -40,12 +47,14 @@ WHERE "MigrationId" IN (
   '20260526120000_RemoveRepairOrderDiscountPercent',
   '20260526130000_AddSaleDiscountMetadata',
   '20260527120000_AddContactLastActivityAt',
-  '20260528120000_AddContactEmailCampaign'
+  '20260528120000_AddContactEmailCampaign',
+  '20260529120000_AddEmailCampaignQueue'
 )
 ORDER BY "MigrationId";
 
 \echo '=== Esperado ==='
 -- Sales: 8 columnas listadas arriba (Discount = monto descuento; TotalAmount legacy = Total)
 -- SalePaymentMethods: true
--- Contacts.LastActivityAt: 1 fila
--- Historial: 5 filas (o las que falten indican qué migración correr)
+-- Contacts: LastActivityAt + LastMarketingEmailAt (2 filas en consulta CRM)
+-- ContactEmailCampaignLogs + EmailCampaigns + EmailCampaignRecipients: existen
+-- Historial: 7 filas mayo 2026 (o las que falten indican qué migración correr)

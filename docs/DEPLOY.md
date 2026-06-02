@@ -72,7 +72,7 @@ npm run build
 
 | Verificación | Esperado |
 |--------------|----------|
-| Tests API | **154+** pasando (154 sin Postgres local; +1 integración si BD dev disponible) |
+| Tests API | **160+** pasando (incluye tests de campaña CRM; +1 integración Postgres si BD local disponible) |
 | Build frontend | Sin errores TypeScript (warnings de budget CSS OK) |
 | Cambios commiteados | API (`master`) y frontend (`main`) |
 | Variables Railway | Todas las obligatorias configuradas |
@@ -104,6 +104,8 @@ Cambios recientes que deben estar incluidos en el deploy:
 - Script `MiNegocioCR.Api/Scripts/verify-schema.sql` (comprobar schema)
 - Frontend: WhatsApp panel **recogido por defecto** (`collapsed = true`)
 - Frontend: pagos al pie del carrito, efectivo precargado, **Completar restante**
+- **CRM campañas de correo:** cola global (`EmailCampaigns`), worker 60 s, cupo 495/día, cancelación, dedupe por email, validaciones de contenido — ver `MiNegocioCR.Api/docs/email-campaigns-crm.md`
+- Fix **re-envío en bucle** de campaña (`CampaignQueueProcessor`, progreso desde recipients)
 
 ---
 
@@ -161,6 +163,9 @@ Alternativas aceptadas por el código:
 | `20260522120000_RefactorPaymentsAndSalePaymentMethods` | Tabla `SalePaymentMethods`, `TotalOrden`, `PrepaidAmount` |
 | `20260526120000_RemoveRepairOrderDiscountPercent` | Elimina `DiscountPercent` de `RepairOrders` |
 | `20260526130000_AddSaleDiscountMetadata` | `DiscountKind`, `DiscountInputValue` en `Sales` |
+| `20260527120000_AddContactLastActivityAt` | `Contacts.LastActivityAt` |
+| `20260528120000_AddContactEmailCampaign` | `LastMarketingEmailAt`, `ContactEmailCampaignLogs` |
+| `20260529120000_AddEmailCampaignQueue` | `EmailCampaigns`, `EmailCampaignRecipients` |
 
 Desde mayo 2026 estas migraciones tienen `[Migration]` / `.Designer.cs` y **EF las detecta**. `dotnet ef database update` y el arranque de la API (`APPLY_MIGRATIONS_ON_STARTUP=true`, default) las aplican.
 
@@ -316,6 +321,7 @@ Checklist manual (5–10 minutos):
 - [ ] **Subir logo** del negocio (Supabase storage)
 - [ ] **WhatsApp panel** — aparece recogido (💬); expandir/cerrar con botones
 - [ ] **WhatsApp OAuth** — solo si está configurado (redirect + webhook)
+- [ ] **Campaña CRM** — Clientes → Campaña: preview, encolar (asunto/cuerpo válidos), status avanza ~1 correo/min, **Detener campaña** detiene envíos; sin decenas de duplicados al mismo correo
 
 ### Endpoints útiles para diagnóstico
 

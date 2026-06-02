@@ -22,6 +22,7 @@
 --   • 20260526130000_AddSaleDiscountMetadata
 --   • 20260527120000_AddContactLastActivityAt
 --   • 20260528120000_AddContactEmailCampaign
+--   • 20260529120000_AddEmailCampaignQueue
 --
 -- NOTA: DiscountAmount en Sales ya existía antes de mayo 2026; no se agrega aquí.
 -- =============================================================================

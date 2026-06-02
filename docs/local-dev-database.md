@@ -56,6 +56,19 @@ WHERE table_name = 'RepairOrders' AND column_name = 'DiscountPercent';
 
 Sin estas columnas/tablas, fallan **dashboard** y **POST /api/sales** con HTTP 500.
 
+### Migraciones CRM y campañas (mayo 2026)
+
+| Migración | Qué agrega |
+|-----------|------------|
+| `20260527120000_AddContactLastActivityAt` | `Contacts.LastActivityAt` |
+| `20260528120000_AddContactEmailCampaign` | `LastMarketingEmailAt`, tabla `ContactEmailCampaignLogs` |
+| `20260529120000_AddEmailCampaignQueue` | `EmailCampaigns`, `EmailCampaignRecipients` |
+
+Sin estas tablas/columnas, fallan **Clientes → Campaña de correo** y el worker de cola.
+
+Guía funcional: [email-campaigns-crm.md](./email-campaigns-crm.md).  
+Emergencia: `Scripts/cancel-active-campaigns.sql`.
+
 ### Columna legacy `TotalAmount`
 
 - Existe desde antes del refactor; **NOT NULL** en PostgreSQL.
@@ -106,7 +119,7 @@ El API usa `QueryTrackingBehavior.NoTracking` global. Al reutilizar contactos ex
 dotnet test
 ```
 
-Esperado: **140** tests pasando (mayo 2026).
+Esperado: **160+** tests pasando (incluye campañas CRM; mayo 2026).
 
 ## Documentación relacionada
 
@@ -114,7 +127,8 @@ Esperado: **140** tests pasando (mayo 2026).
 |---------|-----------|
 | `docs/DEPLOY.md` | Deploy producción (Railway, Vercel, Supabase) |
 | `docs/FIXES_MAYO_2026.md` | Changelog de fixes |
+| `docs/email-campaigns-crm.md` | Campañas de correo en cola |
 | `Scripts/verify-schema.sql` | Verificación post-migración |
 | `Scripts/apply-pending-migrations.sql` | Respaldo idempotente |
 
-*Última actualización: 27 mayo 2026*
+*Última actualización: 25 mayo 2026*

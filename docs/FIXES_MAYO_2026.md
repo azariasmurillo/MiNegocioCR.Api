@@ -38,6 +38,9 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 23. [Ventas — IVA incluido en precios (no sumar 13% extra)](#23-ventas--iva-incluido-en-precios-no-sumar-13-extra)
 24. [Dashboard — filtros por rango y gráfico por canal](#24-dashboard--filtros-por-rango-y-gráfico-por-canal)
 25. [Ventas — facturar reparación con descuento/cortesía (saldo ₡0)](#25-ventas--facturar-reparación-con-descuentocortesía-saldo-0)
+26. [CRM — campañas de correo en cola global](#26-crm--campañas-de-correo-en-cola-global)
+27. [CRM — bucle de re-envío y progreso de campaña](#27-crm--bucle-de-re-envío-y-progreso-de-campaña)
+28. [CRM — cancelar, dedupe, validaciones y UI](#28-crm--cancelar-dedupe-validaciones-y-ui)
 
 ---
 
@@ -66,6 +69,9 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 | 19 | Ventas | IVA sumado dos veces en POS/factura | ✅ |
 | 20 | Dashboard | KPIs ignoraban filtros; actividad falsa | ✅ |
 | 21 | Ventas | 500 al facturar reparación con descuento + abonos (saldo ₡0) | ✅ |
+| 22 | CRM | Campaña de correo por cola (495/día, 60 s) | ✅ |
+| 23 | CRM | Decenas de correos duplicados / progreso atascado | ✅ |
+| 24 | CRM | Cancelar campaña, dedupe email, validaciones contenido | ✅ |
 
 ---
 
@@ -720,6 +726,88 @@ Ejemplo real: servicio ₡35.000 − descuento ₡30.000 = total ₡5.000; abono
 
 ---
 
+## 26. CRM — campañas de correo en cola global
+
+**Doc detallada:** [MiNegocioCR.Api/docs/email-campaigns-crm.md](./MiNegocioCR.Api/docs/email-campaigns-crm.md)
+
+### Qué se agregó
+
+- Pantalla **Clientes → Campaña de correo** (audiencia por inactividad / quiet days, imagen opcional, `{nombre}`).
+- Cola global: tablas `EmailCampaigns` + `EmailCampaignRecipients`, worker en background, Resend.
+- Límites: **495** envíos/día plataforma, **60 s** entre envíos (`CampaignLimits`).
+- Migraciones `20260527120000` … `20260529120000` + script `apply-pending-migrations.sql` §5–7.
+
+### Archivos clave (API)
+
+| Área | Archivos |
+|------|----------|
+| Endpoints | `ContactsController.cs` — preview, queue, status, cancel, upload-image |
+| Cola | `QueueCampaignUseCase`, `CampaignQueueProcessor`, `CampaignQueueBackgroundService` |
+| HTML / validación | `CampaignEmailHtmlBuilder`, `CampaignContentValidator` |
+| Tests | `ContactCampaignQueueTests`, `CampaignContentValidatorTests` |
+
+### Archivos clave (frontend)
+
+`pages/campaign/*`, `customer-contacts.service.ts`, `campaign-content-rules.ts`.
+
+### Verificación
+
+`dotnet test --filter ContactCampaign` · encolar campaña pequeña en local · un correo por minuto.
+
+---
+
+## 27. CRM — bucle de re-envío y progreso de campaña
+
+### Síntoma
+
+Campaña con pocos destinatarios (ej. 4) pero **50+** correos al mismo inbox; UI mostraba pendientes en 0 pero “0/N procesados”; en Supabase destinatarios seguían `Pending` y `ContactEmailCampaignLogs` crecía cada minuto.
+
+### Causa
+
+El worker enviaba por Resend pero **no persistía** el estado del destinatario/campaña (fallo de `SaveChanges` o entidades sin tracking con `NoTracking` global) → el mismo `Pending` se procesaba de nuevo en cada ciclo (~60 s).
+
+### Fix
+
+| Archivo | Cambio |
+|---------|--------|
+| `CampaignQueueProcessor.cs` | Reclamo `Processing` con `ExecuteUpdate`; `Sent` antes del log; persistencia de log aislada |
+| `CampaignQueueProgress.cs` | Conteos y estado desde destinatarios; compatible con `NoTracking` |
+| `GetCampaignStatusUseCase.cs` | `SentCount`/`FailedCount` desde recipients; `Completed` si no hay pendientes |
+| `CampaignQueueMetrics.cs` | Rate limit desde primer envío en recipients |
+
+### Verificación
+
+1. Campaña de prueba → **un** correo por destinatario único (dedupe por email).
+2. Status y UI avanzan hasta `Completed`; panel se oculta con `pendingCount === 0`.
+3. `Scripts/investigate-campaign-duplicates.sql` sin crecimiento de logs tras completar.
+
+---
+
+## 28. CRM — cancelar, dedupe, validaciones y UI
+
+### Cancelación
+
+- API: `CancelCampaignUseCase`, `POST .../campaign/cancel`.
+- UI: botón **Detener campaña**; `cancel-active-campaigns.sql` para emergencia en Supabase.
+
+### Dedupe
+
+`CampaignRecipientDeduplication` en `QueueCampaignUseCase` — un email una vez por campaña aunque haya contactos duplicados en CRM.
+
+### Validaciones de contenido
+
+Asunto ≥8 chars sustantivos; cuerpo ≥25 (≥10 con imagen). Tests en `CampaignContentValidatorTests`.
+
+### Frontend (polling y UX)
+
+- Polling 10 s a `getCampaignStatus`; ocultar panel al drenar pendientes.
+- `{nombre}` escapado en hints HTML; `bodyPlaceholder` en TS (NG5002).
+- Espaciado upload de imagen vs hints.
+
+**Commits de referencia (API `master`):** cola `5b11297`, cancel/validación/dedupe `92c4586`, progreso NoTracking `01ee176`. **Frontend `main`:** polling `69a1557`, panel `15b8b45`.
+
+---
+
 ## 15. Pendiente / deploy
 
 Antes de producción, revisar [DEPLOY.md](./DEPLOY.md):
@@ -728,7 +816,8 @@ Antes de producción, revisar [DEPLOY.md](./DEPLOY.md):
 - [x] **Commit + push frontend** (`main`) — dashboard UI, tests `manual-sale-totals`
 - [ ] Variables Railway (JWT, Resend, Supabase, Admin, `App__PublicUrl`, etc.)
 - [ ] `dotnet ef database update` en Supabase prod (puerto **5432**) si faltan migraciones
-- [ ] `Scripts/verify-schema.sql` — columnas de ventas + historial de 4 migraciones mayo 2026
+- [ ] `Scripts/verify-schema.sql` — ventas + CRM/campañas + historial migraciones mayo 2026
+- [ ] Smoke test: **campaña CRM** (encolar, 1 correo/min, detener, status OK) — ver [email-campaigns-crm.md](./MiNegocioCR.Api/docs/email-campaigns-crm.md)
 - [ ] `Scripts/apply-pending-migrations.sql` — solo si verify falla
 - [ ] Smoke test: login, dashboard (filtros + donut), **facturar reparación con descuento ₡ + abonos → saldo ₡0**, email factura
 - [ ] Opcional: `/health`, desactivar Swagger en prod, `vercel.json` para SPA
@@ -778,4 +867,4 @@ Cómo confirmar que quedó resuelto.
 
 ---
 
-*Última actualización: 28 mayo 2026 — dashboard filtros; factura reparación descuento + saldo ₡0 (`TotalAmount`)*
+*Última actualización: 25 mayo 2026 — campañas CRM en cola, fix re-envío, cancelación y validaciones*
