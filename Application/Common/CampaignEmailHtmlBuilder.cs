@@ -54,15 +54,26 @@ public static class CampaignEmailHtmlBuilder
         }
 
         parts.Add("</div>");
-        parts.Add($"""<p style="margin-top:24px;font-size:12px;color:#64748b;">{safeName}</p>""");
+        parts.Add(
+            $"""
+            <p style="margin-top:24px;font-size:12px;color:#64748b;line-height:1.5;">
+              Recibiste este correo porque sos cliente de {safeName}.
+            </p>
+            """);
         parts.Add("</div>");
 
-        return string.Concat(parts);
-    }
-
-    public static void ValidateContent(string? bodyText, string? imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(bodyText) && string.IsNullOrWhiteSpace(imageUrl))
-            throw new ArgumentException("Se requiere texto o imagen para la campaña.");
+        var inner = string.Concat(parts);
+        return $"""
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+            </head>
+            <body style="margin:0;padding:16px;background:#f8fafc;">
+            {inner}
+            </body>
+            </html>
+            """;
     }
 }

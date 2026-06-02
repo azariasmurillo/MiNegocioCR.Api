@@ -51,7 +51,7 @@ public class ContactCampaignQueueTests
         {
             ContactIds = [contactId],
             Subject = "Feliz Navidad",
-            BodyText = "Hola {nombre}",
+            BodyText = "Hola {nombre}, tenemos promoción especial hasta fin de mes. Visitá la tienda.",
             InactiveDays = 60,
             QuietDays = 60
         });
@@ -62,5 +62,59 @@ public class ContactCampaignQueueTests
         var recipient = await ctx.EmailCampaignRecipients.SingleAsync();
         recipient.GlobalQueueOrder.Should().Be(1);
         recipient.Status.Should().Be("Pending");
+    }
+
+    [Fact]
+    public async Task QueueCampaign_DeduplicatesSameEmailAcrossContacts()
+    {
+        await using var ctx = CreateContext();
+        var businessId = Guid.NewGuid();
+        var contactA = Guid.NewGuid();
+        var contactB = Guid.NewGuid();
+
+        ctx.Businesses.Add(new BusinessEntity
+        {
+            Id = businessId,
+            Name = "JoyCaTech",
+            PublicEmail = "joyca@test.com",
+            EnableEmailNotifications = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.Contacts.AddRange(
+            new Contact
+            {
+                Id = contactA,
+                BusinessId = businessId,
+                Name = "Alexander A",
+                Phone = "50688880001",
+                Email = "alex@test.com",
+                CreatedAt = DateTime.UtcNow,
+                LastActivityAt = DateTime.UtcNow.AddDays(-100)
+            },
+            new Contact
+            {
+                Id = contactB,
+                BusinessId = businessId,
+                Name = "Alexander B",
+                Phone = "50688880002",
+                Email = "alex@test.com",
+                CreatedAt = DateTime.UtcNow,
+                LastActivityAt = DateTime.UtcNow.AddDays(-100)
+            });
+        await ctx.SaveChangesAsync();
+
+        var sut = new QueueCampaignUseCase(ctx);
+        var result = await sut.Execute(businessId, new QueueCampaignRequestDto
+        {
+            ContactIds = [contactA, contactB],
+            Subject = "Promo navideña",
+            BodyText = "Hola {nombre}, tenemos promoción especial hasta fin de mes. Visitá la tienda.",
+            InactiveDays = 60,
+            QuietDays = 60
+        });
+
+        result.TotalRecipients.Should().Be(1);
+        (await ctx.EmailCampaignRecipients.CountAsync()).Should().Be(1);
+        (await ctx.EmailCampaignRecipients.SingleAsync()).ContactEmail.Should().Be("alex@test.com");
     }
 }

@@ -27,7 +27,7 @@ public class SendCampaignEmailUseCase : ISendCampaignEmailUseCase
         if (string.IsNullOrWhiteSpace(request.Subject))
             throw new ArgumentException("Subject is required.", nameof(request.Subject));
 
-        CampaignEmailHtmlBuilder.ValidateContent(request.BodyText, request.ImageUrl);
+        CampaignContentValidator.Validate(request.Subject, request.BodyText, request.ImageUrl);
 
         var inactiveDays = request.InactiveDays < 1 ? CampaignLimits.DefaultInactiveDays : request.InactiveDays;
         var quietDays = request.QuietDays < 1 ? CampaignLimits.DefaultQuietDays : request.QuietDays;

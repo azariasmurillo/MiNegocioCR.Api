@@ -216,7 +216,7 @@ public class ContactCampaignTests
     [Fact]
     public void ValidateContent_RequiresTextOrImage()
     {
-        var act = () => CampaignEmailHtmlBuilder.ValidateContent(null, null);
+        var act = () => CampaignContentValidator.ValidateContent(null, null);
         act.Should().Throw<ArgumentException>();
     }
 }

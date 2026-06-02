@@ -24,6 +24,7 @@ public class ContactsController : ControllerBase
     private readonly IQueueCampaignUseCase _queueCampaignUseCase;
     private readonly IGetCampaignStatusUseCase _getCampaignStatusUseCase;
     private readonly IGetActiveCampaignUseCase _getActiveCampaignUseCase;
+    private readonly ICancelCampaignUseCase _cancelCampaignUseCase;
 
     public ContactsController(
         IListContactsUseCase listContactsUseCase,
@@ -38,7 +39,8 @@ public class ContactsController : ControllerBase
         IUploadCampaignImageUseCase uploadCampaignImageUseCase,
         IQueueCampaignUseCase queueCampaignUseCase,
         IGetCampaignStatusUseCase getCampaignStatusUseCase,
-        IGetActiveCampaignUseCase getActiveCampaignUseCase)
+        IGetActiveCampaignUseCase getActiveCampaignUseCase,
+        ICancelCampaignUseCase cancelCampaignUseCase)
     {
         _listContactsUseCase = listContactsUseCase;
         _searchContactsUseCase = searchContactsUseCase;
@@ -53,6 +55,7 @@ public class ContactsController : ControllerBase
         _queueCampaignUseCase = queueCampaignUseCase;
         _getCampaignStatusUseCase = getCampaignStatusUseCase;
         _getActiveCampaignUseCase = getActiveCampaignUseCase;
+        _cancelCampaignUseCase = cancelCampaignUseCase;
     }
 
     [HttpGet("{businessId:guid}/insights")]
@@ -141,6 +144,15 @@ public class ContactsController : ControllerBase
     public async Task<IActionResult> CampaignActive(Guid businessId)
     {
         var result = await _getActiveCampaignUseCase.Execute(businessId);
+        if (result == null)
+            return NoContent();
+        return Ok(result);
+    }
+
+    [HttpPost("{businessId:guid}/campaign/cancel")]
+    public async Task<IActionResult> CampaignCancel(Guid businessId, [FromQuery] Guid? campaignId = null)
+    {
+        var result = await _cancelCampaignUseCase.Execute(businessId, campaignId);
         if (result == null)
             return NoContent();
         return Ok(result);

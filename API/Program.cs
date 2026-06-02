@@ -254,6 +254,7 @@ builder.Services.AddScoped<IUploadCampaignImageUseCase, UploadCampaignImageUseCa
 builder.Services.AddScoped<IQueueCampaignUseCase, QueueCampaignUseCase>();
 builder.Services.AddScoped<IGetCampaignStatusUseCase, GetCampaignStatusUseCase>();
 builder.Services.AddScoped<IGetActiveCampaignUseCase, GetActiveCampaignUseCase>();
+builder.Services.AddScoped<ICancelCampaignUseCase, CancelCampaignUseCase>();
 builder.Services.AddScoped<ICampaignQueueProcessor, CampaignQueueProcessor>();
 builder.Services.AddHostedService<CampaignQueueBackgroundService>();
 builder.Services.AddScoped<ICampaignImageStorageService, SupabaseCampaignImageStorageService>();

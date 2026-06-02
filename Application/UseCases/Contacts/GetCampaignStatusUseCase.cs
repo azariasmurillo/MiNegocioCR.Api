@@ -32,11 +32,13 @@ public class GetCampaignStatusUseCase : IGetCampaignStatusUseCase
         var utcNow = DateTime.UtcNow;
         var pendingCount = await context.EmailCampaignRecipients
             .AsNoTracking()
-            .CountAsync(r => r.CampaignId == campaign.Id && r.Status == "Pending");
+            .CountAsync(r => r.CampaignId == campaign.Id
+                             && CampaignQueueRecipientStatus.UnfinishedStatuses.Contains(r.Status));
 
         var firstPendingOrder = await context.EmailCampaignRecipients
             .AsNoTracking()
-            .Where(r => r.CampaignId == campaign.Id && r.Status == "Pending")
+            .Where(r => r.CampaignId == campaign.Id
+                        && CampaignQueueRecipientStatus.UnfinishedStatuses.Contains(r.Status))
             .OrderBy(r => r.GlobalQueueOrder)
             .Select(r => (long?)r.GlobalQueueOrder)
             .FirstOrDefaultAsync();
@@ -46,7 +48,8 @@ public class GetCampaignStatusUseCase : IGetCampaignStatusUseCase
         {
             pendingBefore = await context.EmailCampaignRecipients
                 .AsNoTracking()
-                .CountAsync(r => r.Status == "Pending" && r.GlobalQueueOrder < firstPendingOrder.Value);
+                .CountAsync(r => CampaignQueueRecipientStatus.UnfinishedStatuses.Contains(r.Status)
+                                 && r.GlobalQueueOrder < firstPendingOrder.Value);
         }
 
         var sentToday = await CampaignQueueMetrics.CountSentTodayGlobalAsync(context, utcNow);

@@ -25,7 +25,7 @@ public class QueueCampaignUseCase : IQueueCampaignUseCase
         if (request.ContactIds == null || request.ContactIds.Count == 0)
             throw new ArgumentException("At least one contact is required.");
 
-        CampaignEmailHtmlBuilder.ValidateContent(request.BodyText, request.ImageUrl);
+        CampaignContentValidator.Validate(request.Subject, request.BodyText, request.ImageUrl);
 
         var inactiveDays = request.InactiveDays < 1 ? CampaignLimits.DefaultInactiveDays : request.InactiveDays;
         var quietDays = request.QuietDays < 1 ? CampaignLimits.DefaultQuietDays : request.QuietDays;
@@ -56,6 +56,8 @@ public class QueueCampaignUseCase : IQueueCampaignUseCase
             .Where(c => CampaignEligibility.IsEligible(c, inactiveDays, quietDays, utcNow, audienceMode))
             .OrderBy(c => c.Name)
             .ToList();
+
+        eligible = CampaignRecipientDeduplication.ByEmail(eligible);
 
         if (eligible.Count == 0)
             throw new InvalidOperationException("Ningún contacto seleccionado es elegible para esta campaña.");

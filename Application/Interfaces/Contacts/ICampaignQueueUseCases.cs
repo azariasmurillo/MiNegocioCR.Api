@@ -17,6 +17,11 @@ public interface IGetActiveCampaignUseCase
     Task<CampaignStatusDto?> Execute(Guid businessId);
 }
 
+public interface ICancelCampaignUseCase
+{
+    Task<CampaignStatusDto?> Execute(Guid businessId, Guid? campaignId = null);
+}
+
 public interface ICampaignQueueProcessor
 {
     Task<bool> ProcessNextAsync(CancellationToken cancellationToken = default);
