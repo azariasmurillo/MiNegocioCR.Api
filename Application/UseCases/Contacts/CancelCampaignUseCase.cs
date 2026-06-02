@@ -24,6 +24,7 @@ public class CancelCampaignUseCase : ICancelCampaignUseCase
             query = query.Where(c => c.Id == campaignId.Value);
 
         var campaign = await query
+            .AsTracking()
             .OrderByDescending(c => c.CreatedAt)
             .FirstOrDefaultAsync();
 
@@ -35,18 +36,20 @@ public class CancelCampaignUseCase : ICancelCampaignUseCase
         campaign.CompletedAt = utcNow;
 
         var pendingRecipients = await _context.EmailCampaignRecipients
+            .AsTracking()
             .Where(r => r.CampaignId == campaign.Id
                         && CampaignQueueRecipientStatus.UnfinishedStatuses.Contains(r.Status))
             .ToListAsync();
 
         foreach (var recipient in pendingRecipients)
         {
-            recipient.Status = "Cancelled";
+            recipient.Status = CampaignQueueRecipientStatus.Cancelled;
             recipient.ProcessedAt = utcNow;
             recipient.ErrorMessage = "Campaña cancelada por el usuario.";
         }
 
         await _context.SaveChangesAsync(CancellationToken.None);
+        await CampaignQueueProgress.SyncCampaignFromRecipientsAsync(_context, campaign.Id);
 
         return await GetCampaignStatusUseCase.BuildStatusAsync(_context, campaign);
     }

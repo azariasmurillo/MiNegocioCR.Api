@@ -51,6 +51,7 @@ public class CampaignQueueProcessor : ICampaignQueueProcessor
             return false;
 
         var recipient = await _context.EmailCampaignRecipients
+            .AsTracking()
             .Include(r => r.Campaign)
             .FirstOrDefaultAsync(r => r.Id == recipientId.Value, cancellationToken);
 
@@ -111,8 +112,21 @@ public class CampaignQueueProcessor : ICampaignQueueProcessor
 
         if (campaign.Status == "Queued")
         {
+            if (_context.Database.IsRelational())
+            {
+                await _context.EmailCampaigns
+                    .Where(c => c.Id == campaign.Id && c.Status == "Queued")
+                    .ExecuteUpdateAsync(
+                        setters => setters.SetProperty(c => c.Status, "InProgress"),
+                        cancellationToken);
+            }
+            else
+            {
+                campaign.Status = "InProgress";
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
             campaign.Status = "InProgress";
-            await _context.SaveChangesAsync(cancellationToken);
         }
 
         var subject = CampaignPersonalization.ApplySubjectTemplate(campaign.SubjectTemplate, recipient.ContactName);
@@ -214,6 +228,7 @@ public class CampaignQueueProcessor : ICampaignQueueProcessor
     {
         var staleBefore = utcNow - StaleProcessingThreshold;
         var staleRecipients = await _context.EmailCampaignRecipients
+            .AsTracking()
             .Where(r => r.Status == CampaignQueueRecipientStatus.Processing
                         && r.ProcessedAt != null
                         && r.ProcessedAt < staleBefore)
@@ -229,6 +244,11 @@ public class CampaignQueueProcessor : ICampaignQueueProcessor
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        var campaignIds = staleRecipients.Select(r => r.CampaignId).Distinct().ToList();
+        foreach (var campaignId in campaignIds)
+            await CampaignQueueProgress.SyncCampaignFromRecipientsAsync(_context, campaignId, cancellationToken);
+
         _logger.LogWarning("Campaign queue recovered {Count} stale Processing recipients.", staleRecipients.Count);
     }
 
@@ -265,16 +285,13 @@ public class CampaignQueueProcessor : ICampaignQueueProcessor
         recipient.ErrorMessage = errorMessage;
         recipient.ResendMessageId = resendMessageId;
 
-        if (finalStatus == CampaignQueueRecipientStatus.Sent)
-            campaign.SentCount++;
-        else if (finalStatus == CampaignQueueRecipientStatus.Failed)
-            campaign.FailedCount++;
-
         if (contact != null && finalStatus == CampaignQueueRecipientStatus.Sent)
+        {
             contact.LastMarketingEmailAt = utcNow;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
-        await UpdateCampaignProgressAsync(campaign, utcNow, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        await CampaignQueueProgress.SyncCampaignFromRecipientsAsync(_context, campaign.Id, cancellationToken);
 
         if (contact != null && !string.IsNullOrWhiteSpace(subject))
             await TryPersistCampaignLogAsync(campaign, contact, subject, finalStatus, utcNow, resendMessageId, errorMessage, cancellationToken);
@@ -377,21 +394,6 @@ public class CampaignQueueProcessor : ICampaignQueueProcessor
                 "Verify ContactEmailCampaignLogs exists in Supabase.",
                 contact.Id,
                 finalStatus);
-        }
-    }
-
-    private async Task UpdateCampaignProgressAsync(EmailCampaign campaign, DateTime utcNow, CancellationToken cancellationToken)
-    {
-        var pending = await _context.EmailCampaignRecipients
-            .CountAsync(
-                r => r.CampaignId == campaign.Id
-                     && CampaignQueueRecipientStatus.UnfinishedStatuses.Contains(r.Status),
-                cancellationToken);
-
-        if (pending == 0)
-        {
-            campaign.Status = "Completed";
-            campaign.CompletedAt = utcNow;
         }
     }
 }

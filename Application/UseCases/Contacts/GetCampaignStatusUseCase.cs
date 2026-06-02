@@ -30,10 +30,8 @@ public class GetCampaignStatusUseCase : IGetCampaignStatusUseCase
     internal static async Task<CampaignStatusDto> BuildStatusAsync(IAppDbContext context, Domain.Entities.EmailCampaign campaign)
     {
         var utcNow = DateTime.UtcNow;
-        var pendingCount = await context.EmailCampaignRecipients
-            .AsNoTracking()
-            .CountAsync(r => r.CampaignId == campaign.Id
-                             && CampaignQueueRecipientStatus.UnfinishedStatuses.Contains(r.Status));
+        var progress = await CampaignQueueProgress.GetRecipientProgressAsync(context, campaign.Id);
+        var pendingCount = progress.UnfinishedCount;
 
         var firstPendingOrder = await context.EmailCampaignRecipients
             .AsNoTracking()
@@ -64,17 +62,21 @@ public class GetCampaignStatusUseCase : IGetCampaignStatusUseCase
 
         var quota = await GetCampaignPreviewUseCase.BuildQuotaAsync(context, utcNow);
 
+        var status = campaign.Status;
+        if (status is not ("Cancelled" or "Completed") && pendingCount == 0)
+            status = "Completed";
+
         return new CampaignStatusDto
         {
             CampaignId = campaign.Id,
-            Status = campaign.Status,
+            Status = status,
             SubjectTemplate = campaign.SubjectTemplate,
             TotalRecipients = campaign.TotalRecipients,
-            SentCount = campaign.SentCount,
-            FailedCount = campaign.FailedCount,
+            SentCount = progress.SentCount,
+            FailedCount = progress.FailedCount,
             PendingCount = pendingCount,
             CreatedAt = campaign.CreatedAt,
-            CompletedAt = campaign.CompletedAt,
+            CompletedAt = campaign.CompletedAt ?? (status == "Completed" ? utcNow : null),
             EstimatedStartUtc = estimate.EstimatedStartUtc,
             EstimatedEndUtc = estimate.EstimatedEndUtc,
             QueuePosition = estimate.QueuePosition,
