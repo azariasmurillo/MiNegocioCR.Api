@@ -1,6 +1,9 @@
 # Documentación MiNegocioCR (API)
 
-Índice de documentación incluida en el repositorio de la API.  
+Índice de documentación incluida en el repositorio de la API.
+
+**Entrada del repo:** [README.md](../README.md) (setup, tests, deploy).
+
 Los archivos **`DEPLOY.md`** y **`FIXES_MAYO_2026.md`** son copias de la raíz del workspace `Mi-negociocr/` — actualizar ambos al cambiar la documentación.
 
 | Archivo | Contenido |
@@ -9,6 +12,8 @@ Los archivos **`DEPLOY.md`** y **`FIXES_MAYO_2026.md`** son copias de la raíz d
 | [FIXES_MAYO_2026.md](./FIXES_MAYO_2026.md) | Changelog de fixes mayo 2026 |
 | [local-dev-database.md](./local-dev-database.md) | PostgreSQL local, migraciones, verify-schema |
 | [email-campaigns-crm.md](./email-campaigns-crm.md) | Campañas de correo CRM (cola, API, emergencia) |
+| [TIENDA_DIGITAL_DISENO_UNIFICADO.md](./TIENDA_DIGITAL_DISENO_UNIFICADO.md) | **Tienda digital — spec oficial unificada** |
+| [MARKETPLACE_LITE_DISENO_v1.md](./MARKETPLACE_LITE_DISENO_v1.md) | Marketplace Lite — visión Chat (referencia) |
 | [RESEND_SETUP.md](../RESEND_SETUP.md) | Configuración correo Resend |
 | [crc-sale-price-rounding.md](./crc-sale-price-rounding.md) | Redondeo precios CRC |
 
