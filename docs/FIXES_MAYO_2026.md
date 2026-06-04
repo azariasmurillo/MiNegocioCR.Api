@@ -42,6 +42,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 27. [CRM — bucle de re-envío y progreso de campaña](#27-crm--bucle-de-re-envío-y-progreso-de-campaña)
 28. [CRM — cancelar, dedupe, validaciones y UI](#28-crm--cancelar-dedupe-validaciones-y-ui)
 29. [Pedidos Internet — módulo completo (junio 2026)](#29-pedidos-internet--módulo-completo-junio-2026)
+30. [Créditos / cuentas por cobrar — spec v1 (backlog)](#30-créditos--cuentas-por-cobrar--spec-v1-backlog)
 
 ---
 
@@ -74,6 +75,8 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 | 23 | CRM | Decenas de correos duplicados / progreso atascado | ✅ |
 | 24 | CRM | Cancelar campaña, dedupe email, validaciones contenido | ✅ |
 | 25 | Pedidos Internet | Módulo compras asistidas Amazon/proxy (API + UI + correos) | ✅ |
+| 26 | Branding print/email | Fallback plataforma MiNegocioCR (no JoyCaTech) | ✅ |
+| 27 | Créditos | Spec v1 cuentas por cobrar documentada | 📋 backlog |
 
 ---
 
@@ -896,4 +899,27 @@ Spec: [MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md](./MiNegocioCR.Api/doc
 
 ---
 
-*Última actualización: 4 junio 2026 — Pedidos Internet (módulo v1) + doc pre-commit*
+## 30. Créditos / cuentas por cobrar — spec v1 (backlog)
+
+### Qué se documentó
+
+Spec funcional **Créditos y cuentas por cobrar**: una cuenta corriente por cliente, movimientos inmutables (`CreditTransaction`), abonos, estados, comunicaciones, recordatorio manual (sin cron automático), dashboard y reportes.
+
+### Documento
+
+**[MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md)** (copia en raíz: `CREDITOS_CUENTAS_COBRAR_DISENO_v1.md`).
+
+### Notas técnicas alineadas al codebase
+
+- Tenant = `BusinessId` (no `TenantId` en entidades).
+- Reutiliza `Contact`, inventario, `IEmailService`, config de negocio.
+- Correos con branding del tenant (mismo patrón que pedidos internet / facturas).
+- **No implementado** aún: sin migración EF ni rutas `/credits`.
+
+### Fases previstas
+
+Ver tabla en la spec: entidades + API → UI → correos → reportes/print.
+
+---
+
+*Última actualización: 4 junio 2026 — Pedidos Internet, branding MiNegocioCR, spec Créditos v1*

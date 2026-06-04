@@ -84,6 +84,12 @@ Controller → Application → Domain → Infrastructure → DB
 
 ---
 
+## 📋 Próximo módulo (documentado)
+
+**Créditos / cuentas por cobrar** — spec `docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md` (sin entidades EF ni controllers aún). Patrón esperado: UseCases + Controller como `InternetOrders` / `RepairOrders`, filtro `BusinessId`.
+
+---
+
 ## 🎯 Objetivo
 
 Backend escalable, desacoplado y mantenible

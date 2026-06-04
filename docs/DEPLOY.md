@@ -166,6 +166,9 @@ Alternativas aceptadas por el código:
 | `20260527120000_AddContactLastActivityAt` | `Contacts.LastActivityAt` |
 | `20260528120000_AddContactEmailCampaign` | `LastMarketingEmailAt`, `ContactEmailCampaignLogs` |
 | `20260529120000_AddEmailCampaignQueue` | `EmailCampaigns`, `EmailCampaignRecipients` |
+| `20260604142659_AddInternetOrders` | `InternetOrders`, líneas y abonos (Pedidos Internet) |
+
+**Pendiente (sin migración aún):** módulo Créditos — ver [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md).
 
 Desde mayo 2026 estas migraciones tienen `[Migration]` / `.Designer.cs` y **EF las detecta**. `dotnet ef database update` y el arranque de la API (`APPLY_MIGRATIONS_ON_STARTUP=true`, default) las aplican.
 
@@ -406,4 +409,4 @@ Los `.md` de registro viven en la carpeta workspace **`Mi-negociocr/`** (monorep
 
 ---
 
-*Última actualización: 27 mayo 2026 — deploy prep, contactos, WhatsApp recogido*
+*Última actualización: 4 junio 2026 — migración Pedidos Internet; spec Créditos en backlog*

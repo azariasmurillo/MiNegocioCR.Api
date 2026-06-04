@@ -2,7 +2,8 @@
 
 **Workspace:** `c:\Mi-negociocr`  
 **Repos Git separados:** `MiNegocioCR.Api` (`master`) · `mi-negociocr-frontend` (`main`)  
-**Spec de producto:** [MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md](./MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md)
+**Spec de producto:** [MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md](./MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md)  
+**Próximo módulo (backlog):** [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md)
 
 ---
 
@@ -227,8 +228,9 @@ integration, routes and sidebar. Extend print-preview for internet-order docs.
 
 ## Referencias
 
-- [FIXES_MAYO_2026.md](./FIXES_MAYO_2026.md) — §29 Pedidos Internet
+- [FIXES_MAYO_2026.md](./FIXES_MAYO_2026.md) — §29 Pedidos Internet, §30 Créditos (backlog)
+- [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) — spec cuentas por cobrar
 - [DEPLOY.md](./DEPLOY.md) — flujo Railway/Vercel
 - [SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md) — PostgreSQL y tenant local
 
-*Última actualización: 4 junio 2026 — code review pre-commit Pedidos Internet*
+*Última actualización: 4 junio 2026 — Pedidos Internet en producción; spec Créditos v1 documentada*

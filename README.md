@@ -1,6 +1,6 @@
 # MiNegocioCR — API
 
-Backend multi-tenant para **MiNegocioCR**: inventario, órdenes de reparación, ventas/POS, dashboard, CRM de clientes, campañas de correo, WhatsApp e integraciones (Resend, Supabase Storage).
+Backend multi-tenant para **MiNegocioCR**: inventario, órdenes de reparación, ventas/POS, pedidos internet, dashboard, CRM de clientes, campañas de correo, WhatsApp e integraciones (Resend, Supabase Storage). **Próximo:** créditos / cuentas por cobrar ([spec](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md)).
 
 | | |
 |---|---|
@@ -66,6 +66,8 @@ MiNegocioCR.Api/
 | Ventas | `SalesController` — POS, factura desde reparación |
 | Dashboard | `DashboardController` — KPIs, tendencias, canales |
 | CRM / campañas | `ContactsController` — clientes, cola de correo, cancelación |
+| Pedidos Internet | `InternetOrdersController` — proxy Amazon, estados, correos |
+| Créditos *(backlog)* | Ver [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) |
 | WhatsApp | `WhatsappController`, webhooks Meta |
 | Admin | `AdminController` — panel `/admin` |
 
@@ -127,6 +129,8 @@ Esperado: **160+** tests (integración Postgres se omite si no hay BD).
 | [docs/TIENDA_DIGITAL_DISENO_UNIFICADO.md](./docs/TIENDA_DIGITAL_DISENO_UNIFICADO.md) | Tienda digital — spec oficial |
 | [docs/MARKETPLACE_LITE_DISENO_v1.md](./docs/MARKETPLACE_LITE_DISENO_v1.md) | Marketplace Lite — referencia Chat |
 | [docs/local-dev-database.md](./docs/local-dev-database.md) | PostgreSQL local y verify-schema |
+| [docs/PEDIDOS_INTERNET_DISENO_v1.md](./docs/PEDIDOS_INTERNET_DISENO_v1.md) | Pedidos Internet |
+| [docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) | Créditos / cuentas por cobrar (backlog) |
 | [docs/README.md](./docs/README.md) | Índice de `docs/` |
 | [RESEND_SETUP.md](./RESEND_SETUP.md) | Configuración Resend |
 

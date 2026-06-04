@@ -112,4 +112,6 @@ Fase siguiente: `send-document`, `send-refund-note`, print frontend.
 
 ---
 
-*Última actualización: mayo 2026*
+**Estado:** implementado (jun 2026). Ver también backlog: [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md).
+
+*Última actualización: junio 2026*

@@ -76,6 +76,8 @@ Sin estas tablas, fallan **Pedidos Internet** (`/internet-orders` en el front, `
 
 Spec: [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md).
 
+**Créditos / cuentas por cobrar (pendiente):** sin migración aún — ver [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md).
+
 Guía funcional: [email-campaigns-crm.md](./email-campaigns-crm.md).  
 Emergencia: `Scripts/cancel-active-campaigns.sql`.
 
