@@ -30,6 +30,7 @@ using MiNegocioCR.Api.Application.Interfaces.Auth;
 using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
+using MiNegocioCR.Api.Application.Interfaces.InternetOrders;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
@@ -274,6 +275,15 @@ builder.Services.AddScoped<IRepairOrderImageStorageService, SupabaseRepairOrderI
 builder.Services.AddScoped<IUploadRepairOrderImagesUseCase, UploadRepairOrderImagesUseCase>();
 builder.Services.AddScoped<IGetRepairOrderImagesUseCase, GetRepairOrderImagesUseCase>();
 builder.Services.AddScoped<IDeleteRepairOrderImageUseCase, DeleteRepairOrderImageUseCase>();
+
+// --- Internet orders (pedidos Amazon / internet) ---
+builder.Services.AddScoped<ICreateInternetOrderUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.CreateInternetOrderUseCase>();
+builder.Services.AddScoped<IUpdateInternetOrderUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.UpdateInternetOrderUseCase>();
+builder.Services.AddScoped<IGetInternetOrderByIdUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.GetInternetOrderByIdUseCase>();
+builder.Services.AddScoped<IListInternetOrdersByBusinessUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.ListInternetOrdersByBusinessUseCase>();
+builder.Services.AddScoped<IUpdateInternetOrderStatusUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.UpdateInternetOrderStatusUseCase>();
+builder.Services.AddScoped<ISendInternetOrderEmailUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.SendInternetOrderEmailUseCase>();
+builder.Services.AddScoped<IInternetOrderNotificationService, InternetOrderNotificationService>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();

@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 
 firebase-adminsdk.json
+
+# ASP.NET Data Protection keys (local only)
+DataProtection-Keys/

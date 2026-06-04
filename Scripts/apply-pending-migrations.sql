@@ -23,6 +23,7 @@
 --   • 20260527120000_AddContactLastActivityAt
 --   • 20260528120000_AddContactEmailCampaign
 --   • 20260529120000_AddEmailCampaignQueue
+--   • 20260604142659_AddInternetOrders
 --
 -- NOTA: DiscountAmount en Sales ya existía antes de mayo 2026; no se agrega aquí.
 -- =============================================================================
@@ -226,6 +227,75 @@ INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 SELECT '20260529120000_AddEmailCampaignQueue', '8.0.8'
 WHERE NOT EXISTS (
   SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260529120000_AddEmailCampaignQueue'
+);
+
+-- ── 8. Pedidos Internet (Amazon / proxy) ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "InternetOrders" (
+  "Id" uuid NOT NULL,
+  "BusinessId" uuid NOT NULL,
+  "ContactId" uuid NOT NULL,
+  "OrderNumber" character varying(20) NOT NULL,
+  "Status" integer NOT NULL,
+  "ExchangeRateApplied" numeric(18,4) NOT NULL,
+  "InternationalShippingCost" numeric(18,2) NOT NULL,
+  "LocalCourierCost" numeric(18,2) NOT NULL,
+  "ServiceFee" numeric(18,2) NOT NULL,
+  "LinesTotalUsd" numeric(18,2) NOT NULL,
+  "LinesTotalCrc" numeric(18,2) NOT NULL,
+  "SubtotalCrc" numeric(18,2) NOT NULL,
+  "TotalAdvancesCrc" numeric(18,2) NOT NULL,
+  "BalanceDueCrc" numeric(18,2) NOT NULL,
+  "CustomerNotes" character varying(2000),
+  "InternalNotes" character varying(2000),
+  "RefundNote" character varying(2000),
+  "ExternalOrderId" character varying(100),
+  "TrackingNumber" character varying(200),
+  "CreatedAt" timestamp with time zone NOT NULL,
+  "UpdatedAt" timestamp with time zone NOT NULL,
+  "PurchasedAt" timestamp with time zone,
+  "ReceivedAt" timestamp with time zone,
+  "DeliveredAt" timestamp with time zone,
+  "CancelledAt" timestamp with time zone,
+  CONSTRAINT "PK_InternetOrders" PRIMARY KEY ("Id"),
+  CONSTRAINT "FK_InternetOrders_Businesses_BusinessId" FOREIGN KEY ("BusinessId") REFERENCES "Businesses" ("Id") ON DELETE CASCADE,
+  CONSTRAINT "FK_InternetOrders_Contacts_ContactId" FOREIGN KEY ("ContactId") REFERENCES "Contacts" ("Id") ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS "InternetOrderLines" (
+  "Id" uuid NOT NULL,
+  "InternetOrderId" uuid NOT NULL,
+  "SortOrder" integer NOT NULL,
+  "ProductName" character varying(300) NOT NULL,
+  "ProductUrl" character varying(2000) NOT NULL,
+  "UnitPriceUsd" numeric(18,2) NOT NULL,
+  "Quantity" integer NOT NULL,
+  "LineTotalUsd" numeric(18,2) NOT NULL,
+  "LineTotalCrc" numeric(18,2) NOT NULL,
+  CONSTRAINT "PK_InternetOrderLines" PRIMARY KEY ("Id"),
+  CONSTRAINT "FK_InternetOrderLines_InternetOrders_InternetOrderId" FOREIGN KEY ("InternetOrderId") REFERENCES "InternetOrders" ("Id") ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "InternetOrderAdvances" (
+  "Id" uuid NOT NULL,
+  "InternetOrderId" uuid NOT NULL,
+  "AmountCrc" numeric(18,2) NOT NULL,
+  "PaidAt" timestamp with time zone NOT NULL,
+  "Method" character varying(50),
+  "Notes" character varying(500),
+  CONSTRAINT "PK_InternetOrderAdvances" PRIMARY KEY ("Id"),
+  CONSTRAINT "FK_InternetOrderAdvances_InternetOrders_InternetOrderId" FOREIGN KEY ("InternetOrderId") REFERENCES "InternetOrders" ("Id") ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "IX_InternetOrders_BusinessId_OrderNumber" ON "InternetOrders" ("BusinessId", "OrderNumber");
+CREATE INDEX IF NOT EXISTS "IX_InternetOrders_BusinessId_Status_CreatedAt" ON "InternetOrders" ("BusinessId", "Status", "CreatedAt");
+CREATE INDEX IF NOT EXISTS "IX_InternetOrders_ContactId" ON "InternetOrders" ("ContactId");
+CREATE INDEX IF NOT EXISTS "IX_InternetOrderLines_InternetOrderId" ON "InternetOrderLines" ("InternetOrderId");
+CREATE INDEX IF NOT EXISTS "IX_InternetOrderAdvances_InternetOrderId" ON "InternetOrderAdvances" ("InternetOrderId");
+
+INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+SELECT '20260604142659_AddInternetOrders', '8.0.8'
+WHERE NOT EXISTS (
+  SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260604142659_AddInternetOrders'
 );
 
 

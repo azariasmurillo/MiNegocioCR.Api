@@ -34,6 +34,9 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<ContactEmailCampaignLog> ContactEmailCampaignLogs { get; }
         DbSet<EmailCampaign> EmailCampaigns { get; }
         DbSet<EmailCampaignRecipient> EmailCampaignRecipients { get; }
+        DbSet<InternetOrder> InternetOrders { get; }
+        DbSet<InternetOrderLine> InternetOrderLines { get; }
+        DbSet<InternetOrderAdvance> InternetOrderAdvances { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

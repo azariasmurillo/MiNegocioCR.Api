@@ -46,6 +46,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<ContactEmailCampaignLog> ContactEmailCampaignLogs => Set<ContactEmailCampaignLog>();
         public DbSet<EmailCampaign> EmailCampaigns => Set<EmailCampaign>();
         public DbSet<EmailCampaignRecipient> EmailCampaignRecipients => Set<EmailCampaignRecipient>();
+        public DbSet<InternetOrder> InternetOrders => Set<InternetOrder>();
+        public DbSet<InternetOrderLine> InternetOrderLines => Set<InternetOrderLine>();
+        public DbSet<InternetOrderAdvance> InternetOrderAdvances => Set<InternetOrderAdvance>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -549,6 +552,68 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
 
                 entity.HasIndex(x => new { x.Status, x.GlobalQueueOrder });
                 entity.HasIndex(x => x.CampaignId);
+            });
+
+            modelBuilder.Entity<InternetOrder>(entity =>
+            {
+                entity.Property(x => x.OrderNumber).HasMaxLength(20);
+                entity.Property(x => x.ExchangeRateApplied).HasPrecision(18, 4);
+                entity.Property(x => x.InternationalShippingCost).HasPrecision(18, 2);
+                entity.Property(x => x.LocalCourierCost).HasPrecision(18, 2);
+                entity.Property(x => x.ServiceFee).HasPrecision(18, 2);
+                entity.Property(x => x.LinesTotalUsd).HasPrecision(18, 2);
+                entity.Property(x => x.LinesTotalCrc).HasPrecision(18, 2);
+                entity.Property(x => x.SubtotalCrc).HasPrecision(18, 2);
+                entity.Property(x => x.TotalAdvancesCrc).HasPrecision(18, 2);
+                entity.Property(x => x.BalanceDueCrc).HasPrecision(18, 2);
+                entity.Property(x => x.CustomerNotes).HasMaxLength(2000);
+                entity.Property(x => x.InternalNotes).HasMaxLength(2000);
+                entity.Property(x => x.RefundNote).HasMaxLength(2000);
+                entity.Property(x => x.ExternalOrderId).HasMaxLength(100);
+                entity.Property(x => x.TrackingNumber).HasMaxLength(200);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Contact)
+                    .WithMany(c => c.InternetOrders)
+                    .HasForeignKey(x => x.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.BusinessId, x.OrderNumber }).IsUnique();
+                entity.HasIndex(x => new { x.BusinessId, x.Status, x.CreatedAt });
+            });
+
+            modelBuilder.Entity<InternetOrderLine>(entity =>
+            {
+                entity.Property(x => x.ProductName).HasMaxLength(300);
+                entity.Property(x => x.ProductUrl).HasMaxLength(2000);
+                entity.Property(x => x.UnitPriceUsd).HasPrecision(18, 2);
+                entity.Property(x => x.LineTotalUsd).HasPrecision(18, 2);
+                entity.Property(x => x.LineTotalCrc).HasPrecision(18, 2);
+
+                entity.HasOne(x => x.InternetOrder)
+                    .WithMany(o => o.Lines)
+                    .HasForeignKey(x => x.InternetOrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => x.InternetOrderId);
+            });
+
+            modelBuilder.Entity<InternetOrderAdvance>(entity =>
+            {
+                entity.Property(x => x.AmountCrc).HasPrecision(18, 2);
+                entity.Property(x => x.Method).HasMaxLength(50);
+                entity.Property(x => x.Notes).HasMaxLength(500);
+
+                entity.HasOne(x => x.InternetOrder)
+                    .WithMany(o => o.Advances)
+                    .HasForeignKey(x => x.InternetOrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => x.InternetOrderId);
             });
         }
 

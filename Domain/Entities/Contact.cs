@@ -16,6 +16,7 @@ namespace MiNegocioCR.Api.Domain.Entities
         public DateTime? DeletedAt { get; set; }
 
         public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
+        public ICollection<InternetOrder> InternetOrders { get; set; } = new List<InternetOrder>();
         public ICollection<Sale> Sales { get; set; } = new List<Sale>();
     }
 }

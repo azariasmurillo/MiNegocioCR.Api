@@ -41,6 +41,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 26. [CRM — campañas de correo en cola global](#26-crm--campañas-de-correo-en-cola-global)
 27. [CRM — bucle de re-envío y progreso de campaña](#27-crm--bucle-de-re-envío-y-progreso-de-campaña)
 28. [CRM — cancelar, dedupe, validaciones y UI](#28-crm--cancelar-dedupe-validaciones-y-ui)
+29. [Pedidos Internet — módulo completo (junio 2026)](#29-pedidos-internet--módulo-completo-junio-2026)
 
 ---
 
@@ -72,6 +73,7 @@ Historial de correcciones aplicadas en MiNegocioCR (API + frontend).
 | 22 | CRM | Campaña de correo por cola (495/día, 60 s) | ✅ |
 | 23 | CRM | Decenas de correos duplicados / progreso atascado | ✅ |
 | 24 | CRM | Cancelar campaña, dedupe email, validaciones contenido | ✅ |
+| 25 | Pedidos Internet | Módulo compras asistidas Amazon/proxy (API + UI + correos) | ✅ |
 
 ---
 
@@ -867,4 +869,31 @@ Cómo confirmar que quedó resuelto.
 
 ---
 
-*Última actualización: 25 mayo 2026 — campañas CRM en cola, fix re-envío, cancelación y validaciones*
+## 29. Pedidos Internet — módulo completo (junio 2026)
+
+### Qué se entregó
+
+Módulo **Pedidos Internet** (compras asistidas / proxy Amazon): CRUD, estados, totales USD/CRC, correos al cliente, UI Angular con vista previa y envío manual de correo (mismo HTML que la vista previa).
+
+### Documentación de commit / code review
+
+Ver **[CAMBIOS_PEDIDOS_INTERNET_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_JUNIO_2026.md)** (checklist pre-commit, archivos por repo, deploy, pruebas manuales).
+
+Spec: [MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md](./MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md).
+
+### Fix aplicado en review pre-commit
+
+| Archivo | Cambio |
+|---------|--------|
+| `MiNegocioCR.Api/Migrations/20260604142659_AddInternetOrders.cs` | `Down()` ya no elimina `EmailCampaignRecipients` por error |
+| `MiNegocioCR.Api/.gitignore` | Ignorar `DataProtection-Keys/` |
+
+### Verificación
+
+- API: `dotnet test` (con API detenida)
+- Frontend: `npm run build`
+- Manual: crear pedido, ojito vista previa, enviar correo sin botón «Ver detalle»
+
+---
+
+*Última actualización: 4 junio 2026 — Pedidos Internet (módulo v1) + doc pre-commit*

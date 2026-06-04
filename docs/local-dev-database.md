@@ -66,6 +66,16 @@ Sin estas columnas/tablas, fallan **dashboard** y **POST /api/sales** con HTTP 5
 
 Sin estas tablas/columnas, fallan **Clientes → Campaña de correo** y el worker de cola.
 
+### Pedidos Internet (junio 2026)
+
+| Migración | Qué agrega |
+|-----------|------------|
+| `20260604142659_AddInternetOrders` | `InternetOrders`, `InternetOrderLines`, `InternetOrderAdvances` |
+
+Sin estas tablas, fallan **Pedidos Internet** (`/internet-orders` en el front, `/api/internet-orders` en el API).
+
+Spec: [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md).
+
 Guía funcional: [email-campaigns-crm.md](./email-campaigns-crm.md).  
 Emergencia: `Scripts/cancel-active-campaigns.sql`.
 
