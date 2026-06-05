@@ -1,6 +1,7 @@
 # Créditos y cuentas por cobrar — Diseño funcional v1.1 (MiNegocioCR)
 
-> **Spec oficial.** Diseño acordado junio 2026; **implementación en curso** (fase 1).  
+> **Spec oficial.** Diseño acordado junio 2026; **implementado** (fases 0–4, jun 2026).  
+> Deploy: [CAMBIOS_CREDITOS_JUNIO_2026.md](./CAMBIOS_CREDITOS_JUNIO_2026.md).  
 > Complementa ventas (cobro inmediato), reparaciones (abonos por orden) y [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md).
 
 **Convención:** en código MiNegocioCR el tenant es `BusinessId` (no `TenantId`). Toda consulta y mutación debe filtrar por `BusinessId` del JWT / sesión.
@@ -251,10 +252,10 @@ Fase 2+: consolidación, reportes, comunicaciones CRUD, cancelar (solo saldo 0).
 | Fase | Contenido |
 |------|-----------|
 | **0** | Documentación v1.1 ✅ |
-| **1** | EF + API + UI lista/detalle, cargos multi-línea, abonos, inventario, correo manual |
-| **2** | POS **“Vender a crédito”**, dashboard KPIs, print |
-| **3** | Comunicaciones ampliadas, renovación en historial |
-| **4** | Reportes PDF/Excel, consolidación |
+| **1** | EF + API + UI lista/detalle, cargos multi-línea, abonos, inventario, correo manual | ✅ |
+| **2** | POS **“Vender a crédito”**, dashboard KPIs, print | ✅ |
+| **3** | Comunicaciones ampliadas, renovación en historial | ✅ |
+| **4** | Reportes PDF/Excel, consolidación, archivar, tab Archivadas | ✅ |
 
 ---
 
@@ -276,4 +277,4 @@ Fase 2+: consolidación, reportes, comunicaciones CRUD, cancelar (solo saldo 0).
 
 ---
 
-*Última actualización: 25 mayo 2026 — diseño v1.1 acordado; fase 1 en implementación*
+*Última actualización: 5 junio 2026 — fases 0–4 implementadas*

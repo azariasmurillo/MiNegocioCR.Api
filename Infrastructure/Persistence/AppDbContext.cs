@@ -49,6 +49,10 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<InternetOrder> InternetOrders => Set<InternetOrder>();
         public DbSet<InternetOrderLine> InternetOrderLines => Set<InternetOrderLine>();
         public DbSet<InternetOrderAdvance> InternetOrderAdvances => Set<InternetOrderAdvance>();
+        public DbSet<CreditAccount> CreditAccounts => Set<CreditAccount>();
+        public DbSet<CreditTransaction> CreditTransactions => Set<CreditTransaction>();
+        public DbSet<CreditTransactionLine> CreditTransactionLines => Set<CreditTransactionLine>();
+        public DbSet<CreditCommunication> CreditCommunications => Set<CreditCommunication>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -614,6 +618,91 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(x => x.InternetOrderId);
+            });
+
+            modelBuilder.Entity<CreditAccount>(entity =>
+            {
+                entity.Property(x => x.AccountNumber).HasMaxLength(20);
+                entity.Property(x => x.CurrentBalanceCrc).HasPrecision(18, 2);
+                entity.Property(x => x.TotalChargedCrc).HasPrecision(18, 2);
+                entity.Property(x => x.Notes).HasMaxLength(2000);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Contact)
+                    .WithMany(c => c.CreditAccounts)
+                    .HasForeignKey(x => x.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.BusinessId, x.ContactId }).IsUnique();
+                entity.HasIndex(x => new { x.BusinessId, x.AccountNumber }).IsUnique();
+                entity.HasIndex(x => new { x.BusinessId, x.Status, x.CurrentBalanceCrc });
+            });
+
+            modelBuilder.Entity<CreditTransaction>(entity =>
+            {
+                entity.Property(x => x.AmountCrc).HasPrecision(18, 2);
+                entity.Property(x => x.AppliedToBalanceCrc).HasPrecision(18, 2);
+                entity.Property(x => x.ChangeGivenCrc).HasPrecision(18, 2);
+                entity.Property(x => x.PreviousBalanceCrc).HasPrecision(18, 2);
+                entity.Property(x => x.NewBalanceCrc).HasPrecision(18, 2);
+                entity.Property(x => x.Description).HasMaxLength(500);
+                entity.Property(x => x.Notes).HasMaxLength(2000);
+
+                entity.HasOne(x => x.CreditAccount)
+                    .WithMany(a => a.Transactions)
+                    .HasForeignKey(x => x.CreditAccountId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Contact)
+                    .WithMany()
+                    .HasForeignKey(x => x.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.CreditAccountId, x.CreatedAt });
+                entity.HasIndex(x => new { x.BusinessId, x.CreatedAt });
+            });
+
+            modelBuilder.Entity<CreditTransactionLine>(entity =>
+            {
+                entity.Property(x => x.ConceptName).HasMaxLength(300);
+                entity.Property(x => x.BaseUnitPriceCrc).HasPrecision(18, 2);
+                entity.Property(x => x.CreditMarkupPercent).HasPrecision(5, 2);
+                entity.Property(x => x.UnitPriceCrc).HasPrecision(18, 2);
+                entity.Property(x => x.LineTotalCrc).HasPrecision(18, 2);
+
+                entity.HasOne(x => x.CreditTransaction)
+                    .WithMany(t => t.Lines)
+                    .HasForeignKey(x => x.CreditTransactionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.CatalogVariant)
+                    .WithMany()
+                    .HasForeignKey(x => x.CatalogVariantId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.CreditTransactionId);
+            });
+
+            modelBuilder.Entity<CreditCommunication>(entity =>
+            {
+                entity.Property(x => x.Notes).HasMaxLength(2000);
+
+                entity.HasOne(x => x.CreditAccount)
+                    .WithMany(a => a.Communications)
+                    .HasForeignKey(x => x.CreditAccountId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Contact)
+                    .WithMany()
+                    .HasForeignKey(x => x.ContactId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.CreditAccountId);
             });
         }
 

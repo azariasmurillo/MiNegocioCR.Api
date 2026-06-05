@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.API.Http;
+using MiNegocioCR.Api.Application.Interfaces.CreditAccounts;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Dashboard;
 
 namespace MiNegocioCR.Api.API.Controllers;
@@ -17,6 +18,7 @@ public class DashboardController : ControllerBase
     private readonly IGetTopProductsUseCase _getTopProductsUseCase;
     private readonly IGetPendingOrdersDashboardUseCase _getPendingOrdersDashboardUseCase;
     private readonly IGetProfitBySourceUseCase _getProfitBySourceUseCase;
+    private readonly IGetCreditDashboardSummaryUseCase _getCreditDashboardSummary;
 
     public DashboardController(
         IGetDashboardSummaryUseCase getDashboardSummaryUseCase,
@@ -25,7 +27,8 @@ public class DashboardController : ControllerBase
         IGetRecentActivityUseCase getRecentActivityUseCase,
         IGetTopProductsUseCase getTopProductsUseCase,
         IGetPendingOrdersDashboardUseCase getPendingOrdersDashboardUseCase,
-        IGetProfitBySourceUseCase getProfitBySourceUseCase)
+        IGetProfitBySourceUseCase getProfitBySourceUseCase,
+        IGetCreditDashboardSummaryUseCase getCreditDashboardSummary)
     {
         _getDashboardSummaryUseCase = getDashboardSummaryUseCase;
         _getSalesTrendUseCase = getSalesTrendUseCase;
@@ -34,6 +37,7 @@ public class DashboardController : ControllerBase
         _getTopProductsUseCase = getTopProductsUseCase;
         _getPendingOrdersDashboardUseCase = getPendingOrdersDashboardUseCase;
         _getProfitBySourceUseCase = getProfitBySourceUseCase;
+        _getCreditDashboardSummary = getCreditDashboardSummary;
     }
 
     [HttpGet("{businessId:guid}/summary")]
@@ -105,6 +109,14 @@ public class DashboardController : ControllerBase
     }
 
     /// <summary>Ganancia acumulada agrupada por <c>Sale.Source</c>.</summary>
+    [HttpGet("{businessId:guid}/credits-summary")]
+    public async Task<IActionResult> CreditsSummary(Guid businessId)
+    {
+        if (businessId == Guid.Empty) return BadRequest("BusinessId is required.");
+        var result = await _getCreditDashboardSummary.Execute(businessId);
+        return Ok(result);
+    }
+
     [HttpGet("{businessId:guid}/profit-by-source")]
     public async Task<IActionResult> ProfitBySource(
         Guid businessId,

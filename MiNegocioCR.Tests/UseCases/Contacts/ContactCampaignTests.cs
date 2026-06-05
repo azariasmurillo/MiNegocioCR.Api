@@ -154,7 +154,7 @@ public class ContactCampaignTests
         {
             ContactId = contactId,
             Subject = "Feliz Navidad",
-            BodyText = "Te deseamos lo mejor.",
+            BodyText = "Te deseamos lo mejor este mes. Visitá nuestra tienda para ver promociones.",
             AudienceMode = nameof(CampaignAudienceMode.AllWithEmail)
         });
 

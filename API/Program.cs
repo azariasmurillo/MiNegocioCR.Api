@@ -31,6 +31,7 @@ using MiNegocioCR.Api.Application.Interfaces.Business;
 using MiNegocioCR.Api.Application.Interfaces.Contacts;
 using MiNegocioCR.Api.Application.Interfaces.ConversationTag;
 using MiNegocioCR.Api.Application.Interfaces.InternetOrders;
+using MiNegocioCR.Api.Application.Interfaces.CreditAccounts;
 using MiNegocioCR.Api.Application.Interfaces.RepairOrders;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Services;
@@ -284,6 +285,15 @@ builder.Services.AddScoped<IListInternetOrdersByBusinessUseCase, MiNegocioCR.Api
 builder.Services.AddScoped<IUpdateInternetOrderStatusUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.UpdateInternetOrderStatusUseCase>();
 builder.Services.AddScoped<ISendInternetOrderEmailUseCase, MiNegocioCR.Api.Application.UseCases.InternetOrders.SendInternetOrderEmailUseCase>();
 builder.Services.AddScoped<IInternetOrderNotificationService, InternetOrderNotificationService>();
+builder.Services.AddScoped<IListCreditAccountsByBusinessUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.ListCreditAccountsByBusinessUseCase>();
+builder.Services.AddScoped<IGetCreditAccountByIdUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.GetCreditAccountByIdUseCase>();
+builder.Services.AddScoped<IAddCreditChargeUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.AddCreditChargeUseCase>();
+builder.Services.AddScoped<IRegisterCreditPaymentUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.RegisterCreditPaymentUseCase>();
+builder.Services.AddScoped<IUpdateCreditCommitmentUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.UpdateCreditCommitmentUseCase>();
+builder.Services.AddScoped<ISendCreditAccountEmailUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.SendCreditAccountEmailUseCase>();
+builder.Services.AddScoped<IAddCreditCommunicationUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.AddCreditCommunicationUseCase>();
+builder.Services.AddScoped<IGetCreditDashboardSummaryUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.GetCreditDashboardSummaryUseCase>();
+builder.Services.AddScoped<ICancelCreditAccountUseCase, MiNegocioCR.Api.Application.UseCases.CreditAccounts.CancelCreditAccountUseCase>();
 
 // --- Inventory & sales ---
 builder.Services.AddScoped<IInventoryService, InventoryService>();

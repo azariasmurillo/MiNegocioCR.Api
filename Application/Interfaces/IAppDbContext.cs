@@ -37,6 +37,10 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<InternetOrder> InternetOrders { get; }
         DbSet<InternetOrderLine> InternetOrderLines { get; }
         DbSet<InternetOrderAdvance> InternetOrderAdvances { get; }
+        DbSet<CreditAccount> CreditAccounts { get; }
+        DbSet<CreditTransaction> CreditTransactions { get; }
+        DbSet<CreditTransactionLine> CreditTransactionLines { get; }
+        DbSet<CreditCommunication> CreditCommunications { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

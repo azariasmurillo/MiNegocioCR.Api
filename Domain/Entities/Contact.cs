@@ -17,6 +17,7 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public ICollection<RepairOrder> RepairOrders { get; set; } = new List<RepairOrder>();
         public ICollection<InternetOrder> InternetOrders { get; set; } = new List<InternetOrder>();
+        public ICollection<CreditAccount> CreditAccounts { get; set; } = new List<CreditAccount>();
         public ICollection<Sale> Sales { get; set; } = new List<Sale>();
     }
 }
