@@ -1,6 +1,6 @@
-# Créditos y cuentas por cobrar — Diseño funcional v1 (MiNegocioCR)
+# Créditos y cuentas por cobrar — Diseño funcional v1.1 (MiNegocioCR)
 
-> **Spec oficial (backlog).** Aún **no implementado** en API ni frontend (junio 2026).  
+> **Spec oficial.** Diseño acordado junio 2026; **implementación en curso** (fase 1).  
 > Complementa ventas (cobro inmediato), reparaciones (abonos por orden) y [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md).
 
 **Convención:** en código MiNegocioCR el tenant es `BusinessId` (no `TenantId`). Toda consulta y mutación debe filtrar por `BusinessId` del JWT / sesión.
@@ -16,13 +16,14 @@ Integración con arquitectura actual:
 | Sistema existente | Uso en Créditos |
 |-------------------|-----------------|
 | `Contact` (Customers) | Un cliente = una cuenta corriente |
-| Inventario / variantes | Movimientos tipo crédito con productos (descuenta stock) |
+| Inventario / variantes | Cargos con productos (descuenta stock vía `IInventoryService`) |
 | `Business` + config | Logo, nombre comercial, SMTP, correos |
-| `IEmailService` | Notificaciones y recordatorios manuales |
-| Notificaciones (patrón reparaciones / pedidos internet) | Eventos de estado y pagos |
-| Auditoría | `CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy` |
+| `IEmailService` | Envío **manual** de correos (HTML desde frontend) |
+| `RepairOrderContactHelper` | Buscar / crear contacto al abrir cuenta |
 
 Diseño **mobile first** (desde 320px), misma UX que reparaciones / pedidos internet.
+
+**v1.1:** sin campos `CreatedBy` / `UpdatedBy` (solo timestamps). Auditoría de usuario queda para versión futura.
 
 ---
 
@@ -37,301 +38,223 @@ Ejemplo:
 ```text
 Juan Pérez
 
-01 Jun — Laptop Dell        +₡100,000  → Saldo ₡100,000
-15 Jun — Mouse Logitech     +₡10,000   → Saldo ₡110,000
-20 Jun — Abono              −₡25,000   → Saldo ₡85,000
-05 Jul — Monitor            +₡80,000   → Saldo ₡165,000
+01 Jun — Crédito (3 líneas)     +₡115,000  → Saldo ₡115,000
+20 Jun — Abono ₡100,000 (debe ₡85,000)    → Saldo ₡0, Vuelto ₡15,000
 ```
 
 Comportamiento típico: pulperías, talleres, ferreterías, salones, comercios de barrio.
 
 ---
 
-## Menú principal (frontend)
+## Apertura de cuenta
 
-Nuevo ítem de sidebar:
+**Sin** pantalla “crear cuenta vacía”. Al registrar el **primer cargo** o abono para un contacto:
+
+1. Resolver contacto (`RepairOrderContactHelper`).
+2. Si no existe `CreditAccount` para `(BusinessId, ContactId)` → crearla.
+3. Registrar transacción.
+
+---
+
+## Cargos (movimientos tipo Crédito)
+
+### Varias líneas por cargo
+
+Un **cargo** es una `CreditTransaction` tipo `Credito` con **varias** `CreditTransactionLine`:
 
 ```text
-Créditos
+20 Jun 2026 — Crédito
+  Laptop Dell       qty 1  ₡100,000  (+5% línea)
+  Mouse Logitech    qty 1  ₡10,500
+  Mano de obra      —      ₡5,000
+  Total cargo:      ₡115,500
+  Saldo:            ₡115,500
 ```
 
-Subsecciones / vistas:
+### Línea de inventario
 
-| Vista | Descripción |
-|-------|-------------|
-| Créditos activos | Cuentas con saldo > 0 |
-| Clientes con crédito | Listado por contacto |
-| Créditos pagados | Saldo = 0 (histórico) |
-| Reportes | Filtros + export PDF / Excel |
+- Selección desde catálogo / variantes.
+- Precio base = **precio de venta** de la variante.
+- **Recargo crédito % por línea** (ej. 5%) → `UnitPriceCrc = base × (1 + markupPercent/100)`.
+- Precio **editable** manualmente después del cálculo.
+- Al confirmar: `DecreaseStockAsync` (sin stock → error, igual que ventas).
 
-Rutas sugeridas (propuesta):
-
-| Ruta | Vista |
-|------|--------|
-| `/credits` | Créditos activos (lista principal) |
-| `/credits/clients` | Clientes con crédito |
-| `/credits/paid` | Créditos pagados |
-| `/credits/reports` | Reportes |
-| `/credits/:accountId` | Detalle cuenta + historial |
-| `/credits/:accountId/print` | Vista previa / impresión (opcional fase 2) |
-
----
-
-## Crear / abrir crédito
-
-Flujo similar a **Órdenes de reparación** y **Pedidos Internet**.
-
-### Cliente
-
-- Buscar contacto existente (mín. 2 caracteres, `ContactsSearchService`).
-- Crear cliente rápido si no existe.
-
-Campos:
-
-- Nombre, teléfono, email, dirección (opcional).
-
-Reglas:
-
-- Si el contacto existe → usar su **cuenta de crédito** (crear cuenta si es la primera vez).
-- Si no existe → crear `Contact` y cuenta en la misma operación.
-
----
-
-## Agregar movimiento de crédito
-
-### Productos del inventario
-
-- Selección desde catálogo / variantes existentes.
-- Al confirmar: **descontar inventario** + registrar movimiento tipo `Credito`.
-
-### Conceptos libres (sin inventario)
+### Concepto libre (sin inventario)
 
 Ejemplos: Servicio técnico, Mano de obra, Instalación, Transporte, Diagnóstico, Otros.
 
-No afectan stock.
+No afectan stock. `CatalogVariantId` null.
 
 ---
 
-## Modelo de datos (propuesta)
+## Abonos y vuelto
 
-### `CreditAccount` (una por `Contact` + `BusinessId`)
+- Monto abonado siempre **positivo** en `AmountCrc`; tipo `Abono`.
+- Saldo **nunca &lt; 0**.
+- Si abono &gt; saldo pendiente:
+  - `AppliedToBalanceCrc` = saldo antes del abono
+  - `ChangeGivenCrc` = excedente (**vuelto**, solo informativo)
+  - `NewBalanceCrc` = 0
+- **No** modificar transacciones anteriores.
+
+---
+
+## Convención de montos (opción A)
+
+`AmountCrc` en cabecera de transacción: **siempre positivo**. El **tipo** define el efecto:
+
+| Tipo | Efecto en saldo |
+|------|-----------------|
+| `Credito` | Suma deuda (total del cargo) |
+| `Abono` | Resta deuda (monto abonado) |
+| `Renovacion`, `Ajuste`, etc. | Fases posteriores; sin cambio de saldo o según regla explícita |
+
+---
+
+## Modelo de datos (v1.1)
+
+### `CreditAccount` — único `(BusinessId, ContactId)`
 
 | Campo | Notas |
 |-------|--------|
-| `Id`, `BusinessId`, `ContactId` | Único `(BusinessId, ContactId)` |
-| `AccountNumber` | Número legible (ej. diario `YYYYMMDD###`) |
-| `Status` | Ver estados abajo |
+| `Id`, `BusinessId`, `ContactId` | Índice único compuesto |
+| `AccountNumber` | Legible (ej. `CR-YYYYMMDD-###`) |
+| `Status` | `Activo`, `Pagado`, `Cancelado` (ver estados) |
 | `CurrentBalanceCrc` | Snapshot saldo actual |
-| `TotalHistoricalCrc` | Suma histórica de cargos (opcional métrica) |
-| `PaymentCommitmentDate` | Fecha compromiso (solo seguimiento) |
-| `Notes` | Observaciones |
-| `CreatedAt`, `UpdatedAt`, `PaidAt`, `CancelledAt` | |
-| Auditoría | `CreatedBy`, `UpdatedBy` |
+| `TotalChargedCrc` | Suma histórica de cargos (métrica) |
+| `PaymentCommitmentDate` | Solo seguimiento; sin cron |
+| `Notes` | Observaciones de la cuenta |
+| `CreatedAt`, `UpdatedAt`, `PaidAt`, `CancelledAt` | Timestamps |
 
-### `CreditTransaction` (historial inmutable)
-
-**Nunca** sobrescribir filas; cada operación = nueva fila.
+### `CreditTransaction` — historial inmutable (cabecera)
 
 | Campo | Notas |
 |-------|--------|
 | `Id`, `BusinessId`, `CreditAccountId`, `ContactId` | |
-| `TransactionType` | Enum (ver abajo) |
-| `AmountCrc` | Positivo = aumenta deuda; negativo o tipo Abono según diseño de signo |
-| `Description` | Texto / referencia producto |
-| `InventoryVariantId` | Nullable si es producto |
-| `Quantity` | Nullable |
-| `PreviousBalanceCrc`, `NewBalanceCrc` | Snapshot en el momento |
-| `CreatedAt`, `CreatedBy` | |
+| `TransactionType` | Enum |
+| `AmountCrc` | Positivo; total cargo o monto abonado |
+| `AppliedToBalanceCrc` | Nullable; en abono, monto aplicado a deuda |
+| `ChangeGivenCrc` | Nullable; vuelto en abono |
+| `Description` | Resumen opcional |
+| `PreviousBalanceCrc`, `NewBalanceCrc` | Snapshot |
+| `Notes` | Observación del movimiento |
+| `CreatedAt` | |
 
-**`TransactionType`:**
+Líneas de cargo en tabla hija **`CreditTransactionLine`**:
 
-```text
-Credito
-Abono
-Renovacion
-Consolidacion
-Ajuste
-Cancelacion
-PagoCompleto
-```
+| Campo | Notas |
+|-------|--------|
+| `Id`, `CreditTransactionId` | |
+| `SortOrder` | |
+| `LineKind` | `Inventory` / `FreeConcept` |
+| `CatalogVariantId` | Nullable |
+| `ConceptName` | Nombre producto o concepto |
+| `Quantity` | Default 1 |
+| `BaseUnitPriceCrc` | Precio venta variante o manual |
+| `CreditMarkupPercent` | % recargo por línea (0 si no aplica) |
+| `UnitPriceCrc` | Precio final unitario |
+| `LineTotalCrc` | `UnitPriceCrc × Quantity` |
 
-### `CreditCommunication`
+### `CreditCommunication` (fase 1 mínima / fase 3 ampliada)
 
 | Campo | Notas |
 |-------|--------|
 | `Id`, `BusinessId`, `CreditAccountId`, `ContactId` | |
 | `CommunicationType` | Correo, Llamada, WhatsApp, Visita, Otro |
 | `Notes` | |
-| `CreatedAt`, `CreatedBy` | |
+| `CreatedAt` | |
 
-### Tablas auxiliares (fase 2+)
+### Fases posteriores
 
-- `CreditCommitmentRenewal` — historial renovación fecha (fecha anterior, nueva, motivo, usuario).
-- `CreditConsolidation` — trazabilidad consolidación.
+- `CreditCommitmentRenewal`, consolidación, reportes export.
 
 ---
 
 ## Estados de cuenta
 
-| Estado | Definición |
-|--------|------------|
-| `Activo` | Deuda pendiente, sin abonos o recién creada |
-| `Parcial` | Deuda pendiente con abonos parciales |
-| `Renovado` | Fecha compromiso renegociada (registro en historial) |
-| `Consolidado` | Movimientos unificados (trazabilidad) |
-| `Pagado` | Saldo = 0 |
-| `Cancelado` | Cuenta anulada; historial conservado |
-| `Vencido` | Superó fecha compromiso (cálculo / flag; sin automatismos) |
+### Guardados en BD (v1)
+
+| Estado | Regla |
+|--------|--------|
+| `Activo` | `CurrentBalanceCrc` &gt; 0 |
+| `Pagado` | `CurrentBalanceCrc` = 0 |
+| `Cancelado` | Solo si saldo = 0 (archivo administrativo; opcional en UI) |
+
+### Solo UI (filtros / badges)
+
+| Badge | Regla |
+|-------|--------|
+| Parcial | Saldo &gt; 0 y existen abonos previos |
+| Vencido | Saldo &gt; 0 y `PaymentCommitmentDate` &lt; hoy |
+
+**No cancelar** cuentas con deuda pendiente: si el cliente desaparece, la cuenta sigue **Activa** (o badge Vencido) para consulta histórica.
 
 ---
 
-## Reglas de negocio
+## Fecha compromiso
 
-### Abonos
-
-- Fecha, monto, observación.
-- Recalcula saldo; nueva fila `CreditTransaction` tipo `Abono`.
-- **No** modificar transacciones anteriores.
-
-### Fecha compromiso de pago
-
-- Campo `PaymentCommitmentDate`.
-- Solo seguimiento; **sin** acciones automáticas por vencimiento en v1.
-
-### Renovación
-
-- Cambiar fecha compromiso + motivo.
-- Historial: fecha anterior, nueva fecha, motivo, usuario (`Renovacion`).
-
-### Consolidación
-
-- Unificar movimientos de deuda manteniendo trazabilidad (`Consolidacion`).
-
-### Crédito pagado
-
-- Cuando saldo → 0: estado `Pagado`, registrar fecha y usuario.
-- Correo de agradecimiento (plantilla tenant).
-
-### Cancelar crédito
-
-- Estado `Cancelado`; **no** borrar datos.
+- Campo `PaymentCommitmentDate` en cuenta.
+- Editable desde detalle / `PATCH commitment`.
+- Sin recordatorios automáticos en v1.
 
 ---
 
-## Historial de movimientos (UI)
+## Correos (v1 — solo manuales)
 
-Vista tipo línea de tiempo (como ejemplo del spec):
+**Sin** envío automático al crear cargo o abonar.
 
-```text
-01/06/2026 — Crédito — Laptop Dell — ₡100,000 — Saldo ₡100,000
-15/06/2026 — Crédito — Mouse — ₡10,000 — Saldo ₡110,000
-20/06/2026 — Abono — ₡25,000 — Saldo ₡85,000
-```
+Acción **Enviar correo** en detalle (patrón `send-email` de pedidos internet / reparaciones):
 
----
+1. Modal: destino, asunto, mensaje, vista previa HTML.
+2. `POST .../send-email` → `IEmailService`.
+3. Registrar `CreditCommunication` tipo Correo.
 
-## Recordatorio manual (v1)
+HTML: logo y datos del tenant; fallback **MiNegocioCR** (`mergePrintBusiness`, `mi-negociocr-print.branding.ts`).
 
-**No** recordatorios automáticos programados.
-
-Acción **Enviar recordatorio** en detalle de cuenta:
-
-1. Modal: correo destino, asunto, mensaje, vista previa.
-2. Enviar → `IEmailService` + fila `CreditCommunication` tipo Correo.
-3. HTML con logo y datos del **negocio** (`Business` / config), mismo patrón que pedidos internet y facturas — `mergePrintBusiness` + `mi-negociocr-print.branding.ts` en frontend.
+Plantillas sugeridas (asunto / contenido): creación, nuevo cargo, abono, recordatorio, pagado — ver tabla en sección original; todas disponibles vía envío manual.
 
 ---
 
-## Dashboard (extensión)
+## UI / rutas (v1)
 
-KPIs sugeridos (filtro `BusinessId`):
+Menú sidebar: **Créditos**.
 
-- Créditos activos (count)
-- Monto pendiente total
-- Clientes morosos (compromiso vencido + saldo > 0)
-- Abonos del mes
-- Créditos pagados (periodo)
-- Top 10 clientes con mayor deuda
-- Monto total pendiente
+| Ruta | Vista |
+|------|--------|
+| `/credits` | Lista unificada con tabs/filtros: **Activos**, **Pagados**, **Vencidos** |
+| `/credits/:accountId` | Detalle, timeline, agregar cargo, abonar, correo manual |
 
-API propuesta: `/api/dashboard/{businessId}/credits-summary` o ampliar `DashboardController`.
+**No** `/credits/clients` en v1 (misma data que activos con otro orden).
 
----
-
-## Reportes
-
-Filtros: cliente, rango fechas, estado, usuario, monto.
-
-Export: PDF, Excel (fase 2).
+Patrones: `ContactsSearchService`, lista + detalle (reparaciones), cargos multi-línea (pedidos internet).
 
 ---
 
-## Correos (plantillas)
-
-Todos usan **config del tenant** (`LogoUrl`, nombre comercial, teléfono, `PublicEmail`, SMTP del `Business`).  
-Fallback de plataforma: **MiNegocioCR** (ver `mi-negociocr-print.branding.ts`), no marca de un tenant demo.
-
-| Evento | Asunto sugerido |
-|--------|-----------------|
-| Creación / primer crédito | Se ha registrado un crédito a su nombre |
-| Nuevo movimiento | Movimiento en su cuenta — nuevo saldo |
-| Abono | Abono registrado — saldo pendiente |
-| Renovación | Actualización fecha de pago comprometida |
-| Recordatorio manual | Recordatorio de saldo pendiente |
-| Pagado | Crédito cancelado exitosamente (saldo ₡0) |
-
-Contenido mínimo por correo: cliente, fechas, montos, saldo actual, fecha compromiso (si aplica).  
-Recordatorio: botón/enlace **Contactar negocio** (teléfono / email del tenant).
-
-Envío manual de HTML desde frontend (patrón `send-email` de reparaciones / pedidos internet) + notificaciones automáticas opcionales vía `EnableEmailNotifications`.
-
----
-
-## Seguridad y multi-tenant
-
-- Filtrar **siempre** por `BusinessId` en queries y comandos.
-- Validar que `businessId` de ruta coincida con JWT (mejora pendiente global en API).
-- Auditoría en entidades principales.
-- **Prohibido** eliminar historial de `CreditTransaction`; solo estados terminales.
-
----
-
-## API (propuesta `/api/credit-accounts`)
+## API `/api/credit-accounts` (fase 1)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | `business/{businessId}` | Listar cuentas (filtros estado, búsqueda) |
-| GET | `{businessId}/{id}` | Detalle + transacciones paginadas |
-| POST | `{businessId}` | Crear cuenta / primer movimiento |
-| POST | `{businessId}/{id}/transactions` | Agregar crédito (producto o concepto) |
-| POST | `{businessId}/{id}/payments` | Registrar abono |
-| PATCH | `{businessId}/{id}/status` | Cambios estado / cancelar |
-| PATCH | `{businessId}/{id}/commitment` | Renovación fecha |
-| POST | `{businessId}/{id}/consolidate` | Consolidación |
-| POST | `{businessId}/{id}/communications` | Registrar llamada / WhatsApp / etc. |
-| POST | `{businessId}/{id}/send-email` | Recordatorio / plantilla (HTML cliente) |
-| GET | `business/{businessId}/reports` | Datos reportes (fase 2) |
+| GET | `business/{businessId}` | Listar cuentas (`filter`: active, paid, overdue; `search`) |
+| GET | `{businessId}/{id}` | Detalle + transacciones (paginadas) |
+| POST | `{businessId}/charges` | Primer cargo o cargo en cuenta existente (auto-crea cuenta) |
+| POST | `{businessId}/{id}/charges` | Cargo adicional en cuenta |
+| POST | `{businessId}/{id}/payments` | Abono (con vuelto) |
+| PATCH | `{businessId}/{id}/commitment` | Fecha compromiso |
+| POST | `{businessId}/{id}/send-email` | Correo manual (HTML cliente) |
+
+Fase 2+: consolidación, reportes, comunicaciones CRUD, cancelar (solo saldo 0).
 
 ---
 
-## Frontend (propuesta)
-
-- Feature: `src/app/features/credits/`
-- Servicios: `credit-accounts.service.ts`, mapper, calculadora de saldo (solo validación UI).
-- Patrones: lista + detalle, diálogo gestionar, `PrintPreviewDialog` opcional, `ContactsSearchService`.
-- Menú sidebar: **Créditos** con subnavegación o tabs internas.
-
----
-
-## Implementación por fases
+## Implementación por fases (acordado)
 
 | Fase | Contenido |
 |------|-----------|
-| **0** (actual) | Este documento + índices en repos |
-| **1** | Entidades, migración EF, CRUD cuenta + transacciones + abonos, estados, API |
-| **2** | UI lista/detalle, inventario en movimientos, dashboard KPI básicos |
-| **3** | Correos automáticos + recordatorio manual + comunicaciones |
-| **4** | Reportes PDF/Excel, renovación/consolidación avanzada, print |
+| **0** | Documentación v1.1 ✅ |
+| **1** | EF + API + UI lista/detalle, cargos multi-línea, abonos, inventario, correo manual |
+| **2** | POS **“Vender a crédito”**, dashboard KPIs, print |
+| **3** | Comunicaciones ampliadas, renovación en historial |
+| **4** | Reportes PDF/Excel, consolidación |
 
 ---
 
@@ -339,10 +262,18 @@ Envío manual de HTML desde frontend (patrón `send-email` de reparaciones / ped
 
 | Módulo | Diferencia |
 |--------|------------|
-| Ventas (`Sales`) | Cobro al momento; no cuenta corriente persistente |
+| Ventas (`Sales`) | Cobro al momento; fase 2 enlaza “vender a crédito” |
 | Reparaciones | Abonos **por orden**; no cuenta única por cliente |
 | Pedidos Internet | Pedido proxy USD/CRC; no fiado local acumulado |
 
 ---
 
-*Última actualización: 4 junio 2026 — spec v1 backlog*
+## Seguridad
+
+- Filtrar **siempre** por `BusinessId`.
+- **Prohibido** eliminar filas de `CreditTransaction` / líneas.
+- Validar `businessId` de ruta vs JWT (mejora global pendiente).
+
+---
+
+*Última actualización: 25 mayo 2026 — diseño v1.1 acordado; fase 1 en implementación*

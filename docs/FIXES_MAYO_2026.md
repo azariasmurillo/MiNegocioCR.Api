@@ -899,27 +899,26 @@ Spec: [MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md](./MiNegocioCR.Api/doc
 
 ---
 
-## 30. Créditos / cuentas por cobrar — spec v1 (backlog)
+## 30. Créditos / cuentas por cobrar — diseño v1.1
 
-### Qué se documentó
+### Qué se acordó (jun 2026)
 
-Spec funcional **Créditos y cuentas por cobrar**: una cuenta corriente por cliente, movimientos inmutables (`CreditTransaction`), abonos, estados, comunicaciones, recordatorio manual (sin cron automático), dashboard y reportes.
+- Una cuenta por `Contact`; apertura automática al primer cargo.
+- Cargos **multi-línea**; recargo crédito **% por línea**; precio base inventario editable.
+- Abonos con **vuelto** (saldo nunca &lt; 0).
+- Estados BD: `Activo`, `Pagado`, `Cancelado` (solo saldo 0); badges Parcial/Vencido en UI.
+- **No** cancelar cuentas con deuda; correos **solo manuales** en v1.
+- Sin `CreatedBy`/`UpdatedBy` en v1.
+- POS “vender a crédito” → **fase 2**.
 
 ### Documento
 
-**[MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md)** (copia en raíz: `CREDITOS_CUENTAS_COBRAR_DISENO_v1.md`).
+**[MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./MiNegocioCR.Api/docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md)** (v1.1).
 
-### Notas técnicas alineadas al codebase
+### Implementación
 
-- Tenant = `BusinessId` (no `TenantId` en entidades).
-- Reutiliza `Contact`, inventario, `IEmailService`, config de negocio.
-- Correos con branding del tenant (mismo patrón que pedidos internet / facturas).
-- **No implementado** aún: sin migración EF ni rutas `/credits`.
-
-### Fases previstas
-
-Ver tabla en la spec: entidades + API → UI → correos → reportes/print.
+- **Fase 1 en curso:** entidades EF, API, UI `/credits`.
 
 ---
 
-*Última actualización: 4 junio 2026 — Pedidos Internet, branding MiNegocioCR, spec Créditos v1*
+*Última actualización: 25 mayo 2026 — Créditos v1.1 documentado; fase 1 en desarrollo*
