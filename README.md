@@ -130,11 +130,14 @@ Esperado: **160+** tests (integración Postgres se omite si no hay BD).
 | [docs/MARKETPLACE_LITE_DISENO_v1.md](./docs/MARKETPLACE_LITE_DISENO_v1.md) | Marketplace Lite — referencia Chat |
 | [docs/local-dev-database.md](./docs/local-dev-database.md) | PostgreSQL local y verify-schema |
 | [docs/PEDIDOS_INTERNET_DISENO_v1.md](./docs/PEDIDOS_INTERNET_DISENO_v1.md) | Pedidos Internet |
-| [docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) | Créditos / cuentas por cobrar (backlog) |
+| [docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) | Créditos / cuentas por cobrar (implementado) |
+| [docs/CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md](./docs/CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md) | Layout responsive — menú colapsable (frontend) |
+| [docs/SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./docs/SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md) | Setup local y notas operativas |
+| [docs/WORKSPACE_INDEX.md](./docs/WORKSPACE_INDEX.md) | Índice documentación monorepo |
 | [docs/README.md](./docs/README.md) | Índice de `docs/` |
 | [RESEND_SETUP.md](./RESEND_SETUP.md) | Configuración Resend |
 
-En el workspace local `Mi-negociocr/` hay copias ampliadas (`SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md`, `REFACTOR_REPAIR_PAYMENTS_SALES.md`). Al cambiar `docs/DEPLOY.md` o `docs/FIXES_MAYO_2026.md`, sincronizar con la raíz del monorepo si aplica.
+`SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md` y el índice del workspace están en `docs/`. Al cambiar `docs/DEPLOY.md` o `docs/FIXES_MAYO_2026.md`, sincronizar con la raíz del monorepo `Mi-negociocr/` si aplica.
 
 ---
 
