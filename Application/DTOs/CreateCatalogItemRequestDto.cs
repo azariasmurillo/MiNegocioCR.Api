@@ -15,5 +15,7 @@ namespace MiNegocioCR.Api.Application.DTOs
         public CatalogItemType Type { get; set; }
 
         public Guid? CategoryId { get; set; }
+
+        public string? Description { get; set; }
     }
 }

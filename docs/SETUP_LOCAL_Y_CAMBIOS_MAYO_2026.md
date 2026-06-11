@@ -26,6 +26,7 @@
 14. [CRM — campañas de correo](#14-crm--campañas-de-correo)
 15. [Junio 2026 — Pedidos Internet y Créditos (docs)](#15-junio-2026--pedidos-internet-y-créditos-docs)
 16. [Junio 2026 — Layout responsive (menú colapsable)](#16-junio-2026--layout-responsive-menú-colapsable)
+17. [Junio 2026 — Inventario UX rediseño (v2)](#17-junio-2026--inventario-ux-rediseño-v2)
 
 ---
 
@@ -435,6 +436,21 @@ Servicio: `LayoutShellService` (`src/app/layout/layout-shell.service.ts`). Prefe
 
 ---
 
+## 17. Junio 2026 — Inventario UX rediseño (v2)
+
+| Tema | Estado | Documento |
+|------|--------|-----------|
+| Diseño UX aprobado (Shopify/Loyverse) | ✅ Sprints 1–4 (grid, filtros) | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) |
+| Changelog API inventario | ✅ Jun 2026 | [CAMBIOS_INVENTARIO_API_JUNIO_2026.md](./CAMBIOS_INVENTARIO_API_JUNIO_2026.md) |
+| Changelog FE inventario | ✅ Sprint 4 | `mi-negociocr-frontend/docs/CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md` |
+| Análisis estado actual (v1) | Referencia | [INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md](./INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md) |
+
+**Sprints:** 1 lista + producto/servicio · 2 matriz presentaciones · 3 stock/imágenes · **4 grid + inactivos + API toggle** · Fase 2 POS/créditos.
+
+**API Sprint 4:** `PATCH /variants/{id}/toggle`, márgenes e `IsActive` en listados — **sin migración nueva**.
+
+---
+
 ## Referencias cruzadas
 
 - Refactor financiero: `REFACTOR_REPAIR_PAYMENTS_SALES.md`
@@ -445,4 +461,4 @@ Servicio: `LayoutShellService` (`src/app/layout/layout-shell.service.ts`). Prefe
 
 ---
 
-*Última actualización: 6 junio 2026 — Layout responsive; Créditos implementado; Pedidos Internet*
+*Última actualización: 11 junio 2026 — Inventario Sprint 4; Layout responsive; Créditos; Pedidos Internet*

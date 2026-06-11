@@ -26,6 +26,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     BusinessId = x.BusinessId,
                     CategoryId = x.CategoryId,
                     Name = x.Name,
+                    Description = x.Description,
                     BasePrice = x.BasePrice,
                     TrackStock = x.TrackStock,
                     Type = x.Type,

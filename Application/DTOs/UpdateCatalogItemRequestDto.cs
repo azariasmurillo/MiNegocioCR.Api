@@ -13,5 +13,7 @@
         public bool TrackStock { get; set; }
 
         public Domain.Enums.CatalogItemType Type { get; set; }
+
+        public string? Description { get; set; }
     }
 }

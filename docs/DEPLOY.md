@@ -72,7 +72,7 @@ npm run build
 
 | Verificación | Esperado |
 |--------------|----------|
-| Tests API | **160+** pasando (incluye tests de campaña CRM; +1 integración Postgres si BD local disponible) |
+| Tests API | **204** pasando (detener API local si bloquea `MiNegocioCR.Api.exe` durante `dotnet test`) |
 | Build frontend | Sin errores TypeScript (warnings de budget CSS OK) |
 | Cambios commiteados | API (`master`) y frontend (`main`) |
 | Variables Railway | Todas las obligatorias configuradas |
@@ -106,6 +106,10 @@ Cambios recientes que deben estar incluidos en el deploy:
 - Frontend: pagos al pie del carrito, efectivo precargado, **Completar restante**
 - **CRM campañas de correo:** cola global (`EmailCampaigns`), worker 60 s, cupo 495/día, cancelación, dedupe por email, validaciones de contenido — ver `MiNegocioCR.Api/docs/email-campaigns-crm.md`
 - Fix **re-envío en bucle** de campaña (`CampaignQueueProcessor`, progreso desde recipients)
+- **Inventario Sprint 4 (Jun 2026):**
+  - API: `PATCH /variants/{id}/toggle`, `ProfitMargin`/`IsActive`/`PrimaryImageUrl` en listados — ver [CAMBIOS_INVENTARIO_API_JUNIO_2026.md](./CAMBIOS_INVENTARIO_API_JUNIO_2026.md)
+  - FE: grid responsive `/inventory`, filtro Inactivos, fix producto/servicio — ver [CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md](../mi-negociocr-frontend/docs/CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md)
+  - **Sin migraciones nuevas** de BD para este release de inventario
 
 ---
 
@@ -325,6 +329,12 @@ Checklist manual (5–10 minutos):
 - [ ] **WhatsApp panel** — aparece recogido (💬); expandir/cerrar con botones
 - [ ] **WhatsApp OAuth** — solo si está configurado (redirect + webhook)
 - [ ] **Campaña CRM** — Clientes → Campaña: preview, encolar (asunto/cuerpo válidos), status avanza ~1 correo/min, **Detener campaña** detiene envíos; sin decenas de duplicados al mismo correo
+- [ ] **Inventario — grid:** `/inventory` muestra tarjetas en varias columnas (desktop)
+- [ ] **Inventario — filtros:** Productos / Servicios / Inactivos no se mezclan mal
+- [ ] **Inventario — crear producto simple** (sin presentaciones) guarda correctamente
+- [ ] **Inventario — detalle:** Ver → foto sin recorte feo; editar margen persiste
+- [ ] **Inventario — presentación:** desactivar desde detalle multi-SKU → sin 500 (`PATCH .../toggle`)
+- [ ] **Inventario — Editar** en tarjeta solo con 1 presentación
 
 ### Endpoints útiles para diagnóstico
 

@@ -342,6 +342,7 @@ builder.Services.AddScoped<IGetVariantsByCatalogItemUseCase, GetVariantsByCatalo
 builder.Services.AddScoped<IGetVariantsByBusinessUseCase, GetVariantsByBusinessUseCase>();
 builder.Services.AddScoped<IUpdateVariantUseCase, UpdateVariantUseCase>();
 builder.Services.AddScoped<IDeleteVariantUseCase, DeleteVariantUseCase>();
+builder.Services.AddScoped<IToggleVariantStatusUseCase, ToggleVariantStatusUseCase>();
 builder.Services.AddScoped<IRegisterPurchaseUseCase, RegisterPurchaseUseCase>();
 builder.Services.AddScoped<IAdjustInventoryUseCase, AdjustInventoryUseCase>();
 

@@ -32,5 +32,10 @@ namespace MiNegocioCR.Api.Application.DTOs
         public List<string> OptionValueLabels { get; set; } = new();
 
         public DateTime CreatedAt { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        /// <summary>URL pública de la imagen principal de la variante, si existe.</summary>
+        public string? PrimaryImageUrl { get; set; }
     }
 }

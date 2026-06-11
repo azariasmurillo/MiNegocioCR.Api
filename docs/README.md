@@ -22,8 +22,11 @@ Los archivos **`DEPLOY.md`** y **`FIXES_MAYO_2026.md`** son copias de la raíz d
 | [TIENDA_DIGITAL_DISENO_UNIFICADO.md](./TIENDA_DIGITAL_DISENO_UNIFICADO.md) | **Tienda digital — spec oficial unificada** |
 | [MARKETPLACE_LITE_DISENO_v1.md](./MARKETPLACE_LITE_DISENO_v1.md) | Marketplace Lite — visión Chat (referencia) |
 | [RESEND_SETUP.md](../RESEND_SETUP.md) | Configuración correo Resend |
+| [Inventory-API-Handoff.md](./Inventory-API-Handoff.md) | APIs inventario/catálogo para UI |
+| [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) | **Inventario UX** — diseño aprobado, wireframes y plan de sprints |
+| [INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md](./INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md) | Inventario UX — análisis estado actual (v1, referencia) |
 | [crc-sale-price-rounding.md](./crc-sale-price-rounding.md) | Redondeo precios CRC |
 
 Documentos solo en carpeta padre `Mi-negociocr/` (sin Git): `REFACTOR_REPAIR_PAYMENTS_SALES.md`, `TIENDA_DIGITAL_SPEC.md`. Ver [WORKSPACE_INDEX.md](./WORKSPACE_INDEX.md).
 
-*Última actualización: 6 junio 2026*
+*Última actualización: 7 junio 2026 — Inventario UX v2*

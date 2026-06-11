@@ -25,6 +25,7 @@ namespace MiNegocioCR.Api.API.Controllers
         private readonly ICreateVariantUseCase _createVariant;
         private readonly IUpdateVariantUseCase _updateVariant;
         private readonly IDeleteVariantUseCase _deleteVariant;
+        private readonly IToggleVariantStatusUseCase _toggleVariantStatus;
         private readonly IGetVariantsByCatalogItemUseCase _getVariantsByCatalogItem;
         private readonly IGetVariantsByBusinessUseCase _getVariantsByBusiness;
         private readonly IUploadCatalogVariantImagesUseCase _uploadCatalogVariantImagesUseCase;
@@ -36,6 +37,7 @@ namespace MiNegocioCR.Api.API.Controllers
             ICreateVariantUseCase createVariant,
             IUpdateVariantUseCase updateVariant,
             IDeleteVariantUseCase deleteVariant,
+            IToggleVariantStatusUseCase toggleVariantStatus,
             IGetVariantsByCatalogItemUseCase getVariantsByCatalogItem,
             IGetVariantsByBusinessUseCase getVariantsByBusiness,
             IUploadCatalogVariantImagesUseCase uploadCatalogVariantImagesUseCase,
@@ -46,6 +48,7 @@ namespace MiNegocioCR.Api.API.Controllers
             _createVariant = createVariant;
             _updateVariant = updateVariant;
             _deleteVariant = deleteVariant;
+            _toggleVariantStatus = toggleVariantStatus;
             _getVariantsByCatalogItem = getVariantsByCatalogItem;
             _getVariantsByBusiness = getVariantsByBusiness;
             _uploadCatalogVariantImagesUseCase = uploadCatalogVariantImagesUseCase;
@@ -99,6 +102,16 @@ namespace MiNegocioCR.Api.API.Controllers
         public async Task<IActionResult> DeleteVariant([FromRoute] Guid id, [FromQuery] Guid businessId)
         {
             await _deleteVariant.ExecuteAsync(id, businessId);
+            return NoContent();
+        }
+
+        [HttpPatch("{id:guid}/toggle")]
+        public async Task<IActionResult> ToggleStatus([FromRoute] Guid id, [FromBody] ToggleVariantStatusRequestDto request)
+        {
+            if (request == null)
+                return BadRequest("Request body is required.");
+
+            await _toggleVariantStatus.ExecuteAsync(id, request);
             return NoContent();
         }
 

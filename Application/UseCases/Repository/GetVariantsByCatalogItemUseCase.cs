@@ -44,6 +44,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             var variants = await _variantRepository.GetVariantsWithOptionDetailsByCatalogItemIdAsync(catalogItemId);
             var variantIds = variants.Select(v => v.Id).ToList();
             var initialByVariant = await _variantRepository.GetInitialStockQuantitiesAsync(variantIds);
+            var primaryImageByVariant = await GetPrimaryImageUrlsAsync(businessId, variantIds);
 
             var result = new List<CatalogVariantListItemDto>(variants.Count);
             foreach (var v in variants)
@@ -77,11 +78,31 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                     CurrentStock = v.StockQuantity,
                     OptionValueIds = optionValueIds,
                     OptionValueLabels = optionValueLabels,
-                    CreatedAt = v.CreatedAt
+                    CreatedAt = v.CreatedAt,
+                    IsActive = v.IsActive,
+                    PrimaryImageUrl = primaryImageByVariant.GetValueOrDefault(v.Id)
                 });
             }
 
             return result;
+        }
+
+        private async Task<Dictionary<Guid, string>> GetPrimaryImageUrlsAsync(Guid businessId, List<Guid> variantIds)
+        {
+            if (variantIds.Count == 0)
+                return new Dictionary<Guid, string>();
+
+            var rows = await _context.CatalogVariantImages
+                .AsNoTracking()
+                .Where(i => i.BusinessId == businessId && variantIds.Contains(i.CatalogVariantId))
+                .OrderByDescending(i => i.IsPrimary)
+                .ThenBy(i => i.CreatedAt)
+                .Select(i => new { i.CatalogVariantId, i.ImageUrl })
+                .ToListAsync();
+
+            return rows
+                .GroupBy(r => r.CatalogVariantId)
+                .ToDictionary(g => g.Key, g => g.First().ImageUrl);
         }
     }
 }

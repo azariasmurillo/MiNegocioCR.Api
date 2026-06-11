@@ -110,7 +110,9 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
         {
             if (variant == null)
                 throw new ArgumentNullException(nameof(variant));
-            _context.CatalogVariants.Update(variant);
+            var entry = _context.Entry(variant);
+            if (entry.State == EntityState.Detached)
+                _context.CatalogVariants.Update(variant);
             await _context.SaveChangesAsync();
         }
 

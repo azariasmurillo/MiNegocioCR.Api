@@ -132,6 +132,8 @@ Esperado: **160+** tests (integración Postgres se omite si no hay BD).
 | [docs/PEDIDOS_INTERNET_DISENO_v1.md](./docs/PEDIDOS_INTERNET_DISENO_v1.md) | Pedidos Internet |
 | [docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) | Créditos / cuentas por cobrar (implementado) |
 | [docs/CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md](./docs/CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md) | Layout responsive — menú colapsable (frontend) |
+| [docs/INVENTARIO_UX_REDISENO_v2.md](./docs/INVENTARIO_UX_REDISENO_v2.md) | **Inventario UX** — diseño aprobado + plan de sprints |
+| [docs/Inventory-API-Handoff.md](./docs/Inventory-API-Handoff.md) | APIs inventario/catálogo |
 | [docs/SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./docs/SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md) | Setup local y notas operativas |
 | [docs/WORKSPACE_INDEX.md](./docs/WORKSPACE_INDEX.md) | Índice documentación monorepo |
 | [docs/README.md](./docs/README.md) | Índice de `docs/` |

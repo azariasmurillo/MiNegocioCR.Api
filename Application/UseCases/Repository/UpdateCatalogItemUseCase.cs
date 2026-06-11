@@ -49,6 +49,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             }
 
             item.Name = request.Name.Trim();
+            item.Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
             item.BasePrice = request.BasePrice;
             item.CategoryId = request.CategoryId;
             item.TrackStock = request.TrackStock;
