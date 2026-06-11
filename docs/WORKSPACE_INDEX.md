@@ -27,6 +27,7 @@ Cada carpeta tiene su **propio repositorio Git** (API → `master`, frontend →
 | [CAMBIOS_REPARACIONES_JUNIO_2026.md](./CAMBIOS_REPARACIONES_JUNIO_2026.md) | **Reparaciones UX** — modal crear orden, búsqueda auto, Impresora (solo frontend) |
 | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) | **Inventario UX** — diseño aprobado + sprints 1–4 |
 | [CAMBIOS_INVENTARIO_API_JUNIO_2026.md](./CAMBIOS_INVENTARIO_API_JUNIO_2026.md) | Inventario API — toggle presentación, márgenes, fixes |
+| [CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md](./CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md) | **Inventario UX** — renombrar, agregar presentación, filtro Productos (solo FE) |
 | [INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md](./INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md) | Inventario UX — análisis estado actual (v1) |
 | [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md) | Spec funcional Pedidos Internet (**implementado**) |
 | [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) | Créditos / cuentas por cobrar — spec v1.1 (**implementado**) |
@@ -41,7 +42,7 @@ Cada carpeta tiene su **propio repositorio Git** (API → `master`, frontend →
 | Pedidos Internet | Producción (jun 2026) | [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md) · UX: [CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md) |
 | Créditos y cuentas por cobrar | Producción (jun 2026) | [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) |
 | Layout responsive (menú colapsable) | Producción (jun 2026) | [CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md](./CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md) |
-| Inventario UX (rediseño) | Producción (jun 2026) | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) · FE: `mi-negociocr-frontend/docs/CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md` |
+| Inventario UX (rediseño) | Producción (jun 2026) | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) · FE: [CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md](./CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md) |
 | Reparaciones UX | Listo para deploy (jun 2026) | [CAMBIOS_REPARACIONES_JUNIO_2026.md](./CAMBIOS_REPARACIONES_JUNIO_2026.md) |
 | Tienda digital pública | Backlog | [TIENDA_DIGITAL_DISENO_UNIFICADO.md](./TIENDA_DIGITAL_DISENO_UNIFICADO.md) |
 

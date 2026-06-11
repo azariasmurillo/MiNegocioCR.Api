@@ -110,6 +110,7 @@ Cambios recientes que deben estar incluidos en el deploy:
   - API: `PATCH /variants/{id}/toggle`, `ProfitMargin`/`IsActive`/`PrimaryImageUrl` en listados — ver [CAMBIOS_INVENTARIO_API_JUNIO_2026.md](./CAMBIOS_INVENTARIO_API_JUNIO_2026.md)
   - FE: grid responsive `/inventory`, filtro Inactivos, fix producto/servicio — ver [CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md](../mi-negociocr-frontend/docs/CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md)
   - **Sin migraciones nuevas** de BD para este release de inventario
+- **Inventario post-Sprint 4 (Jun 2026):** renombrar, agregar presentación, filtro **Productos** default — ver [CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md](./CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md) — **solo frontend**
 
 ---
 
@@ -341,6 +342,10 @@ Checklist manual (5–10 minutos):
 - [ ] **Inventario — detalle:** Ver → foto sin recorte feo; editar margen persiste
 - [ ] **Inventario — presentación:** desactivar desde detalle multi-SKU → sin 500 (`PATCH .../toggle`)
 - [ ] **Inventario — Editar** en tarjeta solo con 1 presentación
+- [ ] **Inventario — filtro default:** al entrar, pestaña **Productos** activa
+- [ ] **Inventario — foto grilla:** clic abre detalle del producto
+- [ ] **Inventario — renombrar:** lápiz en título del detalle guarda nombre
+- [ ] **Inventario — agregar presentación:** nueva variante con valor nuevo (ej. potencia 120 W); costo recalcula precio
 
 ### Endpoints útiles para diagnóstico
 
@@ -425,4 +430,4 @@ Los `.md` de registro viven en la carpeta workspace **`Mi-negociocr/`** (monorep
 
 ---
 
-*Última actualización: 11 junio 2026 — UX Pedidos Internet (modal + búsqueda auto)*
+*Última actualización: 11 junio 2026 — inventario post-Sprint 4 (detalle y presentaciones)*

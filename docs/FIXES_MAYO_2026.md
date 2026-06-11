@@ -939,4 +939,17 @@ Solo frontend (`main` → Vercel). Sin migraciones.
 
 ---
 
+## 32. Inventario UX — detalle y presentaciones (junio 2026)
+
+### Qué se entregó
+
+- Renombrar producto; **+ Agregar presentación** en multi-SKU.
+- Precio calculado al agregar variante; filtro default **Productos**; clic en imagen abre detalle/fotos.
+
+### Documentación
+
+**[CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md](./CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md)**
+
+---
+
 *Última actualización: 11 junio 2026*
