@@ -162,6 +162,20 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .AnyAsync(i => i.CatalogVariantId == variantId);
         }
 
+        public async Task<bool> ExistsInCreditsAsync(Guid variantId)
+        {
+            return await _context.CreditTransactionLines
+                .AsNoTracking()
+                .AnyAsync(l => l.CatalogVariantId == variantId);
+        }
+
+        public async Task<bool> ExistsInRepairOrdersAsync(Guid variantId)
+        {
+            return await _context.RepairOrderItems
+                .AsNoTracking()
+                .AnyAsync(i => i.CatalogVariantId == variantId);
+        }
+
         public async Task<bool> ExistsSkuForCatalogItemAsync(
             Guid catalogItemId,
             string sku,

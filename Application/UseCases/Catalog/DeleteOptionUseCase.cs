@@ -21,9 +21,9 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             if (option == null)
                 throw new NotFoundException("CatalogOption", "Catalog option not found.");
 
-            var hasValues = await _optionRepository.ExistsWithValuesAsync(id);
-            if (hasValues)
-                throw new InvalidOperationException("Option has values and cannot be deleted");
+            var inVariants = await _optionRepository.ExistsInVariantsAsync(id);
+            if (inVariants)
+                throw new InvalidOperationException("Option is used in variants and cannot be deleted");
 
             await _optionRepository.DeleteAsync(option);
         }

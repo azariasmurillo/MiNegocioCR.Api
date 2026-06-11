@@ -58,6 +58,13 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .AnyAsync(x => x.CatalogOptionId == optionId);
         }
 
+        public async Task<bool> ExistsInVariantsAsync(Guid optionId)
+        {
+            return await _context.CatalogVariantOptionValues
+                .AsNoTracking()
+                .AnyAsync(x => x.CatalogOptionValue.CatalogOptionId == optionId);
+        }
+
         public async Task DeleteAsync(CatalogOption option)
         {
             if (option == null)

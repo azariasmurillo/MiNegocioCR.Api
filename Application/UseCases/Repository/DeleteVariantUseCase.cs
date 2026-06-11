@@ -30,6 +30,12 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             if (await _variantRepository.ExistsInSalesAsync(variantId))
                 throw new InvalidOperationException("Variant has sales and cannot be deleted");
 
+            if (await _variantRepository.ExistsInCreditsAsync(variantId))
+                throw new InvalidOperationException("Variant has credit charges and cannot be deleted");
+
+            if (await _variantRepository.ExistsInRepairOrdersAsync(variantId))
+                throw new InvalidOperationException("Variant has repair orders and cannot be deleted");
+
             if (await _variantRepository.ExistsInPurchasesAsync(variantId))
                 throw new InvalidOperationException("Variant has purchases and cannot be deleted");
 

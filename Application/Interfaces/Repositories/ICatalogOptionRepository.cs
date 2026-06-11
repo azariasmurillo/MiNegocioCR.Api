@@ -14,6 +14,9 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 
         Task<bool> ExistsWithValuesAsync(Guid optionId);
 
+        /// <summary>True si alguna variante usa un valor de esta dimensión.</summary>
+        Task<bool> ExistsInVariantsAsync(Guid optionId);
+
         Task DeleteAsync(CatalogOption option);
     }
 }
