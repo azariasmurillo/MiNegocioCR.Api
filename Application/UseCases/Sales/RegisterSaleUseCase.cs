@@ -213,6 +213,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
                     }
                 }
 
+                await FillMissingProductDescriptionsAsync(sale.Items);
+
                 // ── Calcular totales (unificado: directo y reparación) ─────
                 sale.Subtotal = sale.Items.Sum(x => x.UnitPrice * x.Quantity);
 
@@ -298,6 +300,35 @@ namespace MiNegocioCR.Api.Application.UseCases.Sales
         }
 
         // ── Helpers ────────────────────────────────────────────────────────
+
+        private async Task FillMissingProductDescriptionsAsync(ICollection<SaleItem> items)
+        {
+            var variantIds = items
+                .Where(i => i.CatalogVariantId.HasValue && string.IsNullOrWhiteSpace(i.Description))
+                .Select(i => i.CatalogVariantId!.Value)
+                .Distinct()
+                .ToList();
+            if (variantIds.Count == 0)
+                return;
+
+            var variants = await _context.CatalogVariants
+                .AsNoTracking()
+                .Where(v => variantIds.Contains(v.Id))
+                .Include(v => v.CatalogItem)
+                .Include(v => v.VariantOptionValues)
+                    .ThenInclude(l => l.CatalogOptionValue)
+                        .ThenInclude(ov => ov.CatalogOption)
+                .ToListAsync();
+
+            var byId = variants.ToDictionary(v => v.Id);
+            foreach (var item in items)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Description) || !item.CatalogVariantId.HasValue)
+                    continue;
+                if (byId.TryGetValue(item.CatalogVariantId.Value, out var variant))
+                    item.Description = SaleItemDescriptionResolver.BuildFromVariant(variant);
+            }
+        }
 
         private static void ApplyContactDetailsFromRequest(
             Domain.Entities.Contact? contact,

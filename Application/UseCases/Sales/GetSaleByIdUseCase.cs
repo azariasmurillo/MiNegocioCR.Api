@@ -1,15 +1,20 @@
+using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.UseCases.Sales;
+using Microsoft.EntityFrameworkCore;
 
 namespace MiNegocioCR.Api.Application.UseCases.Sales;
 
 public class GetSaleByIdUseCase : IGetSaleByIdUseCase
 {
     private readonly ISaleRepository _saleRepository;
+    private readonly IAppDbContext _context;
 
-    public GetSaleByIdUseCase(ISaleRepository saleRepository)
+    public GetSaleByIdUseCase(ISaleRepository saleRepository, IAppDbContext context)
     {
         _saleRepository = saleRepository;
+        _context = context;
     }
 
     public async Task<object?> ExecuteAsync(Guid saleId, Guid? businessId = null)
@@ -22,6 +27,7 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
             return null;
 
         var contact = sale.Contact;
+        var variantLabels = await LoadVariantDescriptionsAsync(sale.Items);
 
         return new
         {
@@ -48,7 +54,7 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
                 i.Id,
                 i.ItemType,
                 i.CatalogVariantId,
-                i.Description,
+                Description = ResolveItemDescription(i.Description, i.CatalogVariantId, variantLabels),
                 i.Quantity,
                 i.UnitPrice,
                 LineTotal = i.UnitPrice * i.Quantity
@@ -72,5 +78,42 @@ public class GetSaleByIdUseCase : IGetSaleByIdUseCase
                 pm.Amount
             })
         };
+    }
+
+    private static string? ResolveItemDescription(
+        string? stored,
+        Guid? catalogVariantId,
+        IReadOnlyDictionary<Guid, string> variantLabels)
+    {
+        if (!string.IsNullOrWhiteSpace(stored))
+            return stored.Trim();
+
+        if (catalogVariantId.HasValue && variantLabels.TryGetValue(catalogVariantId.Value, out var label))
+            return label;
+
+        return stored;
+    }
+
+    private async Task<Dictionary<Guid, string>> LoadVariantDescriptionsAsync(
+        IEnumerable<Domain.Entities.SaleItem> items)
+    {
+        var variantIds = items
+            .Where(i => i.CatalogVariantId.HasValue && string.IsNullOrWhiteSpace(i.Description))
+            .Select(i => i.CatalogVariantId!.Value)
+            .Distinct()
+            .ToList();
+        if (variantIds.Count == 0)
+            return new Dictionary<Guid, string>();
+
+        var variants = await _context.CatalogVariants
+            .AsNoTracking()
+            .Where(v => variantIds.Contains(v.Id))
+            .Include(v => v.CatalogItem)
+            .Include(v => v.VariantOptionValues)
+                .ThenInclude(l => l.CatalogOptionValue)
+                    .ThenInclude(ov => ov.CatalogOption)
+            .ToListAsync();
+
+        return variants.ToDictionary(v => v.Id, SaleItemDescriptionResolver.BuildFromVariant);
     }
 }
