@@ -249,6 +249,23 @@ Según `REFACTOR_REPAIR_PAYMENTS_SALES.md`, en **Gestionar orden** no debe haber
 
 ---
 
+## 7b. UI reparaciones — modal crear orden y búsqueda (jun 2026)
+
+Ver changelog completo: [CAMBIOS_REPARACIONES_JUNIO_2026.md](./CAMBIOS_REPARACIONES_JUNIO_2026.md) (copia API) · fuente FE: `mi-negociocr-frontend/docs/CAMBIOS_REPARACIONES_JUNIO_2026.md`.
+
+| Cambio | Detalle |
+|--------|---------|
+| Crear orden | Modal `RepairOrderCreateDialog`; botón **+ Crear orden** en hero |
+| Lista | Una sola columna (tabla full width) |
+| Buscar | Debounce ~350 ms; sin botones Buscar/Limpiar |
+| Filtro estado | Default **Pendiente** |
+| Equipo | +**Impresora**; sin **Sistema operativo** en crear/editar |
+| Menú | WhatsApp oculto en sidebar (`showWhatsAppNav = false`) |
+
+Solo frontend; `npm run build` + push `main` en Vercel.
+
+---
+
 ## 8. Frontend dev vs producción
 
 | Modo | Config | API destino |

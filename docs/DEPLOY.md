@@ -318,15 +318,18 @@ Checklist manual (5–10 minutos):
 - [ ] **Ventas desde reparación** con descuento (₡ o %) y abonos previos — POST `/api/sales` sin 500
 - [ ] **Factura impresa** muestra línea de descuento cuando aplica
 - [ ] **Dashboard** columna descuento en listado de ventas
+- [ ] **Reparaciones — lista:** filtro por defecto **Pendiente**; buscar al escribir (sin botón)
+- [ ] **Reparaciones — crear:** botón **+ Crear orden** abre modal; tipo **Impresora**; sin campo S.O. en formulario
 - [ ] **Orden de reparación:** crear con **contacto ya existente** (no debe dar `PK_Contacts`)
-- [ ] **Cambiar estado** de orden (ej. Recibida → En reparación)
+- [ ] **Cambiar estado** de orden (ej. Pendiente → En progreso)
 - [ ] **Vista previa** muestra ítems y totales
 - [ ] **Enviar orden por correo** — debe llegar **una página** bien formada (HTML email, no iframe)
 - [ ] **Venta POS** con cliente existente por teléfono + descuento — sin 500
 - [ ] **Factura** con email del cliente → **Enviar por correo** funciona
 - [ ] **Reset password** — correo con enlace a `App__PublicUrl`
 - [ ] **Subir logo** del negocio (Supabase storage)
-- [ ] **WhatsApp panel** — aparece recogido (💬); expandir/cerrar con botones
+- [ ] **Menú lateral** — entrada **WhatsApp** oculta (módulo en pausa)
+- [ ] **WhatsApp panel** — panel flotante recogido (💬); expandir/cerrar con botones
 - [ ] **WhatsApp OAuth** — solo si está configurado (redirect + webhook)
 - [ ] **Campaña CRM** — Clientes → Campaña: preview, encolar (asunto/cuerpo válidos), status avanza ~1 correo/min, **Detener campaña** detiene envíos; sin decenas de duplicados al mismo correo
 - [ ] **Inventario — grid:** `/inventory` muestra tarjetas en varias columnas (desktop)
