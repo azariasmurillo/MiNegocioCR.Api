@@ -23,7 +23,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
 
             var inVariants = await _valueRepository.ExistsInVariantsAsync(id);
             if (inVariants)
-                throw new InvalidOperationException("OptionValue is used in variants");
+                throw new InvalidOperationException("Hay presentaciones que usan este valor; no se puede eliminar.");
 
             await _valueRepository.DeleteAsync(optionValue);
         }
