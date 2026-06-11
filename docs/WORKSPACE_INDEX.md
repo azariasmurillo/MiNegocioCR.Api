@@ -21,6 +21,7 @@ Cada carpeta tiene su **propio repositorio Git** (API → `master`, frontend →
 | [SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md) | PostgreSQL local, Resend, tenant JoyCaTech, notas operativas |
 | [email-campaigns-crm.md](./email-campaigns-crm.md) | Campañas de correo CRM (cola, límites, emergencia) |
 | [CAMBIOS_PEDIDOS_INTERNET_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_JUNIO_2026.md) | **Pedidos Internet** — code review y checklist |
+| [CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md) | **Pedidos Internet UX** — modal crear, búsqueda auto (solo frontend) |
 | [CAMBIOS_CREDITOS_JUNIO_2026.md](./CAMBIOS_CREDITOS_JUNIO_2026.md) | **Créditos** — code review y deploy |
 | [CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md](./CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md) | **Layout responsive** — menú colapsable (solo frontend) |
 | [CAMBIOS_REPARACIONES_JUNIO_2026.md](./CAMBIOS_REPARACIONES_JUNIO_2026.md) | **Reparaciones UX** — modal crear orden, búsqueda auto, Impresora (solo frontend) |
@@ -37,7 +38,7 @@ Cada carpeta tiene su **propio repositorio Git** (API → `master`, frontend →
 | Módulo | Estado | Spec / changelog |
 |--------|--------|------------------|
 | Inventario, ventas, reparaciones, CRM, dashboard | Producción | `FIXES_MAYO_2026.md` |
-| Pedidos Internet | Producción (jun 2026) | [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md) |
+| Pedidos Internet | Producción (jun 2026) | [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md) · UX: [CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md) |
 | Créditos y cuentas por cobrar | Producción (jun 2026) | [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) |
 | Layout responsive (menú colapsable) | Producción (jun 2026) | [CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md](./CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md) |
 | Inventario UX (rediseño) | Producción (jun 2026) | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) · FE: `mi-negociocr-frontend/docs/CAMBIOS_INVENTARIO_SPRINT4_JUNIO_2026.md` |

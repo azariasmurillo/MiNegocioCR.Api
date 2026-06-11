@@ -320,6 +320,9 @@ Checklist manual (5–10 minutos):
 - [ ] **Dashboard** columna descuento en listado de ventas
 - [ ] **Reparaciones — lista:** filtro por defecto **Pendiente**; buscar al escribir (sin botón)
 - [ ] **Reparaciones — crear:** botón **+ Crear orden** abre modal; tipo **Impresora**; sin campo S.O. en formulario
+- [ ] **Pedidos Internet — lista:** filtro por defecto **Creada**; buscar al escribir (sin botón)
+- [ ] **Pedidos Internet — crear:** botón **+ Crear pedido** abre modal; crear pedido OK
+- [ ] **Pedidos Internet — gestionar:** líneas y adelantos con espaciado; sin botones encima de campos
 - [ ] **Orden de reparación:** crear con **contacto ya existente** (no debe dar `PK_Contacts`)
 - [ ] **Cambiar estado** de orden (ej. Pendiente → En progreso)
 - [ ] **Vista previa** muestra ítems y totales
@@ -422,4 +425,4 @@ Los `.md` de registro viven en la carpeta workspace **`Mi-negociocr/`** (monorep
 
 ---
 
-*Última actualización: 4 junio 2026 — migración Pedidos Internet; spec Créditos en backlog*
+*Última actualización: 11 junio 2026 — UX Pedidos Internet (modal + búsqueda auto)*

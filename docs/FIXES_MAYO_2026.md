@@ -921,4 +921,22 @@ Spec: [MiNegocioCR.Api/docs/PEDIDOS_INTERNET_DISENO_v1.md](./MiNegocioCR.Api/doc
 
 ---
 
-*Última actualización: 25 mayo 2026 — Créditos v1.1 documentado; fase 1 en desarrollo*
+## 31. Pedidos Internet UX — modal y búsqueda (junio 2026)
+
+### Qué se entregó
+
+- **Crear pedido** en modal (`InternetOrderCreateDialog`) con botón **+ Crear pedido** en el hero.
+- Lista a ancho completo; búsqueda automática (debounce ~350 ms); filtro estado por defecto **Creada**.
+- **Gestionar pedido:** tarjetas de líneas/adelantos con padding y botones separados.
+
+### Documentación
+
+**[CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md)** · FE: `mi-negociocr-frontend/docs/CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md`
+
+### Deploy
+
+Solo frontend (`main` → Vercel). Sin migraciones.
+
+---
+
+*Última actualización: 11 junio 2026*

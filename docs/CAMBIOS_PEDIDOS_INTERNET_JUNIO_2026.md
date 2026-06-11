@@ -233,4 +233,16 @@ integration, routes and sidebar. Extend print-preview for internet-order docs.
 - [DEPLOY.md](./DEPLOY.md) — flujo Railway/Vercel
 - [SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md](./SETUP_LOCAL_Y_CAMBIOS_MAYO_2026.md) — PostgreSQL y tenant local
 
-*Última actualización: 4 junio 2026 — Pedidos Internet en producción; spec Créditos v1 documentada*
+---
+
+## 9. UX Junio 2026 (solo frontend)
+
+Release posterior al módulo inicial: modal crear, búsqueda automática, filtro **Creada** por defecto, espaciado en diálogo **Gestionar pedido**.
+
+**Documentación:** [CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md](./CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md) · FE: `mi-negociocr-frontend/docs/CAMBIOS_PEDIDOS_INTERNET_UX_JUNIO_2026.md`
+
+Sin migraciones ni cambios de API.
+
+---
+
+*Última actualización: 11 junio 2026 — UX Pedidos Internet (modal + búsqueda auto)*
