@@ -1,6 +1,7 @@
 # Inventario MiNegocioCR — Diseño UX aprobado e plan de implementación (v2)
 
-**Estado:** Sprint 1 en implementación (jun 2026)  
+**Estado:** ✅ Sprints 1–4 + post-sprint en **producción** (jun 2026) — ver [CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md](./CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md)  
+| **Siguiente módulo:** [MARKETPLACE_INICIO_JUNIO_2026.md](./MARKETPLACE_INICIO_JUNIO_2026.md)  
 **Fecha:** Junio 2026  
 **Repositorios:** `mi-negociocr-frontend` (`main`) · `MiNegocioCR.Api` (`master`)  
 **Referencia análisis inicial:** [INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md](./INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md)  
@@ -76,7 +77,7 @@ El módulo de inventario actual (`/inventory`, 6 pestañas, ~1.300 líneas en `p
 | Matriz defaults | Mismo precio, costo y stock para todas las filas; **tabla editable** fila por fila |
 | Stock bajo | Umbral **configurable después**; MVP puede usar 2 fijo en cliente |
 | Servicios POS / Créditos | **Fase 2** — MVP solo CRUD en inventario; POS mantiene texto libre + catálogo después |
-| Marketplace / tienda | Servicios **ignorados** en marketplace futuro |
+| Marketplace / tienda | Servicios **ignorados**; catálogo por variantes — [MARKETPLACE_INICIO_JUNIO_2026.md](./MARKETPLACE_INICIO_JUNIO_2026.md) |
 | Combinaciones > 50 | **Advertencia** antes de guardar |
 | Límite combinaciones | Guardrail ~50 con confirmación (ajustable) |
 

@@ -1,6 +1,6 @@
 # MiNegocioCR — API
 
-Backend multi-tenant para **MiNegocioCR**: inventario, órdenes de reparación, ventas/POS, pedidos internet, dashboard, CRM de clientes, campañas de correo, WhatsApp e integraciones (Resend, Supabase Storage). **En desarrollo:** créditos / cuentas por cobrar v1.1 ([spec](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md)).
+Backend multi-tenant para **MiNegocioCR**: inventario, órdenes de reparación, ventas/POS, pedidos internet, créditos, dashboard, CRM de clientes, campañas de correo, WhatsApp e integraciones (Resend, Supabase Storage). **Próximo módulo:** tienda digital / marketplace — [MARKETPLACE_INICIO_JUNIO_2026.md](./docs/MARKETPLACE_INICIO_JUNIO_2026.md).
 
 | | |
 |---|---|
@@ -67,7 +67,8 @@ MiNegocioCR.Api/
 | Dashboard | `DashboardController` — KPIs, tendencias, canales |
 | CRM / campañas | `ContactsController` — clientes, cola de correo, cancelación |
 | Pedidos Internet | `InternetOrdersController` — proxy Amazon, estados, correos |
-| Créditos *(fase 1)* | Ver [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./docs/CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) (v1.1) |
+| Créditos | `CreditAccountsController` — cuentas por cobrar |
+| **Tienda digital** *(M1)* | Ver [MARKETPLACE_INICIO_JUNIO_2026.md](./docs/MARKETPLACE_INICIO_JUNIO_2026.md) |
 | WhatsApp | `WhatsappController`, webhooks Meta |
 | Admin | `AdminController` — panel `/admin` |
 

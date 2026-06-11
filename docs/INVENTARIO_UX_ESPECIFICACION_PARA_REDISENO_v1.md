@@ -1,13 +1,13 @@
 # Inventario MiNegocioCR — Especificación actual y brief para rediseño UX (v1)
 
-> **Implementación:** el diseño aprobado, wireframes y plan de sprints están en **[INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md)**. Este v1 conserva el análisis del estado actual y el brief original para Chat.
+> **Implementación:** el diseño aprobado, wireframes y plan de sprints están en **[INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md)** (✅ completado jun 2026). Este v1 conserva el análisis del estado **anterior** al rediseño.
 
 **Documento para:** Chat / diseño de producto / rediseño de interfaz  
 **Fecha:** Junio 2026  
 **Proyecto:** MiNegocioCR — plataforma multi-tenant para negocios en Costa Rica  
 **Stack:** Angular 21 (frontend) + .NET 8 API + PostgreSQL  
 **Estado del backend:** Implementado y en producción  
-**Estado del frontend:** Funcional pero **difícil de usar** — necesita rediseño UX sin romper reglas de negocio
+**Estado del frontend:** ✅ Rediseño UX en producción (jun 2026)
 
 ---
 
