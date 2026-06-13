@@ -10,7 +10,8 @@
 | Máx. imágenes | 3 por SKU / variante |
 | Formato final | **WebP** 1200×1200 (main), 600×600 (mobile), 300×300 (thumb) |
 | Procesamiento | Async por lote (`ImageImportBatch`) |
-| IA MVP | **Fase 2** — Fase 1 con ImageSharp + estilo fijo |
+| **Estilo visual default** | **`marketplace-white-v1`** — fondo blanco `#FFFFFF` tipo Amazon (referencia acordada) |
+| IA / recorte | **Fase 2** — solo **quitar fondo** (no escenas generadas); Fase 1 ImageSharp sobre blanco |
 | Storage | Supabase (extender paths multi-tamaño) |
 | Reemplazo | Solo si `replaceExisting=true` |
 
@@ -132,11 +133,21 @@ Task<IReadOnlyList<CatalogVariant>> FindAllByBusinessAndSkuAsync(...); // solo i
 
 ## 3. Import ZIP — objetivo marketplace
 
-Uniformidad visual tipo Shopify/Amazon:
+Uniformidad visual tipo **Amazon / listing profesional** (fondo blanco limpio, producto protagonista):
 
-- Mismo canvas 1:1, fondo degradado fijo, sombra suave, WebP optimizado.
-- Pipeline IA (fase 2): segmentar producto, quitar fondo, **sin alterar** color/logo/forma.
-- Fallback ImageSharp (fase 1): canvas + centrado + degradado + sombra.
+- Mismo canvas **1:1**, fondo **blanco plano** `#FFFFFF`, WebP optimizado.
+- **No** generar escenas ni fondos “creativos” con IA.
+- **Fase 2 (recomendada para fotos reales):** segmentar → **quitar fondo original** → pegar en blanco → sombra de contacto suave → exportar. Producto **100% fiel** (color, logo, forma).
+- **Fase 1 (ImageSharp, sin proveedor):** canvas blanco + centrar + padding + sombra opcional. Ideal si la foto **ya venía en estudio blanco**; si el fondo es mesa/tienda, el sucio **permanece** hasta activar recorte (fase 2).
+
+### Estilos soportados (`marketplaceStyle`)
+
+| Clave | Fondo | Uso |
+|-------|--------|-----|
+| **`marketplace-white-v1`** | `#FFFFFF` + sombra contacto ~6–8% | **Default** — Amazon, suplementos, autopartes (refs. acordadas) |
+| `marketplace-soft-v1` | Degradado `#F7F9FB` → `#EEF2F6` | Opcional — tenant que prefiera gris muy suave |
+
+Todos los tenants del marketplace público comparten **el mismo preset** por versión (no fondos distintos por categoría).
 
 ---
 
@@ -207,8 +218,10 @@ public class ImageImportBatch
     public Guid CreatedByUserId { get; set; }
     public string OriginalFileName { get; set; }
     public bool ReplaceExisting { get; set; }
+    public bool UseBackgroundRemoval { get; set; }
+    /// <summary>Alias legacy en API: mismo flag que UseBackgroundRemoval (no escenas IA).</summary>
     public bool UseAiProcessing { get; set; }
-    public string MarketplaceStyle { get; set; } = "v1";
+    public string MarketplaceStyle { get; set; } = "marketplace-white-v1";
     public ImageImportBatchStatus Status { get; set; }
     public int TotalFiles { get; set; }
     public int ProcessedFiles { get; set; }
@@ -266,8 +279,9 @@ public class ImageImportLog
 |-------|------|---------|
 | `file` | ZIP | requerido |
 | `replaceExisting` | bool | `false` |
-| `useAiProcessing` | bool | `false` (fase 2) |
-| `marketplaceStyle` | string | `"v1"` |
+| `useBackgroundRemoval` | bool | `false` (fase 2; **recomendado `true`** en prod para fotos no estudio) |
+| `useAiProcessing` | bool | alias de `useBackgroundRemoval` (compat.) |
+| `marketplaceStyle` | string | `"marketplace-white-v1"` |
 
 **Límites configurables (`appsettings`):**
 
@@ -297,7 +311,7 @@ Worker:
        c. Si 0 → log VariantNotFound
        d. Si >1 → log AmbiguousSku (no debe pasar post-migración SKU)
        e. Si slot ocupado y !replaceExisting → SkippedExisting
-       f. IProductImageEnhancerService → 3 tamaños WebP
+       f. IProductImageEnhancerService (estilo + recorte opcional) → 3 tamaños WebP
        g. Upload Supabase + upsert CatalogVariantImage
        h. log Success
   4. Batch Completed / CompletedWithErrors
@@ -349,8 +363,9 @@ public interface IProductImageEnhancerService
 
 public sealed class ProductImageEnhanceOptions
 {
-    public string MarketplaceStyle { get; init; } = "v1";
-    public bool UseAi { get; init; }
+    public string MarketplaceStyle { get; init; } = "marketplace-white-v1";
+    /// <summary>Quitar fondo vía Clipdrop/Cloudinary/etc. — no generar escenas.</summary>
+    public bool UseBackgroundRemoval { get; init; }
     public int MainSize { get; init; } = 1200;
     public int MobileSize { get; init; } = 600;
     public int ThumbnailSize { get; init; } = 300;
@@ -358,22 +373,34 @@ public sealed class ProductImageEnhanceOptions
 }
 ```
 
-### 7.2 Implementaciones (orden de rollout)
+### 7.2 Estilos (`MarketplaceStylePresets`)
+
+Constantes en `Application/Common/MarketplaceStylePresets.cs`:
+
+**`marketplace-white-v1` (default)**
+
+- Canvas 1200×1200, fondo sólido **`#FFFFFF`**
+- Producto ~75–80% del canvas, centrado (padding uniforme)
+- Sombra de contacto elíptica bajo el producto (~6–8% opacidad `#000000`)
+- WebP quality 88
+- Referencia visual: listings Amazon (suplementos, autopartes)
+
+**`marketplace-soft-v1` (opcional)**
+
+- Canvas 1200×1200, degradado vertical `#F7F9FB` → `#EEF2F6`
+- Misma geometría y sombra que white-v1
+
+### 7.3 Implementaciones (orden de rollout)
 
 | Fase | Clase | Notas |
 |------|-------|-------|
-| **1** | `LocalImageSharpProductImageEnhancerService` | Reutilizar SixLabors; preset `MarketplaceStyleV1` |
-| **2** | `CloudinaryProductImageEnhancerService` **o** `ClipdropProductImageEnhancerService` | Un proveedor; cadena try → fallback local |
-| **3** | Otros | Solo si hace falta |
+| **1** | `LocalImageSharpProductImageEnhancerService` | Preset `marketplace-white-v1`; sin recorte |
+| **2** | `ClipdropProductImageEnhancerService` **o** `CloudinaryProductImageEnhancerService` | **Solo background removal** + compositar en preset white-v1; fallback local |
+| **3** | Otros proveedores de recorte | Solo si hace falta |
 
-**`MarketplaceStyleV1` (constantes):**
+**Importante:** `OpenAiProductImageEnhancerService` **no** está en scope — no generar fondos ni “mejorar” el producto.
 
-- Canvas 1200×1200, fondo `#F7F9FB` → `#EEF2F6` degradado vertical suave
-- Producto ~78% del canvas, centrado
-- Sombra elíptica 8% opacidad bajo el producto
-- WebP quality 88
-
-### 7.3 Storage paths Supabase
+### 7.4 Storage paths Supabase
 
 ```
 variant/{variantId}/{imageId}/main.webp
@@ -407,14 +434,20 @@ Componentes:
 ### 8.2 Servicio
 
 ```typescript
-importZip(file: File, options: { replaceExisting: boolean; useAiProcessing: boolean }): Observable<{ batchId: string }>
+importZip(file: File, options: {
+  replaceExisting: boolean;
+  useBackgroundRemoval: boolean;
+  marketplaceStyle?: 'marketplace-white-v1' | 'marketplace-soft-v1';
+}): Observable<{ batchId: string }>
 getBatch(batchId: string): Observable<ImageImportBatchDto>
 getBatchLogs(batchId: string, page: number): Observable<ImageImportLogDto[]>
 ```
 
 ### 8.3 UX copy
 
-- «Nombrá las fotos `{SKU}_1`, `{SKU}_2`, `{SKU}_3`. El SKU debe coincidir con una variante de tu negocio.»
+- «Nombrá las fotos `{SKU}_1`, `{SKU}_2`, `{SKU}_3`. Fondo final blanco tipo tienda profesional.»
+- Toggle: **Quitar fondo de la foto** (recomendado si no es estudio blanco)
+- Selector estilo: Blanco (default) / Gris suave
 - Link a doc / ejemplo ZIP plantilla descargable (fase 1.1)
 
 ---
@@ -436,20 +469,20 @@ getBatchLogs(batchId: string, page: number): Observable<ImageImportLogDto[]>
 | # | Tarea |
 |---|--------|
 | B1 | Entidades batch/log + migración |
-| B2 | `LocalImageSharpProductImageEnhancerService` + tests snapshot |
+| B2 | `LocalImageSharpProductImageEnhancerService` + preset `marketplace-white-v1` + tests snapshot |
 | B3 | `ImportVariantImagesZipUseCase` + background worker |
 | B4 | Controller + límites configurables |
 | B5 | Extender `CatalogVariantImage` URLs + storage multi-size |
 | B6 | FE modal import + reporte |
 | B7 | Actualizar DTOs listado (`PrimaryImageUrl` → thumb) |
 
-### Sprint C — IA opcional (~3–5 días)
+### Sprint C — Recorte de fondo (~3–5 días)
 
 | # | Tarea |
 |---|--------|
-| C1 | Integrar Cloudinary **o** Clipdrop |
-| C2 | Flag `useAiProcessing` |
-| C3 | Métricas costo/tiempo en log |
+| C1 | Integrar Clipdrop **o** Cloudinary (background removal only) |
+| C2 | Flag `useBackgroundRemoval` + compositar en `marketplace-white-v1` |
+| C3 | Métricas costo/tiempo en log; fallback ImageSharp si falla recorte |
 
 ---
 
@@ -463,7 +496,8 @@ getBatchLogs(batchId: string, page: number): Observable<ImageImportLogDto[]>
 - [ ] Segundo import sin `replaceExisting` → SkippedExisting
 - [ ] Con `replaceExisting=true` → reemplaza + borra objetos viejos
 - [ ] SKU inexistente en ZIP → log error, resto continúa
-- [ ] Tienda pública muestra thumbs uniformes
+- [ ] Fondo `#FFFFFF` uniforme en grid tienda (preset white-v1)
+- [ ] Con `useBackgroundRemoval=true`, foto con fondo sucio → producto en blanco
 
 ---
 
@@ -473,8 +507,8 @@ getBatchLogs(batchId: string, page: number): Observable<ImageImportLogDto[]>
 |--------|------------|
 | Duplicados SKU en prod | Script pre-migración + limpieza Joyca |
 | Timeout Railway | Siempre async batch |
-| IA altera producto | Fallback local; revisión manual muestra |
-| Costo IA | `useAiProcessing=false` default en MVP |
+| Recorte altera producto | Solo APIs de removal; fallback local; QA muestra |
+| Costo recorte | `useBackgroundRemoval=false` default en MVP; doc al tenant |
 | ZIP malicioso | Validar paths, límite entries, scan magic bytes |
 
 ---
@@ -492,4 +526,4 @@ getBatchLogs(batchId: string, page: number): Observable<ImageImportLogDto[]>
 
 ---
 
-*Última actualización: 13 junio 2026*
+*Última actualización: 13 junio 2026 — estilo default `marketplace-white-v1`*
