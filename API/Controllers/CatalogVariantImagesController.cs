@@ -31,13 +31,10 @@ public class CatalogVariantImagesController : ControllerBase
     }
 
     [HttpPost("import-zip")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(104_857_600)]
     public async Task<IActionResult> ImportZip(
-        [FromForm(Name = "file")] IFormFile? file,
-        [FromForm] bool replaceExisting = false,
-        [FromForm] bool useBackgroundRemoval = false,
-        [FromForm] bool useAiProcessing = false,
-        [FromForm] string? marketplaceStyle = null,
+        [FromForm] ImportZipFormRequest request,
         CancellationToken cancellationToken = default)
     {
         var businessId = AuthHelper.GetBusinessId(HttpContext);
@@ -48,6 +45,7 @@ public class CatalogVariantImagesController : ControllerBase
         if (!userId.HasValue || userId.Value == Guid.Empty)
             return Unauthorized(new { sessionMessage = "Token inválido." });
 
+        var file = request.File;
         if (file == null || file.Length == 0)
             return BadRequest("Se requiere un archivo ZIP (campo file).");
 
@@ -58,9 +56,9 @@ public class CatalogVariantImagesController : ControllerBase
         if (!string.Equals(ext, ".zip", StringComparison.OrdinalIgnoreCase))
             return BadRequest("Solo se aceptan archivos .zip.");
 
-        var style = string.IsNullOrWhiteSpace(marketplaceStyle)
+        var style = string.IsNullOrWhiteSpace(request.MarketplaceStyle)
             ? MarketplaceStylePresets.WhiteV1
-            : marketplaceStyle.Trim();
+            : request.MarketplaceStyle.Trim();
 
         try
         {
@@ -73,8 +71,8 @@ public class CatalogVariantImagesController : ControllerBase
                     ZipStream = stream,
                     OriginalFileName = file.FileName,
                     ZipLength = file.Length,
-                    ReplaceExisting = replaceExisting,
-                    UseBackgroundRemoval = useBackgroundRemoval || useAiProcessing,
+                    ReplaceExisting = request.ReplaceExisting,
+                    UseBackgroundRemoval = request.UseBackgroundRemoval || request.UseAiProcessing,
                     MarketplaceStyle = style,
                 },
                 cancellationToken);
@@ -85,6 +83,20 @@ public class CatalogVariantImagesController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+    }
+
+    public sealed class ImportZipFormRequest
+    {
+        [FromForm(Name = "file")]
+        public IFormFile? File { get; set; }
+
+        public bool ReplaceExisting { get; set; }
+
+        public bool UseBackgroundRemoval { get; set; }
+
+        public bool UseAiProcessing { get; set; }
+
+        public string? MarketplaceStyle { get; set; }
     }
 
     [HttpGet("import-batches/{batchId:guid}")]
