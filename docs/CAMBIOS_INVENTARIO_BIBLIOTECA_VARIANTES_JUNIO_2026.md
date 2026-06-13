@@ -1,6 +1,8 @@
 # Inventario — biblioteca de variantes y catálogo de dimensiones (Junio 2026)
 
-**Deploy:** pendiente (13 jun 2026)  
+**Deploy:** 13 jun 2026  
+**Frontend:** `bae2dee` (`main`)  
+**API:** `0dc34f3` (`master`)  
 Complementa [CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md](./CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md).
 
 ---
