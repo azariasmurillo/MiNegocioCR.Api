@@ -16,6 +16,7 @@ public class CreateVariantUseCaseTests
     private readonly Mock<IVariantRepository> _variantRepositoryMock;
     private readonly Mock<IInventoryRepository> _inventoryRepositoryMock;
     private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
+    private readonly Mock<ICatalogOptionRepository> _optionRepositoryMock;
     private readonly Mock<ICatalogOptionValueRepository> _optionValueRepositoryMock;
     private readonly Mock<ICatalogVariantOptionValueRepository> _variantOptionValueRepositoryMock;
     private readonly Mock<IBusinessRepository> _businessRepositoryMock;
@@ -26,7 +27,11 @@ public class CreateVariantUseCaseTests
         _variantRepositoryMock = new Mock<IVariantRepository>();
         _inventoryRepositoryMock = new Mock<IInventoryRepository>();
         _catalogRepositoryMock = new Mock<ICatalogRepository>();
+        _optionRepositoryMock = new Mock<ICatalogOptionRepository>();
         _optionValueRepositoryMock = new Mock<ICatalogOptionValueRepository>();
+        _optionRepositoryMock
+            .Setup(x => x.GetByCatalogItemIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+            .ReturnsAsync(new List<CatalogOption>());
         _variantOptionValueRepositoryMock = new Mock<ICatalogVariantOptionValueRepository>();
         _businessRepositoryMock = new Mock<IBusinessRepository>();
         _businessRepositoryMock
@@ -42,6 +47,7 @@ public class CreateVariantUseCaseTests
             _variantRepositoryMock.Object,
             _inventoryRepositoryMock.Object,
             _catalogRepositoryMock.Object,
+            _optionRepositoryMock.Object,
             _optionValueRepositoryMock.Object,
             _variantOptionValueRepositoryMock.Object,
             _businessRepositoryMock.Object);
@@ -216,9 +222,18 @@ public class CreateVariantUseCaseTests
         var colorValueId = Guid.NewGuid();
         var sizeValueId = Guid.NewGuid();
 
+        var colorOptionId = Guid.NewGuid();
+        var sizeOptionId = Guid.NewGuid();
         _catalogRepositoryMock
             .Setup(x => x.GetItemByIdAsync(catalogItemId))
             .ReturnsAsync(new CatalogItem { Id = catalogItemId, BusinessId = businessId });
+        _optionRepositoryMock
+            .Setup(x => x.GetByCatalogItemIdAsync(catalogItemId, It.IsAny<bool>()))
+            .ReturnsAsync(new List<CatalogOption>
+            {
+                new() { Id = colorOptionId, CatalogItemId = catalogItemId, Name = "Color", IsActive = true },
+                new() { Id = sizeOptionId, CatalogItemId = catalogItemId, Name = "Tamaño", IsActive = true },
+            });
         _optionValueRepositoryMock
             .Setup(x => x.GetByIdsWithCatalogOptionAsync(It.IsAny<IReadOnlyList<Guid>>()))
             .ReturnsAsync(new List<CatalogOptionValue>
@@ -226,11 +241,11 @@ public class CreateVariantUseCaseTests
                 new()
                 {
                     Id = colorValueId,
-                    CatalogOptionId = Guid.NewGuid(),
+                    CatalogOptionId = colorOptionId,
                     Value = "Negro",
                     CatalogOption = new CatalogOption
                     {
-                        Id = Guid.NewGuid(),
+                        Id = colorOptionId,
                         CatalogItemId = catalogItemId,
                         Name = "Color"
                     }
@@ -238,11 +253,11 @@ public class CreateVariantUseCaseTests
                 new()
                 {
                     Id = sizeValueId,
-                    CatalogOptionId = Guid.NewGuid(),
+                    CatalogOptionId = sizeOptionId,
                     Value = "16GB",
                     CatalogOption = new CatalogOption
                     {
-                        Id = Guid.NewGuid(),
+                        Id = sizeOptionId,
                         CatalogItemId = catalogItemId,
                         Name = "Tamaño"
                     }
@@ -306,10 +321,17 @@ public class CreateVariantUseCaseTests
         var catalogItemId = Guid.NewGuid();
         var otherItemId = Guid.NewGuid();
         var valueId = Guid.NewGuid();
+        var optionId = Guid.NewGuid();
 
         _catalogRepositoryMock
             .Setup(x => x.GetItemByIdAsync(catalogItemId))
             .ReturnsAsync(new CatalogItem { Id = catalogItemId, BusinessId = Guid.NewGuid() });
+        _optionRepositoryMock
+            .Setup(x => x.GetByCatalogItemIdAsync(catalogItemId, It.IsAny<bool>()))
+            .ReturnsAsync(new List<CatalogOption>
+            {
+                new() { Id = optionId, CatalogItemId = catalogItemId, Name = "Color", IsActive = true }
+            });
         _optionValueRepositoryMock
             .Setup(x => x.GetByIdsWithCatalogOptionAsync(It.IsAny<IReadOnlyList<Guid>>()))
             .ReturnsAsync(new List<CatalogOptionValue>
@@ -317,11 +339,11 @@ public class CreateVariantUseCaseTests
                 new()
                 {
                     Id = valueId,
-                    CatalogOptionId = Guid.NewGuid(),
+                    CatalogOptionId = optionId,
                     Value = "X",
                     CatalogOption = new CatalogOption
                     {
-                        Id = Guid.NewGuid(),
+                        Id = optionId,
                         CatalogItemId = otherItemId,
                         Name = "Opt"
                     }
@@ -350,10 +372,19 @@ public class CreateVariantUseCaseTests
         var catalogItemId = Guid.NewGuid();
         var v1 = Guid.NewGuid();
         var v2 = Guid.NewGuid();
+        var option1Id = Guid.NewGuid();
+        var option2Id = Guid.NewGuid();
 
         _catalogRepositoryMock
             .Setup(x => x.GetItemByIdAsync(catalogItemId))
             .ReturnsAsync(new CatalogItem { Id = catalogItemId, BusinessId = Guid.NewGuid() });
+        _optionRepositoryMock
+            .Setup(x => x.GetByCatalogItemIdAsync(catalogItemId, It.IsAny<bool>()))
+            .ReturnsAsync(new List<CatalogOption>
+            {
+                new() { Id = option1Id, CatalogItemId = catalogItemId, Name = "Color", IsActive = true },
+                new() { Id = option2Id, CatalogItemId = catalogItemId, Name = "Talla", IsActive = true },
+            });
         _optionValueRepositoryMock
             .Setup(x => x.GetByIdsWithCatalogOptionAsync(It.IsAny<IReadOnlyList<Guid>>()))
             .ReturnsAsync(new List<CatalogOptionValue>
@@ -361,12 +392,14 @@ public class CreateVariantUseCaseTests
                 new()
                 {
                     Id = v1,
-                    CatalogOption = new CatalogOption { CatalogItemId = catalogItemId }
+                    CatalogOptionId = option1Id,
+                    CatalogOption = new CatalogOption { Id = option1Id, CatalogItemId = catalogItemId }
                 },
                 new()
                 {
                     Id = v2,
-                    CatalogOption = new CatalogOption { CatalogItemId = catalogItemId }
+                    CatalogOptionId = option2Id,
+                    CatalogOption = new CatalogOption { Id = option2Id, CatalogItemId = catalogItemId }
                 }
             });
         _variantOptionValueRepositoryMock

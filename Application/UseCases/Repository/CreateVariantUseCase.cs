@@ -14,6 +14,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
         private readonly IVariantRepository _variantRepository;
         private readonly IInventoryRepository _inventoryRepository;
         private readonly ICatalogRepository _catalogRepository;
+        private readonly ICatalogOptionRepository _optionRepository;
         private readonly ICatalogOptionValueRepository _optionValueRepository;
         private readonly ICatalogVariantOptionValueRepository _variantOptionValueRepository;
         private readonly IBusinessRepository _businessRepository;
@@ -22,6 +23,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             IVariantRepository variantRepository,
             IInventoryRepository inventoryRepository,
             ICatalogRepository catalogRepository,
+            ICatalogOptionRepository optionRepository,
             ICatalogOptionValueRepository optionValueRepository,
             ICatalogVariantOptionValueRepository variantOptionValueRepository,
             IBusinessRepository businessRepository)
@@ -29,6 +31,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             _variantRepository = variantRepository;
             _inventoryRepository = inventoryRepository;
             _catalogRepository = catalogRepository;
+            _optionRepository = optionRepository;
             _optionValueRepository = optionValueRepository;
             _variantOptionValueRepository = variantOptionValueRepository;
             _businessRepository = businessRepository;
@@ -58,6 +61,23 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             if (request.CostPrice < 0)
                 throw new ArgumentException("CostPrice cannot be negative.", nameof(request));
 
+            var activeOptions = await _optionRepository.GetByCatalogItemIdAsync(request.CatalogItemId);
+            var activeOptionCount = activeOptions.Count;
+
+            if (activeOptionCount == 0 && sortedValueIds.Count > 0)
+            {
+                throw new ArgumentException(
+                    "Este producto no tiene dimensiones; no se permiten valores de dimensión.",
+                    nameof(request));
+            }
+
+            if (activeOptionCount > 0 && sortedValueIds.Count != activeOptionCount)
+            {
+                throw new ArgumentException(
+                    $"La variante debe incluir un valor por cada dimensión ({activeOptionCount} requeridas).",
+                    nameof(request));
+            }
+
             if (sortedValueIds.Count > 0)
             {
                 var optionValues = await _optionValueRepository.GetByIdsWithCatalogOptionAsync(sortedValueIds);
@@ -72,6 +92,14 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                             "All option values must belong to the same catalog item.",
                             nameof(request));
                     }
+                }
+
+                var distinctOptionIds = optionValues.Select(v => v.CatalogOptionId).Distinct().Count();
+                if (distinctOptionIds != sortedValueIds.Count)
+                {
+                    throw new ArgumentException(
+                        "La variante debe incluir exactamente un valor por dimensión.",
+                        nameof(request));
                 }
             }
 

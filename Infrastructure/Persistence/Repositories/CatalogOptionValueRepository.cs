@@ -42,6 +42,27 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .ToListAsync();
         }
 
+        public async Task<bool> ExistsActiveValueAsync(
+            Guid catalogOptionId,
+            string normalizedValue,
+            Guid? excludeValueId = null)
+        {
+            var key = normalizedValue.Trim().ToLowerInvariant();
+            var query = _context.CatalogOptionValues
+                .AsNoTracking()
+                .Where(x =>
+                    x.CatalogOptionId == catalogOptionId &&
+                    x.IsActive &&
+                    x.Value.ToLower() == key);
+
+            if (excludeValueId.HasValue)
+            {
+                query = query.Where(x => x.Id != excludeValueId.Value);
+            }
+
+            return await query.AnyAsync();
+        }
+
         public async Task<List<CatalogOptionValue>> GetByIdsWithCatalogOptionAsync(IReadOnlyList<Guid> ids)
         {
             if (ids == null || ids.Count == 0)

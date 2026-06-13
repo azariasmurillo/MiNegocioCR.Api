@@ -53,6 +53,7 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<CreditTransaction> CreditTransactions => Set<CreditTransaction>();
         public DbSet<CreditTransactionLine> CreditTransactionLines => Set<CreditTransactionLine>();
         public DbSet<CreditCommunication> CreditCommunications => Set<CreditCommunication>();
+        public DbSet<BusinessDimensionValue> BusinessDimensionValues => Set<BusinessDimensionValue>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -188,6 +189,21 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 .WithMany(x => x.Values)
                 .HasForeignKey(x => x.CatalogOptionId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BusinessDimensionValue>(entity =>
+            {
+                entity.Property(x => x.DimensionName).HasMaxLength(80);
+                entity.Property(x => x.Value).HasMaxLength(120);
+                entity.Property(x => x.ValueKey).HasMaxLength(220);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => new { x.BusinessId, x.ValueKey }).IsUnique();
+                entity.HasIndex(x => new { x.BusinessId, x.DimensionName });
+            });
 
             // Variante ↔ valores de opción (combinación; tabla de unión explícita con Id).
             modelBuilder.Entity<CatalogVariantOptionValue>(entity =>

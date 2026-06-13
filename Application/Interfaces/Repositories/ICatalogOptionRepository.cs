@@ -10,6 +10,10 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 
         Task<List<CatalogOption>> GetByCatalogItemIdAsync(Guid catalogItemId, bool includeInactive = false);
 
+        Task<int> CountActiveByCatalogItemIdAsync(Guid catalogItemId);
+
+        Task<bool> ExistsActiveNameOnItemAsync(Guid catalogItemId, string name, Guid? excludeOptionId = null);
+
         Task UpdateAsync(CatalogOption option);
 
         Task<bool> ExistsWithValuesAsync(Guid optionId);

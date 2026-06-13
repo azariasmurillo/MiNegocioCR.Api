@@ -40,6 +40,7 @@ Cada carpeta tiene su **propio repositorio Git** (API → `master`, frontend →
 | [CAMBIOS_INVENTARIO_API_JUNIO_2026.md](./CAMBIOS_INVENTARIO_API_JUNIO_2026.md) | Inventario API — toggle presentación, márgenes |
 | [CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md](./CAMBIOS_INVENTARIO_POST_SPRINT4_JUNIO_2026.md) | Inventario UX — renombrar, agregar presentación |
 | [CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md](./CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md) | **Inventario** — dimensiones en modal, quick-add, errores ES |
+| [CAMBIOS_INVENTARIO_BIBLIOTECA_VARIANTES_JUNIO_2026.md](./CAMBIOS_INVENTARIO_BIBLIOTECA_VARIANTES_JUNIO_2026.md) | **Inventario** — biblioteca variantes, catálogo dimensiones, normalización |
 | [INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md](./INVENTARIO_UX_ESPECIFICACION_PARA_REDISENO_v1.md) | Inventario UX — análisis pre-rediseño (v1 histórico) |
 | [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md) | Spec funcional Pedidos Internet (**implementado**) |
 | [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) | Créditos / cuentas por cobrar — spec v1.1 (**implementado**) |
@@ -53,7 +54,7 @@ Cada carpeta tiene su **propio repositorio Git** (API → `master`, frontend →
 | Pedidos Internet | Producción (jun 2026) | [PEDIDOS_INTERNET_DISENO_v1.md](./PEDIDOS_INTERNET_DISENO_v1.md) |
 | Créditos y cuentas por cobrar | Producción (jun 2026) | [CREDITOS_CUENTAS_COBRAR_DISENO_v1.md](./CREDITOS_CUENTAS_COBRAR_DISENO_v1.md) |
 | Layout responsive | Producción (jun 2026) | [CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md](./CAMBIOS_LAYOUT_RESPONSIVE_JUNIO_2026.md) |
-| Inventario UX (rediseño) | **Producción** (jun 2026) | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) · [CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md](./CAMBIOS_INVENTARIO_JUNIO_2026_DIMENSIONES_Y_PRECIO.md) |
+| Inventario UX (rediseño) | **Producción** (jun 2026) | [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md) · [CAMBIOS_INVENTARIO_BIBLIOTECA_VARIANTES_JUNIO_2026.md](./CAMBIOS_INVENTARIO_BIBLIOTECA_VARIANTES_JUNIO_2026.md) |
 | Reparaciones UX | Producción (jun 2026) | [CAMBIOS_REPARACIONES_JUNIO_2026.md](./CAMBIOS_REPARACIONES_JUNIO_2026.md) |
 | **Tienda digital / Marketplace** | **En implementación** (jun 2026) | [MARKETPLACE_INICIO_JUNIO_2026.md](./MARKETPLACE_INICIO_JUNIO_2026.md) |
 

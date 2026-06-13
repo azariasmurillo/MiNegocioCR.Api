@@ -202,6 +202,7 @@ builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
 builder.Services.AddScoped<ICatalogCategoryRepository, CatalogCategoryRepository>();
 builder.Services.AddScoped<ICatalogOptionRepository, CatalogOptionRepository>();
 builder.Services.AddScoped<ICatalogOptionValueRepository, CatalogOptionValueRepository>();
+builder.Services.AddScoped<IBusinessDimensionValueRepository, BusinessDimensionValueRepository>();
 builder.Services.AddScoped<ICatalogVariantOptionValueRepository, CatalogVariantOptionValueRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IVariantRepository, VariantRepository>();
@@ -337,6 +338,8 @@ builder.Services.AddScoped<IGetValuesByOptionUseCase, GetValuesByOptionUseCase>(
 builder.Services.AddScoped<IUpdateOptionValueUseCase, UpdateOptionValueUseCase>();
 builder.Services.AddScoped<IToggleOptionValueStatusUseCase, ToggleOptionValueStatusUseCase>();
 builder.Services.AddScoped<IDeleteOptionValueUseCase, DeleteOptionValueUseCase>();
+builder.Services.AddScoped<IGetBusinessDimensionValuesUseCase, GetBusinessDimensionValuesUseCase>();
+builder.Services.AddScoped<IGetCatalogDimensionCatalogUseCase, GetCatalogDimensionCatalogUseCase>();
 builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
 builder.Services.AddScoped<IGetVariantsByCatalogItemUseCase, GetVariantsByCatalogItemUseCase>();
 builder.Services.AddScoped<IGetVariantsByBusinessUseCase, GetVariantsByBusinessUseCase>();

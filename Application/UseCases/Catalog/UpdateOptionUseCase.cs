@@ -1,4 +1,5 @@
-﻿using MiNegocioCR.Api.Application.DTOs;
+﻿using MiNegocioCR.Api.Application.Common;
+using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain.Exceptions;
 
@@ -21,14 +22,22 @@ namespace MiNegocioCR.Api.Application.UseCases.Catalog
             if (id == Guid.Empty)
                 throw new ArgumentException("Id is required.", nameof(id));
 
-            if (string.IsNullOrWhiteSpace(request.Name))
-                throw new ArgumentException("Name is required.", nameof(request));
-
             var option = await _optionRepository.GetByIdAsync(id);
             if (option == null)
                 throw new NotFoundException("CatalogOption", "Catalog option not found.");
 
-            option.Name = request.Name.Trim();
+            var dimensionName = CatalogDimensionRules.ValidateAndNormalizeDimensionName(
+                request.Name,
+                request.IsCustomDimension);
+
+            if (await _optionRepository.ExistsActiveNameOnItemAsync(option.CatalogItemId, dimensionName, id))
+            {
+                throw new ArgumentException(
+                    $"Ya existe la dimensión «{dimensionName}» en este producto.",
+                    nameof(request));
+            }
+
+            option.Name = dimensionName;
             await _optionRepository.UpdateAsync(option);
         }
     }
