@@ -319,6 +319,14 @@ builder.Services.AddScoped<IToggleCatalogItemStatusUseCase, ToggleCatalogItemSta
 builder.Services.AddScoped<IDeleteCatalogItemUseCase, DeleteCatalogItemUseCase>();
 builder.Services.AddScoped<IGetCatalogItemsByBusinessUseCase, GetCatalogItemsByBusinessUseCase>();
 builder.Services.AddScoped<IVariantImageStorageService, SupabaseVariantImageStorageService>();
+builder.Services.AddScoped<IProductImageEnhancerService, LocalImageSharpProductImageEnhancerService>();
+builder.Services.Configure<VariantImageImportOptions>(
+    builder.Configuration.GetSection(VariantImageImportOptions.SectionName));
+builder.Services.AddScoped<IStartVariantImageImportZipUseCase, StartVariantImageImportZipUseCase>();
+builder.Services.AddScoped<IGetImageImportBatchUseCase, GetImageImportBatchUseCase>();
+builder.Services.AddScoped<IGetImageImportBatchLogsUseCase, GetImageImportBatchLogsUseCase>();
+builder.Services.AddScoped<IImageImportBatchProcessor, ImageImportBatchProcessor>();
+builder.Services.AddHostedService<ImageImportBackgroundService>();
 builder.Services.AddScoped<IUploadCatalogVariantImagesUseCase, UploadCatalogVariantImagesUseCase>();
 builder.Services.AddScoped<IGetCatalogVariantImagesUseCase, GetCatalogVariantImagesUseCase>();
 builder.Services.AddScoped<IDeleteCatalogVariantImageUseCase, DeleteCatalogVariantImageUseCase>();

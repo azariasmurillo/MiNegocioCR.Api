@@ -94,13 +94,14 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 .AsNoTracking()
                 .Where(i => i.BusinessId == businessId && variantIds.Contains(i.CatalogVariantId))
                 .OrderByDescending(i => i.IsPrimary)
+                .ThenBy(i => i.SortOrder)
                 .ThenBy(i => i.CreatedAt)
-                .Select(i => new { i.CatalogVariantId, i.ImageUrl })
+                .Select(i => new { i.CatalogVariantId, Url = i.ThumbnailImageUrl ?? i.ImageUrl })
                 .ToListAsync();
 
             return rows
                 .GroupBy(r => r.CatalogVariantId)
-                .ToDictionary(g => g.Key, g => g.First().ImageUrl);
+                .ToDictionary(g => g.Key, g => g.First().Url);
         }
     }
 }

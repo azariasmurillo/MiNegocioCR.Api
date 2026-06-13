@@ -33,6 +33,10 @@ public class DeleteCatalogVariantImageUseCase : IDeleteCatalogVariantImageUseCas
         var wasPrimary = image.IsPrimary;
 
         await _storage.DeleteByPublicUrlAsync(image.ImageUrl, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(image.MobileImageUrl))
+            await _storage.DeleteByPublicUrlAsync(image.MobileImageUrl, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(image.ThumbnailImageUrl))
+            await _storage.DeleteByPublicUrlAsync(image.ThumbnailImageUrl, cancellationToken);
         _context.CatalogVariantImages.Remove(image);
         await _context.SaveChangesAsync(cancellationToken);
 

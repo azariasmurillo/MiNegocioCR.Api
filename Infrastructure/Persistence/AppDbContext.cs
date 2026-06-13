@@ -54,6 +54,8 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
         public DbSet<CreditTransactionLine> CreditTransactionLines => Set<CreditTransactionLine>();
         public DbSet<CreditCommunication> CreditCommunications => Set<CreditCommunication>();
         public DbSet<BusinessDimensionValue> BusinessDimensionValues => Set<BusinessDimensionValue>();
+        public DbSet<ImageImportBatch> ImageImportBatches => Set<ImageImportBatch>();
+        public DbSet<ImageImportLog> ImageImportLogs => Set<ImageImportLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -187,6 +189,46 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
                 entity.HasIndex(x => x.BusinessId);
                 entity.HasIndex(x => x.CatalogVariantId);
                 entity.HasIndex(x => new { x.BusinessId, x.CatalogVariantId });
+                entity.HasIndex(x => new { x.CatalogVariantId, x.SortOrder });
+            });
+
+            modelBuilder.Entity<ImageImportBatch>(entity =>
+            {
+                entity.ToTable("ImageImportBatches");
+                entity.Property(x => x.OriginalFileName).HasMaxLength(260).IsRequired();
+                entity.Property(x => x.StagingZipPath).HasMaxLength(500).IsRequired();
+                entity.Property(x => x.MarketplaceStyle).HasMaxLength(80).IsRequired();
+                entity.Property(x => x.SummaryMessage).HasMaxLength(2000);
+                entity.Property(x => x.CreatedAt)
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("now()");
+                entity.Property(x => x.CompletedAt).HasColumnType("timestamp with time zone");
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.BusinessId);
+                entity.HasIndex(x => new { x.Status, x.CreatedAt });
+            });
+
+            modelBuilder.Entity<ImageImportLog>(entity =>
+            {
+                entity.ToTable("ImageImportLogs");
+                entity.Property(x => x.FileName).HasMaxLength(260).IsRequired();
+                entity.Property(x => x.ParsedSku).HasMaxLength(80);
+                entity.Property(x => x.Message).HasMaxLength(2000);
+                entity.Property(x => x.CreatedAt)
+                    .HasColumnType("timestamp with time zone")
+                    .HasDefaultValueSql("now()");
+
+                entity.HasOne(x => x.Batch)
+                    .WithMany(b => b.Logs)
+                    .HasForeignKey(x => x.BatchId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(x => x.BatchId);
             });
 
             modelBuilder.Entity<CatalogOption>()

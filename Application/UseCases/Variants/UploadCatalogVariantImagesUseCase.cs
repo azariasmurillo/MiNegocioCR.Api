@@ -78,6 +78,7 @@ public class UploadCatalogVariantImagesUseCase : IUploadCatalogVariantImagesUseC
             .AsNoTracking()
             .Where(i => i.BusinessId == businessId && i.CatalogVariantId == catalogVariantId)
             .OrderByDescending(i => i.IsPrimary)
+            .ThenBy(i => i.SortOrder)
             .ThenBy(i => i.CreatedAt)
             .Select(i => new CatalogVariantImageDto { Id = i.Id, ImageUrl = i.ImageUrl, IsPrimary = i.IsPrimary })
             .ToListAsync(cancellationToken);

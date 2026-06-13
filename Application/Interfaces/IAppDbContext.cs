@@ -41,6 +41,8 @@ namespace MiNegocioCR.Api.Application.Interfaces
         DbSet<CreditTransaction> CreditTransactions { get; }
         DbSet<CreditTransactionLine> CreditTransactionLines { get; }
         DbSet<CreditCommunication> CreditCommunications { get; }
+        DbSet<ImageImportBatch> ImageImportBatches { get; }
+        DbSet<ImageImportLog> ImageImportLogs { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }

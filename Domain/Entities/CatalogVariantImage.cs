@@ -10,6 +10,16 @@ public class CatalogVariantImage
 
     public string ImageUrl { get; set; } = string.Empty;
 
+    public string? MobileImageUrl { get; set; }
+
+    public string? ThumbnailImageUrl { get; set; }
+
+    public int SortOrder { get; set; }
+
+    public Guid? ImportBatchId { get; set; }
+
+    public string? SourceFileName { get; set; }
+
     public bool IsPrimary { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

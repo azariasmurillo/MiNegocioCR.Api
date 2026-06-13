@@ -92,6 +92,85 @@ public class SupabaseVariantImageStorageService : IVariantImageStorageService
         }
     }
 
+    public async Task<ProcessedVariantImageUrls> UploadProcessedAsync(
+        Guid catalogVariantId,
+        Guid imageId,
+        ProcessedVariantImageStreams files,
+        CancellationToken cancellationToken = default)
+    {
+        var main = await UploadObjectAsync(
+            catalogVariantId,
+            imageId,
+            "main.webp",
+            files.Main,
+            "image/webp",
+            cancellationToken);
+        var mobile = await UploadObjectAsync(
+            catalogVariantId,
+            imageId,
+            "mobile.webp",
+            files.Mobile,
+            "image/webp",
+            cancellationToken);
+        var thumb = await UploadObjectAsync(
+            catalogVariantId,
+            imageId,
+            "thumb.webp",
+            files.Thumbnail,
+            "image/webp",
+            cancellationToken);
+
+        return new ProcessedVariantImageUrls
+        {
+            MainUrl = main,
+            MobileUrl = mobile,
+            ThumbnailUrl = thumb,
+        };
+    }
+
+    private async Task<string> UploadObjectAsync(
+        Guid catalogVariantId,
+        Guid imageId,
+        string fileName,
+        Stream fileStream,
+        string contentType,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_supabaseUrl))
+            throw new InvalidOperationException(
+                "Supabase config missing: set Supabase:Url or SUPABASE_URL (project URL, e.g. https://xxx.supabase.co).");
+        if (string.IsNullOrWhiteSpace(_serviceKey))
+            throw new InvalidOperationException(
+                "Supabase config missing: set Supabase:ServiceKey or SUPABASE_SERVICE_ROLE_KEY (service_role, not anon).");
+
+        var path = $"variant/{catalogVariantId}/{imageId}/{fileName}";
+        var baseUrl = _supabaseUrl.TrimEnd('/');
+        var uploadUrl = $"{baseUrl}/storage/v1/object/{_bucket}/{path}";
+        var publicUrl = $"{baseUrl}/storage/v1/object/public/{_bucket}/{path}";
+
+        var client = _httpClientFactory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _serviceKey);
+        request.Headers.Add("apikey", _serviceKey);
+        request.Headers.Add("x-upsert", "true");
+        request.Content = new StreamContent(fileStream);
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+        using var response = await client.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var details = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning(
+                "Supabase processed image upload failed. Status={Status}, Path={Path}, Body={Body}",
+                (int)response.StatusCode,
+                path,
+                details);
+            throw new InvalidOperationException($"Supabase upload failed: {(int)response.StatusCode} {details}");
+        }
+
+        return publicUrl;
+    }
+
     public async Task DeleteByPublicUrlAsync(string publicImageUrl, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(publicImageUrl))
