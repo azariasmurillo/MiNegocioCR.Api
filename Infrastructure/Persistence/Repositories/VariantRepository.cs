@@ -1,3 +1,4 @@
+using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Domain;
 using MiNegocioCR.Api.Domain.Entities;
@@ -193,6 +194,42 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 query = query.Where(v => v.Id != excludeVariantId.Value);
 
             return await query.AnyAsync(v => v.SKU!.ToLower() == normalized);
+        }
+
+        public async Task<bool> ExistsSkuForBusinessAsync(
+            Guid businessId,
+            string sku,
+            Guid? excludeVariantId = null)
+        {
+            var key = SkuNormalizer.ToNormalizedKey(sku);
+            if (key == null)
+            {
+                return false;
+            }
+
+            var query = _context.CatalogVariants
+                .AsNoTracking()
+                .Where(v => v.BusinessId == businessId && v.SkuNormalized == key);
+
+            if (excludeVariantId.HasValue)
+            {
+                query = query.Where(v => v.Id != excludeVariantId.Value);
+            }
+
+            return await query.AnyAsync();
+        }
+
+        public async Task<CatalogVariant?> FindByBusinessAndSkuAsync(Guid businessId, string sku)
+        {
+            var key = SkuNormalizer.ToNormalizedKey(sku);
+            if (key == null)
+            {
+                return null;
+            }
+
+            return await _context.CatalogVariants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.BusinessId == businessId && v.SkuNormalized == key);
         }
     }
 }

@@ -6,7 +6,13 @@ namespace MiNegocioCR.Api.Domain.Entities
 
         public Guid CatalogItemId { get; set; }
 
+        /// <summary>Negocio dueño (denormalizado desde CatalogItem) para unicidad de SKU por tenant.</summary>
+        public Guid BusinessId { get; set; }
+
         public string? SKU { get; set; }
+
+        /// <summary>LOWER(TRIM(SKU)) para índice único por negocio; null si no hay SKU.</summary>
+        public string? SkuNormalized { get; set; }
 
         public decimal Price { get; set; }
 
@@ -25,6 +31,8 @@ namespace MiNegocioCR.Api.Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public CatalogItem CatalogItem { get; set; }
+
+        public Business Business { get; set; } = null!;
 
         public ICollection<CatalogVariantOptionValue> VariantOptionValues { get; set; } = new List<CatalogVariantOptionValue>();
 

@@ -41,7 +41,7 @@ public class CreateVariantUseCaseTests
             .Setup(x => x.ExistsVariantWithSameOptionValueCombinationAsync(It.IsAny<Guid>(), It.IsAny<IReadOnlyList<Guid>>()))
             .ReturnsAsync(false);
         _variantRepositoryMock
-            .Setup(x => x.ExistsSkuForCatalogItemAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>()))
+            .Setup(x => x.ExistsSkuForBusinessAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid?>()))
             .ReturnsAsync(false);
         _sut = new CreateVariantUseCase(
             _variantRepositoryMock.Object,

@@ -42,5 +42,13 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
         /// SKU vacío no se considera duplicado.
         /// </summary>
         Task<bool> ExistsSkuForCatalogItemAsync(Guid catalogItemId, string sku, Guid? excludeVariantId = null);
+
+        /// <summary>
+        /// True si otra variante del negocio ya usa este SKU (case-insensitive).
+        /// </summary>
+        Task<bool> ExistsSkuForBusinessAsync(Guid businessId, string sku, Guid? excludeVariantId = null);
+
+        /// <summary>Resuelve variante por SKU dentro del negocio; null si SKU vacío o no encontrado.</summary>
+        Task<CatalogVariant?> FindByBusinessAndSkuAsync(Guid businessId, string sku);
     }
 }

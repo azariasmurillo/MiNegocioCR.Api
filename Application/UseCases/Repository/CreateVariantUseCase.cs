@@ -115,10 +115,10 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             }
 
             if (!string.IsNullOrWhiteSpace(request.SKU) &&
-                await _variantRepository.ExistsSkuForCatalogItemAsync(request.CatalogItemId, request.SKU))
+                await _variantRepository.ExistsSkuForBusinessAsync(catalogItem.BusinessId, request.SKU))
             {
                 throw new ArgumentException(
-                    "A variant with this SKU already exists for this catalog item.",
+                    $"Ya existe otra variante con el SKU «{request.SKU.Trim()}» en tu negocio.",
                     nameof(request.SKU));
             }
 
@@ -143,7 +143,6 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             {
                 Id = Guid.NewGuid(),
                 CatalogItemId = request.CatalogItemId,
-                SKU = string.IsNullOrWhiteSpace(request.SKU) ? null : request.SKU.Trim(),
                 Price = resolvedPrice,
                 CostPrice = request.CostPrice,
                 ProfitMargin = request.ProfitMargin,
@@ -151,6 +150,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
+            SkuNormalizer.Apply(variant, catalogItem.BusinessId, request.SKU);
 
             await _variantRepository.AddVariantAsync(variant);
 

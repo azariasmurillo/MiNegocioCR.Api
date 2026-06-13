@@ -80,6 +80,17 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence
             {
                 entity.Property(x => x.ProfitMargin).HasPrecision(5, 2);
                 entity.Property(x => x.CostPrice).HasPrecision(18, 2);
+                entity.Property(x => x.SkuNormalized).HasMaxLength(80);
+
+                entity.HasOne(x => x.Business)
+                    .WithMany()
+                    .HasForeignKey(x => x.BusinessId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.BusinessId);
+                entity.HasIndex(x => new { x.BusinessId, x.SkuNormalized })
+                    .IsUnique()
+                    .HasFilter("\"SkuNormalized\" IS NOT NULL");
             });
 
             modelBuilder.Entity<User>(entity =>

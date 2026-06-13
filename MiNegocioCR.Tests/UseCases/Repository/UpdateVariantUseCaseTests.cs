@@ -46,7 +46,7 @@ public class UpdateVariantUseCaseTests
             .Setup(x => x.GetVariantAsync(variantId, businessId))
             .ReturnsAsync(variant);
         _variantRepositoryMock
-            .Setup(x => x.ExistsSkuForCatalogItemAsync(catalogItemId, It.IsAny<string>(), variantId))
+            .Setup(x => x.ExistsSkuForBusinessAsync(businessId, It.IsAny<string>(), variantId))
             .ReturnsAsync(false);
         _businessRepositoryMock
             .Setup(x => x.GetByIdAsync(businessId))
@@ -89,7 +89,7 @@ public class UpdateVariantUseCaseTests
             .Setup(x => x.GetVariantAsync(variantId, businessId))
             .ReturnsAsync(variant);
         _variantRepositoryMock
-            .Setup(x => x.ExistsSkuForCatalogItemAsync(catalogItemId, It.IsAny<string>(), variantId))
+            .Setup(x => x.ExistsSkuForBusinessAsync(businessId, It.IsAny<string>(), variantId))
             .ReturnsAsync(false);
         _businessRepositoryMock
             .Setup(x => x.GetByIdAsync(businessId))
@@ -130,7 +130,7 @@ public class UpdateVariantUseCaseTests
             .Setup(x => x.GetVariantAsync(variantId, businessId))
             .ReturnsAsync(variant);
         _variantRepositoryMock
-            .Setup(x => x.ExistsSkuForCatalogItemAsync(catalogItemId, It.IsAny<string>(), variantId))
+            .Setup(x => x.ExistsSkuForBusinessAsync(businessId, It.IsAny<string>(), variantId))
             .ReturnsAsync(false);
         _businessRepositoryMock
             .Setup(x => x.GetByIdAsync(businessId))
@@ -168,7 +168,7 @@ public class UpdateVariantUseCaseTests
             .Setup(x => x.GetVariantAsync(variantId, businessId))
             .ReturnsAsync(variant);
         _variantRepositoryMock
-            .Setup(x => x.ExistsSkuForCatalogItemAsync(catalogItemId, "DUP", variantId))
+            .Setup(x => x.ExistsSkuForBusinessAsync(businessId, "DUP", variantId))
             .ReturnsAsync(true);
 
         var act = () => _sut.ExecuteAsync(variantId, new UpdateVariantRequestDto
@@ -225,7 +225,7 @@ public class UpdateVariantUseCaseTests
             .Setup(x => x.GetVariantAsync(variantId, businessId))
             .ReturnsAsync(variant);
         _variantRepositoryMock
-            .Setup(x => x.ExistsSkuForCatalogItemAsync(catalogItemId, It.IsAny<string>(), variantId))
+            .Setup(x => x.ExistsSkuForBusinessAsync(businessId, It.IsAny<string>(), variantId))
             .ReturnsAsync(false);
 
         var act = () => _sut.ExecuteAsync(variantId, new UpdateVariantRequestDto
