@@ -15,7 +15,7 @@
 | Storage | Supabase (extender paths multi-tamaño) |
 | Reemplazo | Solo si `replaceExisting=true` |
 
-**Estado código (jun 2026):** **Sin implementar** — diseño aprobado para sprint.
+**Estado código (jun 2026):** **MVP implementado** (Sprint A + B). Pendiente: recorte de fondo con IA (Sprint C) y smoke test en prod.
 
 ---
 

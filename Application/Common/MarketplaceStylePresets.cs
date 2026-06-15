@@ -15,4 +15,6 @@ public static class MarketplaceStylePresets
     }
 
     public static float ProductFillRatio => 0.78f;
+
+    public static float ContactShadowOpacity => 0.07f;
 }

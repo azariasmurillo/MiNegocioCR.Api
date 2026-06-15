@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using MiNegocioCR.Api.API.Helpers;
 using MiNegocioCR.Api.Application.Common;
@@ -32,6 +33,7 @@ public class CatalogVariantImagesController : ControllerBase
 
     [HttpPost("import-zip")]
     [Consumes("multipart/form-data")]
+    [RequestFormLimits(MultipartBodyLengthLimit = 104_857_600)]
     [RequestSizeLimit(104_857_600)]
     public async Task<IActionResult> ImportZip(
         [FromForm] ImportZipFormRequest request,

@@ -38,16 +38,20 @@ public class UploadCatalogVariantImagesUseCase : IUploadCatalogVariantImagesUseC
         if (!variantExists)
             throw new NotFoundException("CatalogVariant", "Catalog variant not found.");
 
-        var existingCount = await _context.CatalogVariantImages
-            .CountAsync(i => i.CatalogVariantId == catalogVariantId && i.BusinessId == businessId, cancellationToken);
+        var existingImages = await _context.CatalogVariantImages
+            .Where(i => i.CatalogVariantId == catalogVariantId && i.BusinessId == businessId)
+            .ToListAsync(cancellationToken);
 
-        if (existingCount + files.Count > MaxImagesPerVariant)
+        if (existingImages.Count + files.Count > MaxImagesPerVariant)
             throw new ArgumentException($"A catalog variant can have at most {MaxImagesPerVariant} images.");
+
+        var occupiedSlots = ResolveOccupiedSlots(existingImages);
 
         var index = 0;
         foreach (var file in files)
         {
-            var isPrimary = existingCount == 0 && index == 0;
+            var sortOrder = TakeNextSortOrder(occupiedSlots);
+            var isPrimary = sortOrder == 1 || (existingImages.Count == 0 && index == 0);
             var imageUrl = await _storage.UploadAsync(catalogVariantId, file.Stream, file.ContentType, cancellationToken);
 
             var entity = new CatalogVariantImage
@@ -56,6 +60,7 @@ public class UploadCatalogVariantImagesUseCase : IUploadCatalogVariantImagesUseC
                 BusinessId = businessId,
                 CatalogVariantId = catalogVariantId,
                 ImageUrl = imageUrl,
+                SortOrder = sortOrder,
                 IsPrimary = isPrimary,
                 CreatedAt = DateTime.UtcNow
             };
@@ -67,6 +72,38 @@ public class UploadCatalogVariantImagesUseCase : IUploadCatalogVariantImagesUseC
         await _context.SaveChangesAsync(cancellationToken);
 
         return await ProjectOrderedListAsync(businessId, catalogVariantId, cancellationToken);
+    }
+
+    internal static HashSet<int> ResolveOccupiedSlots(IReadOnlyList<CatalogVariantImage> existingImages)
+    {
+        var occupied = existingImages
+            .Where(i => i.SortOrder is >= 1 and <= MaxImagesPerVariant)
+            .Select(i => i.SortOrder)
+            .ToHashSet();
+
+        var legacyCount = existingImages.Count(i => i.SortOrder is < 1 or > MaxImagesPerVariant);
+        for (var slot = 1; legacyCount > 0 && slot <= MaxImagesPerVariant; slot++)
+        {
+            if (occupied.Add(slot))
+            {
+                legacyCount--;
+            }
+        }
+
+        return occupied;
+    }
+
+    internal static int TakeNextSortOrder(HashSet<int> occupiedSlots)
+    {
+        for (var slot = 1; slot <= MaxImagesPerVariant; slot++)
+        {
+            if (occupiedSlots.Add(slot))
+            {
+                return slot;
+            }
+        }
+
+        throw new InvalidOperationException($"No free image slot (max {MaxImagesPerVariant}).");
     }
 
     private async Task<IReadOnlyList<CatalogVariantImageDto>> ProjectOrderedListAsync(
