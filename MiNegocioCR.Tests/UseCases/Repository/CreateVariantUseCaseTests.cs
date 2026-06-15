@@ -418,7 +418,7 @@ public class CreateVariantUseCaseTests
         var act = () => _sut.ExecuteAsync(request);
 
         await act.Should().ThrowAsync<ArgumentException>()
-            .Where(ex => ex.Message.Contains("combination already exists", StringComparison.Ordinal));
+            .Where(ex => ex.Message.Contains("misma combinación de presentación", StringComparison.Ordinal));
         _variantRepositoryMock.Verify(x => x.AddVariantAsync(It.IsAny<CatalogVariant>()), Times.Never);
     }
 }

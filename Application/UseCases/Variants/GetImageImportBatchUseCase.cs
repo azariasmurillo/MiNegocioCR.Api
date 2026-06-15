@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces;
 using MiNegocioCR.Api.Application.Interfaces.Variants;
+using MiNegocioCR.Api.Domain.Enums;
 using MiNegocioCR.Api.Domain.Exceptions;
 
 namespace MiNegocioCR.Api.Application.UseCases.Variants;
@@ -32,10 +33,12 @@ public class GetImageImportBatchUseCase : IGetImageImportBatchUseCase
         if (batch == null)
             throw new NotFoundException("ImageImportBatch", "Lote de importación no encontrado.");
 
+        var status = ResolveDisplayStatus(batch);
+
         return new ImageImportBatchDto
         {
             Id = batch.Id,
-            Status = batch.Status.ToString(),
+            Status = status,
             TotalFiles = batch.TotalFiles,
             ProcessedFiles = batch.ProcessedFiles,
             SuccessCount = batch.SuccessCount,
@@ -45,5 +48,19 @@ public class GetImageImportBatchUseCase : IGetImageImportBatchUseCase
             CompletedAt = batch.CompletedAt,
             SummaryMessage = batch.SummaryMessage,
         };
+    }
+
+    internal static string ResolveDisplayStatus(Domain.Entities.ImageImportBatch batch)
+    {
+        if (batch.Status == ImageImportBatchStatus.Processing
+            && batch.TotalFiles > 0
+            && batch.ProcessedFiles >= batch.TotalFiles)
+        {
+            return batch.ErrorCount > 0
+                ? ImageImportBatchStatus.CompletedWithErrors.ToString()
+                : ImageImportBatchStatus.Completed.ToString();
+        }
+
+        return batch.Status.ToString();
     }
 }

@@ -109,8 +109,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
             {
                 throw new ArgumentException(
                     sortedValueIds.Count > 0
-                        ? "A variant with this option combination already exists."
-                        : "This catalog item already has a variant without option values.",
+                        ? "Ya existe una variante con la misma combinación de presentación en este producto."
+                        : "Este producto ya tiene una variante sin presentaciones.",
                     nameof(request));
             }
 
@@ -118,7 +118,7 @@ namespace MiNegocioCR.Api.Application.UseCases.Repository
                 await _variantRepository.ExistsSkuForBusinessAsync(catalogItem.BusinessId, request.SKU))
             {
                 throw new ArgumentException(
-                    $"Ya existe otra variante con el SKU «{request.SKU.Trim()}» en tu negocio.",
+                    $"El SKU «{request.SKU.Trim()}» ya está en uso por otra variante de tu negocio. Usá otro SKU o editá la variante existente.",
                     nameof(request.SKU));
             }
 

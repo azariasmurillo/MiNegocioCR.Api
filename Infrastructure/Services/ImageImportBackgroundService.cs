@@ -38,7 +38,7 @@ public class ImageImportBackgroundService : BackgroundService
 
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

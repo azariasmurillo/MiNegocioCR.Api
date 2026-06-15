@@ -1,4 +1,6 @@
 using System.IO.Compression;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MiNegocioCR.Api.Application.Common;
 using MiNegocioCR.Api.Application.Configuration;
@@ -12,13 +14,19 @@ namespace MiNegocioCR.Api.Application.UseCases.Variants;
 public class StartVariantImageImportZipUseCase : IStartVariantImageImportZipUseCase
 {
     private readonly IAppDbContext _context;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<StartVariantImageImportZipUseCase> _logger;
     private readonly VariantImageImportOptions _options;
 
     public StartVariantImageImportZipUseCase(
         IAppDbContext context,
+        IServiceScopeFactory scopeFactory,
+        ILogger<StartVariantImageImportZipUseCase> logger,
         IOptions<VariantImageImportOptions> options)
     {
         _context = context;
+        _scopeFactory = scopeFactory;
+        _logger = logger;
         _options = options.Value;
     }
 
@@ -86,7 +94,29 @@ public class StartVariantImageImportZipUseCase : IStartVariantImageImportZipUseC
 
         _context.ImageImportBatches.Add(batch);
         await _context.SaveChangesAsync(cancellationToken);
+        WakeProcessor();
         return batchId;
+    }
+
+    private void WakeProcessor()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var processor = scope.ServiceProvider.GetRequiredService<IImageImportBatchProcessor>();
+                for (var i = 0; i < 30; i++)
+                {
+                    if (!await processor.ProcessNextAsync(CancellationToken.None))
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Immediate image import wake failed; background worker will retry.");
+            }
+        });
     }
 
     private string ResolveStagingDirectory()

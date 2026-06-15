@@ -15,7 +15,8 @@ namespace MiNegocioCR.Api.Application.UseCases.Variants;
 
 public class ImageImportBatchProcessor : IImageImportBatchProcessor
 {
-    private static readonly TimeSpan StaleProcessingThreshold = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan StaleProcessingThreshold = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan StaleNoProgressThreshold = TimeSpan.FromSeconds(90);
 
     private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -114,11 +115,17 @@ public class ImageImportBatchProcessor : IImageImportBatchProcessor
 
         var seenSlots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        var fileIndex = 0;
         foreach (var entry in entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            fileIndex++;
+            var fileName = Path.GetFileName(entry.FullName);
+            batch.SummaryMessage = $"Procesando {fileName} ({fileIndex}/{entries.Count})…";
+            await _context.SaveChangesAsync(cancellationToken);
+
             await ProcessEntryAsync(batch, entry, seenSlots, cancellationToken);
-            batch.ProcessedFiles++;
+            batch.ProcessedFiles = fileIndex;
             await _context.SaveChangesAsync(cancellationToken);
         }
 
@@ -477,9 +484,15 @@ public class ImageImportBatchProcessor : IImageImportBatchProcessor
 
     private async Task RecoverStaleProcessingBatchesAsync(CancellationToken cancellationToken)
     {
-        var staleBefore = DateTime.UtcNow - StaleProcessingThreshold;
+        var now = DateTime.UtcNow;
+        var staleBefore = now - StaleProcessingThreshold;
+        var noProgressBefore = now - StaleNoProgressThreshold;
         var stale = await _context.ImageImportBatches
-            .Where(b => b.Status == ImageImportBatchStatus.Processing && b.CreatedAt < staleBefore)
+            .Where(b => b.Status == ImageImportBatchStatus.Processing
+                        && (b.CreatedAt < staleBefore
+                            || (b.ProcessedFiles == 0
+                                && b.TotalFiles > 0
+                                && b.CreatedAt < noProgressBefore)))
             .ToListAsync(cancellationToken);
 
         if (stale.Count == 0)
