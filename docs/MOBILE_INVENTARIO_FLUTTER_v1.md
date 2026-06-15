@@ -1,7 +1,8 @@
 # App móvil Flutter — Inventario rápido (diseño v1)
 
-> **Spec para desarrollo** de la app Android que complementa MiNegocioCR web.  
-> Reutiliza el modelo de inventario existente (`CatalogItem` → `CatalogVariant` → imágenes / stock).  
+> **Superseded:** usar [MOBILE_INVENTARIO_FLUTTER_v2.md](./MOBILE_INVENTARIO_FLUTTER_v2.md) (v1 + mejoras estratégicas).
+
+> **Spec para desarrollo** de la app Android que complementa MiNegocioCR web.> Reutiliza el modelo de inventario existente (`CatalogItem` → `CatalogVariant` → imágenes / stock).  
 > Complementa [VARIANT_IMAGE_IMPORT_MARKETPLACE_v1.md](./VARIANT_IMAGE_IMPORT_MARKETPLACE_v1.md) y [INVENTARIO_UX_REDISENO_v2.md](./INVENTARIO_UX_REDISENO_v2.md).
 
 | Decisión | Valor |
