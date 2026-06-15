@@ -231,5 +231,27 @@ namespace MiNegocioCR.Api.Infrastructure.Persistence.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(v => v.BusinessId == businessId && v.SkuNormalized == key);
         }
+
+        public async Task<CatalogVariant?> GetVariantWithOptionDetailsByBusinessAndSkuAsync(
+            Guid businessId,
+            string sku,
+            CancellationToken cancellationToken = default)
+        {
+            var key = SkuNormalizer.ToNormalizedKey(sku);
+            if (key == null)
+            {
+                return null;
+            }
+
+            return await _context.CatalogVariants
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Where(v => v.BusinessId == businessId && v.SkuNormalized == key)
+                .Include(v => v.CatalogItem)
+                .Include(v => v.VariantOptionValues)
+                    .ThenInclude(l => l.CatalogOptionValue)
+                        .ThenInclude(ov => ov.CatalogOption)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
     }
 }

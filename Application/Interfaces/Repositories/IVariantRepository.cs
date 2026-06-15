@@ -50,5 +50,11 @@ namespace MiNegocioCR.Api.Application.Interfaces.Repositories
 
         /// <summary>Resuelve variante por SKU dentro del negocio; null si SKU vacío o no encontrado.</summary>
         Task<CatalogVariant?> FindByBusinessAndSkuAsync(Guid businessId, string sku);
+
+        /// <summary>Variante con ítem, opciones y valores para lookup por SKU (sin tracking).</summary>
+        Task<CatalogVariant?> GetVariantWithOptionDetailsByBusinessAndSkuAsync(
+            Guid businessId,
+            string sku,
+            CancellationToken cancellationToken = default);
     }
 }

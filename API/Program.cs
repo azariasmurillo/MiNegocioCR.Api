@@ -351,6 +351,7 @@ builder.Services.AddScoped<IGetCatalogDimensionCatalogUseCase, GetCatalogDimensi
 builder.Services.AddScoped<ICreateVariantUseCase, CreateVariantUseCase>();
 builder.Services.AddScoped<IGetVariantsByCatalogItemUseCase, GetVariantsByCatalogItemUseCase>();
 builder.Services.AddScoped<IGetVariantsByBusinessUseCase, GetVariantsByBusinessUseCase>();
+builder.Services.AddScoped<IGetVariantBySkuUseCase, GetVariantBySkuUseCase>();
 builder.Services.AddScoped<IUpdateVariantUseCase, UpdateVariantUseCase>();
 builder.Services.AddScoped<IDeleteVariantUseCase, DeleteVariantUseCase>();
 builder.Services.AddScoped<IToggleVariantStatusUseCase, ToggleVariantStatusUseCase>();

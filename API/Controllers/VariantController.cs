@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Features;
+using MiNegocioCR.Api.API.Helpers;
 using MiNegocioCR.Api.Application.DTOs;
 using MiNegocioCR.Api.Application.Interfaces.Repositories;
 using MiNegocioCR.Api.Application.Interfaces.Variants;
@@ -28,6 +29,7 @@ namespace MiNegocioCR.Api.API.Controllers
         private readonly IToggleVariantStatusUseCase _toggleVariantStatus;
         private readonly IGetVariantsByCatalogItemUseCase _getVariantsByCatalogItem;
         private readonly IGetVariantsByBusinessUseCase _getVariantsByBusiness;
+        private readonly IGetVariantBySkuUseCase _getVariantBySku;
         private readonly IUploadCatalogVariantImagesUseCase _uploadCatalogVariantImagesUseCase;
         private readonly IGetCatalogVariantImagesUseCase _getCatalogVariantImagesUseCase;
         private readonly IDeleteCatalogVariantImageUseCase _deleteCatalogVariantImageUseCase;
@@ -40,6 +42,7 @@ namespace MiNegocioCR.Api.API.Controllers
             IToggleVariantStatusUseCase toggleVariantStatus,
             IGetVariantsByCatalogItemUseCase getVariantsByCatalogItem,
             IGetVariantsByBusinessUseCase getVariantsByBusiness,
+            IGetVariantBySkuUseCase getVariantBySku,
             IUploadCatalogVariantImagesUseCase uploadCatalogVariantImagesUseCase,
             IGetCatalogVariantImagesUseCase getCatalogVariantImagesUseCase,
             IDeleteCatalogVariantImageUseCase deleteCatalogVariantImageUseCase,
@@ -51,10 +54,23 @@ namespace MiNegocioCR.Api.API.Controllers
             _toggleVariantStatus = toggleVariantStatus;
             _getVariantsByCatalogItem = getVariantsByCatalogItem;
             _getVariantsByBusiness = getVariantsByBusiness;
+            _getVariantBySku = getVariantBySku;
             _uploadCatalogVariantImagesUseCase = uploadCatalogVariantImagesUseCase;
             _getCatalogVariantImagesUseCase = getCatalogVariantImagesUseCase;
             _deleteCatalogVariantImageUseCase = deleteCatalogVariantImageUseCase;
             _setPrimaryCatalogVariantImageUseCase = setPrimaryCatalogVariantImageUseCase;
+        }
+
+        /// <summary>Lookup exacto por SKU en el negocio del JWT (app móvil / escáner).</summary>
+        [HttpGet("by-sku/{sku}")]
+        public async Task<IActionResult> GetBySku([FromRoute] string sku, CancellationToken cancellationToken)
+        {
+            var businessId = AuthHelper.GetBusinessId(HttpContext);
+            if (!businessId.HasValue || businessId.Value == Guid.Empty)
+                return Unauthorized(new { sessionMessage = "Token inválido para negocio." });
+
+            var result = await _getVariantBySku.ExecuteAsync(businessId.Value, sku, cancellationToken);
+            return Ok(result);
         }
 
         [HttpGet("{catalogItemId:guid}")]

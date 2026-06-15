@@ -269,7 +269,7 @@ public class ImageImportLog
 | `POST` | `/api/catalog/variant-images/import-zip` | Sube ZIP → crea batch → **202** `{ batchId }` |
 | `GET` | `/api/catalog/variant-images/import-batches/{batchId}` | Estado + contadores |
 | `GET` | `/api/catalog/variant-images/import-batches/{batchId}/logs` | Detalle paginado |
-| `GET` | `/api/variants/by-sku/{sku}` | *(opcional)* Resolver variante por SKU tenant — útil FE + import |
+| `GET` | `/api/variants/by-sku/{sku}` | Resolver variante por SKU tenant — app móvil + escáner |
 
 **Auth:** `[Authorize]` — `businessId` desde claim/token (nunca confiar solo en body).
 
