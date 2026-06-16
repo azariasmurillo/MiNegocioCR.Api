@@ -6,7 +6,7 @@
 | Decisión | Valor |
 |----------|--------|
 | Plataforma inicial | **Android** (Flutter) |
-| Distribución | Descarga APK desde panel MiNegocioCR |
+| Distribución | **Descarga APK desde MiNegocioCR web** (ver §23.0) — hoy **no implementado** |
 | Auth | Mismo JWT que la web (`POST /api/auth/login`) |
 | Escaneo MVP | Código escaneado → lookup por SKU (`barcode = sku` por convención) |
 | Escaneo M1+ | Campo **`Barcode`** separado de **`SKU`** en `CatalogVariant` |
@@ -16,7 +16,7 @@
 
 **Estado código (jun 2026):**
 - [x] `GET /api/variants/by-sku/{sku}` — lookup exacto por tenant
-- [ ] Barcode separado, endpoints móvil, Flutter app
+- [ ] Distribución APK en web, barcode separado, endpoints móvil, Flutter app
 
 ---
 
@@ -42,6 +42,10 @@ Mantener el **MVP simple y rápido**, pero diseñar arquitectura desde hoy para:
 - Sugerir, clasificar, detectar coincidencias, extraer información (OCR/atributos)
 
 **La persistencia siempre requiere confirmación humana** (`quick-create`, `adjust`, upload explícito).
+
+### Regla UX estratégica (§23.7)
+
+**90% de las entradas de inventario** deben completarse en **menos de 15 segundos** desde el escaneo. Toda pantalla o campo extra debe justificarse contra esta regla.
 
 ---
 
@@ -119,19 +123,29 @@ public class CatalogVariant
 - [ ] Flujo producto nuevo: wizard simple (1 presentación)
 - [ ] **Modo caja** — ingreso masivo (ver §6)
 - [ ] **Historial local** — actividad reciente (ver §5)
-- [ ] Descarga APK desde web MiNegocioCR
+- [ ] **Pantalla resumen** antes de crear producto nuevo (ver §23.3)
+- [ ] **Modo caja:** cantidad + costo opcional + razón (ver §23.1–23.2)
 
-**API (opcional pero recomendado):**
+**Web MiNegocioCR (distribución APK — §23.0):**
+
+- [ ] Pantalla / sección «App móvil inventario» con botón descargar APK
+- [ ] `GET /api/mobile/app/release` — versión, URL, notas, tamaño
+- [ ] APK alojada en Supabase Storage o CDN (CI sube artefacto)
+
+**API (recomendado para Fase A):**
 
 - [ ] `POST /api/mobile/inventory/quick-create` — catalog + variant + fotos en transacción
 - [ ] `POST /api/mobile/inventory/{variantId}/photos` — enhancer `marketplace-white-v1`
+- [ ] `POST /api/mobile/inventory/receive` — stock + costo opcional + razón (ver §23.1) — extiende `adjust`
 
-### M1 — Barcode separado (API, antes de muchos clientes con EAN real)
+### M1 — Barcode separado + auditoría móvil (API)
 
 - [ ] Migración `Barcode` + `BarcodeNormalized` en `CatalogVariants`
 - [ ] `GET /api/variants/by-barcode/{barcode}` o `GET /api/mobile/inventory/scan`
 - [ ] Create/Update variant acepta `barcode` opcional
 - [ ] Web inventario: campo barcode en edición variante (opcional)
+- [ ] `InventoryMovement`: `UserId`, `StockBefore`, `StockAfter`, `ReasonCode` (ver §23.2, §23.5)
+- [ ] `CatalogVariantImage.IsPublic` default `true` (ver §23.4)
 
 ### Fase B — IA asistida (Gemini)
 
@@ -140,6 +154,7 @@ public class CatalogVariant
 - [ ] **Prioridad IA:** sugerir **nueva presentación** antes que producto nuevo (ver §7)
 - [ ] OCR / atributos del empaque vía Gemini Vision (marca, modelo, capacidad, color)
 - [ ] Detección de duplicados fuzzy (nombre/marca/categoría similares)
+- [ ] **Aprendizaje por negocio** en prompt: top marcas, categorías, productos recientes (§23.6)
 - [ ] Pantalla revisión humana obligatoria
 - [ ] Rate limit por negocio (ej. 50 sugerencias/día plan básico)
 
@@ -459,14 +474,16 @@ Header: Authorization: Bearer {token}
 ```text
 Scan → GET by-sku (M1: scan unificado)
   200 → VariantFoundScreen
-  404 → ProductNotFoundScreen → fotos + formulario
+  404 → ProductNotFoundScreen → fotos + formulario → ProductSummaryScreen → confirm
 ```
 
 ### 14.3 Modo caja
 
 ```text
-Scan → found → cantidad → adjust → historial local → scan siguiente
+Scan → found → cantidad → [costo unitario opcional] → [razón: Compra] → receive/adjust → historial → scan siguiente
 ```
+
+**Objetivo:** ≤ 15 s por ítem cuando costo no se captura (default más común).
 
 ### 14.4 Producto nuevo con IA (Fase B)
 
@@ -508,11 +525,13 @@ Default: `GET /api/businesses/{id}/config` → `defaultProfitMargin`.
 | 6 | ProductNotFoundScreen | A |
 | 7 | PhotoCaptureScreen | A |
 | 8 | ProductFormScreen | A |
-| 9 | RecentActivityScreen | A |
-| 10 | PhotoPreviewEnhancedScreen | A |
-| 11 | AiSuggestionReviewScreen | B |
-| 12 | PendingProductReviewScreen | B |
-| 13 | SuccessScreen | A |
+| 9 | **ProductSummaryScreen** (confirmar antes de guardar) | A |
+| 10 | RecentActivityScreen | A |
+| 11 | PhotoPreviewEnhancedScreen | A |
+| 12 | **MobileAppDownload** (web: Configuración o Inventario) | A |
+| 13 | AiSuggestionReviewScreen | B |
+| 14 | PendingProductReviewScreen | B |
+| 15 | SuccessScreen | A |
 
 ---
 
@@ -620,3 +639,278 @@ Rate limit: manejar 429 con mensaje amigable.
 | Duplicados fuzzy | — | **Fase B** |
 | Inventario visual | — | **Fase C visión** |
 | Regla IA no persiste | sí | **norma de producto §0** |
+
+---
+
+## 23. Ajustes recomendados antes de implementar
+
+> Incorporados desde revisión externa (Chat). Alto valor, bajo costo de diseño; evitan refactor después.
+
+### 23.0 Distribución APK desde MiNegocioCR web ⚠️ pendiente
+
+**Problema:** hoy la spec menciona «descargar APK desde el panel» pero **no hay diseño ni pantalla** en web ni endpoint de release.
+
+**Objetivo:** el usuario autenticado descarga la app desde MiNegocioCR cuando la necesite, sin Play Store (MVP).
+
+#### UX web (Fase A)
+
+Ubicación sugerida (elegir una o ambas):
+
+| Ubicación | Ventaja |
+|-----------|---------|
+| **Configuración del negocio** → pestaña «App móvil» | Descubrible para admins |
+| **Inventario** → banner / menú «Descargar app de escaneo» | Contexto de uso |
+
+Contenido de la pantalla:
+
+```text
+App Inventario Rápido (Android)
+Versión: 1.0.0 (build 42)
+Tamaño: ~18 MB
+
+[ Descargar APK ]
+[ Ver instrucciones de instalación ]
+
+QR → misma URL (opcional)
+```
+
+Instrucciones mínimas: habilitar «orígenes desconocidos», instalar, iniciar sesión con la misma cuenta web.
+
+#### API propuesta
+
+**GET** `/api/mobile/app/release` — `[Authorize]`, cualquier usuario del negocio
+
+```json
+{
+  "platform": "android",
+  "versionName": "1.0.0",
+  "versionCode": 42,
+  "downloadUrl": "https://...supabase.../releases/minnegociocr-inventario-1.0.0.apk",
+  "releaseNotes": "Modo caja, escáner, fotos marketplace.",
+  "fileSizeBytes": 18874368,
+  "minApiLevel": 24,
+  "publishedAt": "2026-06-15T00:00:00Z"
+}
+```
+
+| Decisión | Valor MVP |
+|----------|-----------|
+| Storage | Supabase bucket `platform-releases` o path fijo en CDN |
+| Upload | CI (GitHub Actions) al merge tag `mobile-v*` |
+| Multi-tenant | **Una APK global** para todos los negocios (mismo backend) |
+| iOS | Futuro — endpoint puede devolver `platform: ios` + TestFlight URL |
+
+#### Frontend (Angular)
+
+- Ruta: `/settings/mobile-app` o componente en `business-settings`
+- Servicio: `MobileAppReleaseService` → `GET /api/mobile/app/release`
+- Botón: `<a href="downloadUrl" download>` o redirect
+
+#### Checklist
+
+- [ ] Bucket Supabase + política lectura pública del APK (o signed URL 24h)
+- [ ] Endpoint API + config `MobileAppReleaseOptions` en appsettings
+- [ ] Pantalla web con descarga
+- [ ] Pipeline CI que publique APK al bucket
+
+---
+
+### 23.1 Captura de costo durante ingreso de inventario
+
+**Problema hoy:** `POST /api/inventory/adjust` solo mueve stock (`AdjustInventoryUseCase` → `InventoryService.AdjustStockAsync`). **No actualiza `CostPrice`.**
+
+**Realidad comercial:** llega mercadería nueva y cambia el costo de compra.
+
+```text
+Mouse Logitech — stock 5, costo ₡4.500
+Nueva compra: +10 unidades a ₡5.000
+```
+
+#### Flujo modo caja (propuesto)
+
+```text
+Escanear → encontrado → Cantidad → Costo unitario (opcional) → Guardar
+```
+
+| Si usuario… | Sistema… |
+|-------------|----------|
+| No indica costo | Solo stock (+ movimiento) |
+| Indica costo | Stock + actualizar costo según política del negocio |
+
+#### Política de costo (config negocio — futuro)
+
+| Modo | Fórmula |
+|------|---------|
+| `replace` | Nuevo costo reemplaza el anterior |
+| `weighted_average` | `(stock_viejo × costo_viejo + qty × costo_nuevo) / stock_nuevo` |
+
+**MVP sugerido:** `replace` (más simple) o solo guardar costo en el movimiento sin recalcular hasta M1.
+
+#### API propuesta
+
+**POST** `/api/mobile/inventory/receive`
+
+```json
+{
+  "variantId": "uuid",
+  "quantity": 10,
+  "unitCost": 5000,
+  "reasonCode": "purchase",
+  "reasonNote": "Factura #1234"
+}
+```
+
+Extiende o reemplaza adjust en app móvil; web puede seguir con `adjust` hasta unificar.
+
+**Gap vs código actual:** requiere extender `AdjustInventoryRequestDto` o nuevo use case + opcional recalcular precio si modo calculado.
+
+---
+
+### 23.2 Razón del movimiento de inventario
+
+**Hoy:** `AdjustInventoryRequestDto.Reason` es **string libre** guardado en `InventoryMovement.Notes`. No hay catálogo ni `ReasonCode`.
+
+**Propuesta:** enum / código + nota opcional.
+
+| `reasonCode` | Etiqueta ES |
+|--------------|-------------|
+| `purchase` | Compra |
+| `initial_stock` | Inventario inicial |
+| `manual_adjustment` | Ajuste manual |
+| `correction` | Corrección |
+| `supplier_return` | Devolución proveedor |
+| `customer_return` | Devolución cliente |
+| `production` | Producción |
+| `other` | Otro |
+
+App móvil: dropdown con default **`purchase`** en modo caja (1 tap). Nota libre colapsada.
+
+**Beneficios:** kardex, reportes, auditoría.
+
+---
+
+### 23.3 Pantalla de revisión final (producto nuevo)
+
+**Problema:** errores al crear producto sin chance de revisar.
+
+```text
+Formulario → Resumen → Confirmar → Guardar
+```
+
+Mostrar:
+
+```text
+Nombre, Categoría, SKU, Barcode, Costo, Precio, Stock inicial, Fotos (preview)
+```
+
+**Fase A Flutter** — `ProductSummaryScreen`. Cumple regla §23.7 si el resumen es una sola pantalla de confirmación (no formulario extra largo).
+
+---
+
+### 23.4 Fotos públicas vs fotos internas
+
+**Hoy:** `CatalogVariantImage` **no tiene** `IsPublic`. Todas las URLs van al marketplace si se publican.
+
+**Propuesta (migración M1):**
+
+```csharp
+public class CatalogVariantImage
+{
+    // ... existente ...
+    public bool IsPublic { get; set; } = true;
+}
+```
+
+| MVP | Todas `IsPublic = true` |
+| Futuro | Fotos internas: factura, caja, serie, daños — no en tienda digital |
+
+Marketplace / tienda digital: filtrar `IsPublic == true`.
+
+---
+
+### 23.5 Auditoría mínima desde Fase A
+
+**Historial local (app)** ayuda al usuario; **no sustituye** auditoría en servidor.
+
+Cada movimiento de inventario debería registrar (migración M1):
+
+| Campo | Descripción |
+|-------|-------------|
+| `UserId` | Quién hizo el ajuste (JWT) |
+| `CreatedAt` | Cuándo |
+| `Quantity` | Delta (+/-) |
+| `ReasonCode` / `Notes` | Por qué |
+| `StockBefore` | Stock antes |
+| `StockAfter` | Stock después |
+| `Source` | `web` \| `mobile` \| `pos` |
+
+**Hoy:** `InventoryMovement` tiene `Quantity`, `Notes`, `Type`, `CreatedAt` — **sin** `UserId`, stock before/after, reason code.
+
+**Beneficio:** investigar diferencias, kardex futuro, cumplimiento.
+
+---
+
+### 23.6 Aprendizaje por negocio (Fase B — prompt IA)
+
+La IA debe adaptarse al tipo de negocio. Ejemplo Joyca Tech: HP, Dell, SSD, RAM, cargadores…
+
+Incluir en contexto Gemini:
+
+```json
+{
+  "topCategories": [{ "id": "...", "name": "Cargadores" }],
+  "topBrands": ["HP", "Dell", "Lenovo"],
+  "recentProducts": [{ "name": "...", "catalogItemId": "..." }],
+  "commonDimensions": ["Marca", "Capacidad", "Color"]
+}
+```
+
+**Backend:** query agregada por negocio antes de llamar IA (cache 1h). Menos errores, menos tokens, sugerencias más rápidas.
+
+---
+
+### 23.7 Regla estratégica de velocidad
+
+```text
+90% de las entradas de inventario → completar en < 15 segundos desde el escaneo.
+```
+
+| Flujo | Cómo cumplir |
+|-------|----------------|
+| Modo caja existente | Scan → qty → Enter (razón default Compra) |
+| Producto nuevo | Solo cuando 404; resumen en 1 pantalla |
+| Costo opcional | Colapsado; no bloquear guardar |
+| IA | Solo Fase B; nunca en camino crítico de caja |
+
+Toda decisión UX futura se evalúa contra esta regla.
+
+---
+
+### 23.8 Mapa gap vs código actual (jun 2026)
+
+| Recomendación | Estado actual | Fase |
+|---------------|---------------|------|
+| Descarga APK web | No existe | **A** |
+| `GET /api/mobile/app/release` | No existe | **A** |
+| Costo en ingreso | Solo adjust stock | **A API** / receive |
+| Reason enum | String libre en Notes | **A app** / **M1 API** |
+| Resumen confirmación | No en app (web parcial) | **A Flutter** |
+| `IsPublic` imágenes | No existe | **M1 migración** |
+| Auditoría UserId / stock before | No en movement | **M1 migración** |
+| Contexto IA por negocio | No existe | **B** |
+| Regla 15 segundos | Norma doc | **A diseño** |
+
+---
+
+## 24. Changelog v2.1 (post-revisión Chat)
+
+| Tema | v2.0 | v2.1 |
+|------|------|------|
+| Distribución APK | mencionada | **§23.0 diseño completo web + API + CI** |
+| Costo en ingreso | — | **§23.1 receive + política costo** |
+| Reason enum | — | **§23.2** |
+| Resumen confirmación | — | **§23.3 ProductSummaryScreen** |
+| IsPublic imágenes | — | **§23.4 migración M1** |
+| Auditoría movement | — | **§23.5 M1** |
+| IA contexto negocio | genérico | **§23.6 topBrands/categories** |
+| Regla 15 s | — | **§23.7 + §0** |
