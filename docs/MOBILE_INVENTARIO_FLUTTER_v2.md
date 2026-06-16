@@ -10,9 +10,10 @@
 | Auth | Mismo JWT que la web (`POST /api/auth/login`) |
 | Escaneo MVP | Código escaneado → lookup por SKU (`barcode = sku` por convención) |
 | Escaneo M1+ | Campo **`Barcode`** separado de **`SKU`** en `CatalogVariant` |
-| Fotos | Máx. **3** por variante, enhancer marketplace WebP |
-| IA | **Fase B** — Gemini Flash vision; **nunca persiste solo** |
-| Recorte fondo IA | **Fase C** — Sprint C API (`useBackgroundRemoval`) |
+| Fotos | Máx. **3** por variante; **ImageSharp** estilo Amazon (`marketplace-white-v1`) — ver §16 |
+| IA (Gemini) | **Fase B** — solo **lee** fotos para clasificar; **no modifica imágenes** |
+| Mejora visual fotos | **ImageSharp** (API existente), **no Gemini** — decisión cerrada §16 |
+| Recorte fondo IA | **Fuera de alcance móvil** por ahora; opcional futuro ZIP API (Sprint C), no requerido |
 
 **Estado código (jun 2026):**
 - [x] `GET /api/variants/by-sku/{sku}` — lookup exacto por tenant
@@ -39,9 +40,20 @@ Mantener el **MVP simple y rápido**, pero diseñar arquitectura desde hoy para:
 
 **La IA únicamente puede:**
 
-- Sugerir, clasificar, detectar coincidencias, extraer información (OCR/atributos)
+- Sugerir, clasificar, detectar coincidencias, extraer información (OCR/atributos) **desde** fotos
+- **No** retocar, recortar, cambiar fondo ni generar archivos de imagen
 
 **La persistencia siempre requiere confirmación humana** (`quick-create`, `adjust`, upload explícito).
+
+### Decisión cerrada — fotos vs Gemini (jun 2026)
+
+| Responsable | Qué hace | Qué **no** hace |
+|-------------|----------|-----------------|
+| **ImageSharp** (`LocalImageSharpProductImageEnhancerService`) | Fondo blanco tipo Amazon, resize, WebP 3 tamaños, sombra contacto | Clasificar producto |
+| **Gemini (Fase B)** | Leer foto → JSON (nombre, categoría, marca, presentación sugerida) | Retocar, recortar, cambiar fondo ni generar imagen |
+| **Usuario** | Confirma sugerencias y ve preview **ya mejorada por ImageSharp** antes de guardar | — |
+
+El estilo visual actual **marketplace-white-v1** se mantiene; no se planea que Gemini procese fotos en la app móvil.
 
 ### Regla UX estratégica (§23.7)
 
@@ -147,9 +159,9 @@ public class CatalogVariant
 - [ ] `InventoryMovement`: `UserId`, `StockBefore`, `StockAfter`, `ReasonCode` (ver §23.2, §23.5)
 - [ ] `CatalogVariantImage.IsPublic` default `true` (ver §23.4)
 
-### Fase B — IA asistida (Gemini)
+### Fase B — IA asistida (Gemini) — solo datos, no imágenes
 
-- [ ] `POST /api/mobile/inventory/ai-suggest` — fotos → JSON sugerencia (**sin persistir**)
+- [ ] `POST /api/mobile/inventory/ai-suggest` — envía fotos **solo para análisis**; respuesta **JSON** (**sin** imagen procesada)
 - [ ] Entidad **`PendingProduct`** / `MobileProductDraft` con TTL (ver §4)
 - [ ] **Prioridad IA:** sugerir **nueva presentación** antes que producto nuevo (ver §7)
 - [ ] OCR / atributos del empaque vía Gemini Vision (marca, modelo, capacidad, color)
@@ -158,13 +170,13 @@ public class CatalogVariant
 - [ ] Pantalla revisión humana obligatoria
 - [ ] Rate limit por negocio (ej. 50 sugerencias/día plan básico)
 
-### Fase C — Catálogo avanzado
+### Fase C — Catálogo avanzado (opcional / futuro)
 
-- [ ] Recorte de fondo real (`useBackgroundRemoval` — Sprint C API)
 - [ ] Matching avanzado catálogo (embeddings / scores de similitud)
 - [ ] **Inventario visual** — video → IA → conteo (solo diseño; sin código aún)
 - [ ] Cola offline en app (opcional)
 - [ ] iOS (opcional)
+- [ ] *(Opcional, no móvil)* Recorte fondo `useBackgroundRemoval` en import ZIP — ver [VARIANT_IMAGE_IMPORT_MARKETPLACE_v1.md](./VARIANT_IMAGE_IMPORT_MARKETPLACE_v1.md) Sprint C; **no prioritario**; ImageSharp Amazon-style es suficiente
 
 ---
 
@@ -311,7 +323,9 @@ Solo si no hay match razonable → `"action": "new-product"`.
 
 ## 8. OCR / atributos del empaque (Fase B)
 
-No requiere pipeline OCR separado al inicio — **Gemini Vision** extrae texto y estructura.
+Gemini **analiza** la foto (vision) y devuelve **texto/JSON únicamente**. La imagen que se guarda en inventario pasa **después** por ImageSharp (§16), no por Gemini.
+
+No requiere pipeline OCR separado — **Gemini Vision** extrae texto y estructura.
 
 Foto del empaque:
 
@@ -535,14 +549,61 @@ Default: `GET /api/businesses/{id}/config` → `defaultProfitMargin`.
 
 ---
 
-## 16. Imágenes marketplace
+## 16. Imágenes marketplace — pipeline de fotos (decisión cerrada)
 
-Reutilizar pipeline existente:
+### Principio
 
-- Estilos: `marketplace-white-v1` (default), `marketplace-soft-v1`
-- Salida: WebP 1200 / 600 / 300 px
-- Storage: Supabase `business-assets`
-- Fase C: `useBackgroundRemoval`
+**Toda foto que entra al inventario (móvil, web o ZIP) se mejora con ImageSharp, estilo Amazon.**  
+**Gemini no participa en este pipeline** — solo ayuda a llenar datos del producto en Fase B.
+
+### Flujo móvil (Fase A)
+
+```text
+Usuario toma foto (JPEG/PNG)
+        ↓
+POST /api/mobile/inventory/{variantId}/photos
+  (o quick-create con adjuntos)
+        ↓
+LocalImageSharpProductImageEnhancerService
+  • marketplace-white-v1 (default) — fondo #FFFFFF, producto centrado, sombra contacto
+  • marketplace-soft-v1 (opcional)
+  • WebP: 1200 / 600 / 300 px
+        ↓
+Supabase business-assets
+        ↓
+App muestra PhotoPreviewEnhancedScreen (preview URLs devueltas)
+        ↓
+Usuario confirma → variante queda con fotos marketplace
+```
+
+### Qué hace ImageSharp (ya implementado en import ZIP)
+
+| Paso | Detalle |
+|------|---------|
+| Canvas | Blanco tipo Amazon (`marketplace-white-v1`) |
+| Producto | Centrado, ratio ~85% del canvas |
+| Sombra | Contact shadow bajo el producto |
+| Salida | WebP calidad ~88%, 3 tamaños |
+| Referencia | `LocalImageSharpProductImageEnhancerService`, spec [VARIANT_IMAGE_IMPORT_MARKETPLACE_v1.md](./VARIANT_IMAGE_IMPORT_MARKETPLACE_v1.md) |
+
+### Qué hace Gemini (Fase B) — explícitamente NO
+
+| Prohibido | Motivo |
+|-----------|--------|
+| Devolver imagen retocada | Costo, latencia, inconsistencia visual |
+| Quitar fondo con IA | Fuera de alcance; ImageSharp alcanza para MVP |
+| Generar escenas / fondos creativos | No es marketplace |
+
+Gemini recibe la misma foto **solo como input multimodal** para `ai-suggest` → JSON.
+
+### Estilos disponibles
+
+- **`marketplace-white-v1`** — default app móvil (Amazon-style) ✅
+- **`marketplace-soft-v1`** — gris suave (opcional en settings)
+
+### Fuera de alcance móvil (por ahora)
+
+- `useBackgroundRemoval` / Sprint C del import ZIP — **no requerido** para app móvil; evaluar solo si fotos con fondo muy sucio lo exigen en prod.
 
 ---
 
@@ -602,6 +663,8 @@ Backend: POST /api/mobile/inventory/ai-suggest (Gemini 2.0 Flash vision).
 
 Reglas IA (obligatorias):
 - NUNCA persistir catálogo automáticamente
+- NUNCA procesar, retocar ni devolver imágenes — solo JSON de sugerencia
+- Las fotos finales las mejora ImageSharp (marketplace-white-v1) en el API, igual que import ZIP
 - Priorizar action "new-presentation" sobre "new-product"
 - Incluir extractedAttributes (marca, capacidad, color…) del empaque
 - Mostrar duplicateCandidates si similarity > 0.85
@@ -915,3 +978,14 @@ Toda decisión UX futura se evalúa contra esta regla.
 | Auditoría movement | — | **§23.5 M1** |
 | IA contexto negocio | genérico | **§23.6 topBrands/categories** |
 | Regla 15 s | — | **§23.7 + §0** |
+
+---
+
+## 25. Changelog v2.2 — fotos vs Gemini
+
+| Tema | v2.1 | v2.2 |
+|------|------|------|
+| Mejora visual fotos | mezclado con IA | **ImageSharp solo** — §16 pipeline explícito |
+| Gemini y fotos | vision genérico | **solo lectura → JSON**; no modifica imágenes |
+| Recorte fondo IA | Fase C móvil | **Fuera de alcance móvil**; Sprint C ZIP opcional futuro |
+| Estilo default | marketplace-white-v1 | **Confirmado suficiente** estilo Amazon |
