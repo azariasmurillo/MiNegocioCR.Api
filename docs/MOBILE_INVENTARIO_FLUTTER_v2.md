@@ -584,6 +584,7 @@ Funcionalidad:
 6. Historial local SQLite: últimos 50 escaneos
 7. Precio fijo o calculado; margen desde GET /api/businesses/{id}/config
 8. SIN IA en Fase A
+9. La APK se descarga desde MiNegocioCR web (GET /api/mobile/app/release), no desde la app — ver §23.0
 
 Stack: Riverpod, dio, mobile_scanner, image_picker, flutter_secure_storage, sqflite.
 
